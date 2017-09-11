@@ -91,4 +91,3 @@ parser.add_argument("--cloud-config-data", type=json.loads)
 parser.add_argument("--cloud-init-timeout", type=int, default=-1,
                     help="Approximate time in seconds to wait for cloud-init to finish before aborting.")
 parser.add_argument("--iam-role", default=__name__)
-

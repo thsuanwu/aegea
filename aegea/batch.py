@@ -98,7 +98,6 @@ def create_compute_environment(args):
                              ec2KeyPair=ssh_key_name)
     if args.ecs_container_instance_ami:
         compute_resources["imageId"] = args.ecs_container_instance_ami
-
     elif args.ecs_container_instance_tags:
         # TODO: build ECS CI AMI on demand
         compute_resources["imageId"] = resolve_ami(**args.ecs_container_instance_tags)
@@ -238,10 +237,10 @@ def ensure_job_definition(args):
     iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"],
                                policies=["AmazonEC2FullAccess", "AmazonDynamoDBFullAccess", "AmazonS3FullAccess"])
     if args.ulimits:
-      container_props.setdefault("ulimits", [])
-      for ulimit in args.ulimits:
-        name, value = ulimit.split(":", 1)
-        container_props["ulimits"].append(dict(name=name, hardLimit=int(value), softLimit=int(value)))
+        container_props.setdefault("ulimits", [])
+        for ulimit in args.ulimits:
+            name, value = ulimit.split(":", 1)
+            container_props["ulimits"].append(dict(name=name, hardLimit=int(value), softLimit=int(value)))
     container_props.update(jobRoleArn=iam_role.arn)
     return clients.batch.register_job_definition(jobDefinitionName=__name__.replace(".", "_"),
                                                  type="container",
@@ -310,7 +309,8 @@ ecs_img_arg = img_group.add_argument("--ecs-image", "--ecr-image", "-i", metavar
 ecs_img_arg.completer = ecr_image_name_completer
 group.add_argument("--vcpus", type=int, default=1)
 group.add_argument("--ulimits", nargs="*",
-                   help="Separate ulimit name and value with colon, for example: --ulimits nofile:20000")
+                   help="Separate ulimit name and value with colon, for example: --ulimits nofile:20000",
+                   default=["nofile:100000"])
 group.add_argument("--memory-mb", dest="memory", type=int, default=1024)
 group.add_argument("--privileged", action="store_true", default=False)
 group.add_argument("--volumes", nargs="+", metavar="HOST_PATH=GUEST_PATH", type=lambda x: x.split("=", 1), default=[])

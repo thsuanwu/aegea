@@ -15,7 +15,7 @@ MITM vulnerability.
 import os, sys, argparse, subprocess
 
 from . import register_parser, logger
-from .util.aws import resolve_instance_id, resources
+from .util.aws import resolve_instance_id, resources, clients
 from .util.crypto import add_ssh_host_key_to_known_hosts
 from .util.printing import BOLD
 from .util.exceptions import AegeaException
@@ -43,7 +43,7 @@ def check_for_active_ssh_key():
                 has_valid_key = True
                 break
     if not has_valid_key:
-        raise AegeaException("Current IAM user: \"%s\" doesn't have an active AWS CodeCommit SSH key."%username)
+        raise AegeaException("Current IAM user: \"%s\" doesn't have an active AWS CodeCommit SSH key." % username)
 
 def ssh(args):
     check_for_active_ssh_key()
