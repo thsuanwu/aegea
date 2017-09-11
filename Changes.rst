@@ -1,3 +1,16 @@
+Changes for v1.10.0 (2017-09-11)
+================================
+
+-  Set default nofile to 100000; lint fixes
+
+-  aegea batch submit: Add ability to specify ulimits nofile to
+   conatiner and also adding sensible default (#24)
+
+-  Change aegea-deploy service to serve as template, add custom make
+   targets, using one queue per (org, name, branch, instanceid)
+
+-  Add iam-role argument to build
+
 Changes for v1.9.18 (2017-08-16)
 ================================
 
