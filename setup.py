@@ -37,7 +37,8 @@ setuptools.setup(
         "babel >= 2.3.4, < 3",
         "ipwhois >= 0.13.0, < 1",
         "uritemplate >= 3.0.0, < 4",
-        "awscli >= 1.2.9"
+        "awscli >= 1.2.9",
+        "chalice >= 1.0.2"
     ],
     extras_require={
         ':python_version == "2.7"': [

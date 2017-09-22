@@ -4,7 +4,7 @@ Manage AWS Batch jobs, queues, and compute environments.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, base64, collections, io, subprocess, json, time
+import os, sys, argparse, base64, collections, io, subprocess, json, time, re
 from datetime import datetime
 
 from botocore.exceptions import ClientError
@@ -98,9 +98,9 @@ def create_compute_environment(args):
                              ec2KeyPair=ssh_key_name)
     if args.ecs_container_instance_ami:
         compute_resources["imageId"] = args.ecs_container_instance_ami
-    elif args.ecs_container_instance_tags:
+    elif args.ecs_container_instance_ami_tags:
         # TODO: build ECS CI AMI on demand
-        compute_resources["imageId"] = resolve_ami(**args.ecs_container_instance_tags)
+        compute_resources["imageId"] = resolve_ami(**args.ecs_container_instance_ami_tags)
     logger.info("Creating compute environment %s in %s", args.name, vpc)
     compute_environment = clients.batch.create_compute_environment(computeEnvironmentName=args.name,
                                                                    type=args.type,
@@ -271,8 +271,9 @@ def submit(args):
         return {"Dry run succeeded": True}
     try:
         job = clients.batch.submit_job(**submit_args)
-    except ClientError:
-        # FIXME: only catch "no queue" error
+    except ClientError as e:
+        if not re.search("JobQueue .+ not found", str(e)):
+            raise
         ensure_queue(args.queue)
         job = clients.batch.submit_job(**submit_args)
     if args.watch:
