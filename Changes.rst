@@ -1,3 +1,13 @@
+Changes for v2.0.0 (2017-11-15)
+===============================
+
+-  Further ameliorate the volume attach/detach polling issues (#31)
+
+-  Limit time we wait for aws detach to succeed before deleting volume
+   (#30)
+
+-  Make exception catching more specific
+
 Changes for v1.0.1 (2017-09-15)
 ===============================
 
