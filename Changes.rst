@@ -1,3 +1,8 @@
+Changes for v2.0.1 (2017-11-16)
+===============================
+
+-  fix batch: newlines and percent characters have special meaning (#32)
+
 Changes for v2.0.0 (2017-11-15)
 ===============================
 
