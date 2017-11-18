@@ -1,3 +1,10 @@
+Changes for v2.0.2 (2017-11-17)
+===============================
+
+-  Undo changes that had to do with tweak breakage
+
+-  fix another typo that was breaking job launch (#33)
+
 Changes for v2.0.1 (2017-11-16)
 ===============================
 
