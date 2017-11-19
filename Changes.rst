@@ -1,3 +1,8 @@
+Changes for v2.0.3 (2017-11-19)
+===============================
+
+-  Bump tweak dependency with upstream fix
+
 Changes for v2.0.2 (2017-11-17)
 ===============================
 
