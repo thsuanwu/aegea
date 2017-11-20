@@ -48,6 +48,6 @@ clean:
 	-rm -rf *.egg-info
 	-rm -rf .venv
 
-.PHONY: wheel lint test test_deps docs install clean
+.PHONY: wheel lint test test_deps docs install clean version
 
 include common.mk
