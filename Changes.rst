@@ -1,3 +1,8 @@
+Changes for v2.0.7 (2017-11-20)
+===============================
+
+-  aegea batch watch: fix logic error when job fails before starting
+
 Changes for v2.0.6 (2017-11-20)
 ===============================
 
