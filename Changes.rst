@@ -1,3 +1,8 @@
+Changes for v2.0.5 (2017-11-20)
+===============================
+
+-  Make sure version is updated when rolling release
+
 Changes for v2.0.4 (2017-11-20)
 ===============================
 
