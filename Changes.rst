@@ -1,3 +1,8 @@
+Changes for v2.0.6 (2017-11-20)
+===============================
+
+-  Disable custom Batch AMIs by default
+
 Changes for v2.0.5 (2017-11-20)
 ===============================
 
