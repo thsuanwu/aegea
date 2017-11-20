@@ -98,5 +98,9 @@ TODO: ``build_image build_ami build_docker_image rootfs.skel``
 
 .. image:: https://circleci.com/gh/kislyuk/aegea.svg?style=svg&circle-token=70d22b84025fad5d484ac5f3df1fc0a183c0f516
    :target: https://circleci.com/gh/kislyuk/aegea
+.. image:: https://img.shields.io/pypi/v/aegea.svg
+   :target: https://pypi.python.org/pypi/aegea
+.. image:: https://img.shields.io/pypi/l/aegea.svg
+   :target: https://pypi.python.org/pypi/aegea
 .. image:: https://codecov.io/gh/kislyuk/aegea/branch/master/graph/badge.svg?token=a9suCNpECz
    :target: https://codecov.io/gh/kislyuk/aegea
