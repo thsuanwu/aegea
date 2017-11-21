@@ -440,7 +440,7 @@ def watch(args):
             if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"}:
                 logger.info("Job %s log stream: %s", args.job_id, job_desc.get("container", {}).get("logStreamName"))
                 save_job_desc(job_desc)
-        if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"}:
+        if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"} and "logStreamName" in job_desc["container"]:
             args.log_stream_name = job_desc["container"]["logStreamName"]
             get_logs(args)
         if "statusReason" in job_desc:
