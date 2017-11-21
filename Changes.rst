@@ -1,3 +1,12 @@
+Changes for v2.0.8 (2017-11-21)
+===============================
+
+-  aegea batch submit: Use S3 to stage execute payload
+
+-  Enable newline formatting and excise comments in ebs shellcode
+
+-  kill processes using the filesystem before unmounting (#34)
+
 Changes for v2.0.7 (2017-11-20)
 ===============================
 
