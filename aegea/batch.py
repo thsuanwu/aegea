@@ -68,7 +68,9 @@ mount $devnode %s
 echo Devnode $devnode mounted >& 2
 """ # noqa
 
-ebs_vol_mgr_shellcode = "\n".join([l for l in ebs_vol_mgr_shellcode.splitlines() if l.strip() and not l.startswith("#")])
+ebs_vol_mgr_shellcode = "\n".join(
+    [l for l in ebs_vol_mgr_shellcode.splitlines() if l.strip() and not l.startswith("#")]
+)
 
 efs_vol_shellcode = """mkdir -p {efs_mountpoint}
 MAC=$(curl http://169.254.169.254/latest/meta-data/mac)
@@ -199,7 +201,7 @@ def get_command_and_env(args):
         args.privileged = True
         args.volumes.append(["/dev", "/dev"])
         for mountpoint, size_gb in args.storage:
-            shellcode += (ebs_vol_mgr_shellcode % (size_gb, mountpoint, mountpoint, mountpoint, mountpoint, mountpoint)).splitlines()
+            shellcode += (ebs_vol_mgr_shellcode % tuple([size_gb] + [mountpoint]*5)).splitlines()
     elif args.efs_storage:
         args.privileged = True
         if "=" in args.efs_storage:
