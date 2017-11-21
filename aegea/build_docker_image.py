@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, json, time, base64, argparse, io, gzip
+import os, sys, json, time, base64, argparse, io, gzip, tempfile
 from collections import OrderedDict
 
 from botocore.exceptions import ClientError
@@ -70,26 +70,30 @@ def ensure_ecr_repo(name, read_access=None):
     if read_access:
         clients.ecr.set_repository_policy(repositoryName=name, policyText=str(policy))
 
+build_docker_image_shellcode = """#!/bin/bash
+set -euo pipefail
+apt-get update -qq
+apt-get install -qqy docker.io python-pip
+pip install -q awscli
+cd $(mktemp -d)
+aws configure set default.region $AWS_DEFAULT_REGION
+$(aws ecr get-login)
+DOCKERFILE_B64GZ="%s"
+echo "$DOCKERFILE_B64GZ" | base64 --decode | gunzip > Dockerfile
+TAG="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${REPO}:${TAG}"
+docker build -t "$TAG" .
+docker push "$TAG"
+"""
 def build_docker_image(args):
     for key, value in config.build_image.items():
         getattr(args, key).extend(value)
     args.tags += ["AegeaVersion={}".format(__version__),
                   'description="Built by {} for {}"'.format(__name__, ARN.get_iam_username())]
     ensure_ecr_repo(args.name, read_access=args.read_access)
-    submit_args = submit_parser.parse_args([
-        "--command",
-        "set -euo pipefail",
-        "apt-get update -qq",
-        "apt-get install -qqy docker.io python-pip",
-        "pip install -q awscli",
-        "cd $(mktemp -d)",
-        "aws configure set default.region $AWS_DEFAULT_REGION",
-        "$(aws ecr get-login)",
-        'echo "$DOCKERFILE_B64GZ" | base64 --decode | gunzip > Dockerfile',
-        'TAG="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${REPO}:${TAG}"',
-        'docker build -t "$TAG" .',
-        'docker push "$TAG"'
-    ])
+    with tempfile.NamedTemporaryFile() as exec_fh:
+        exec_fh.write(build_docker_image_shellcode % (encode_dockerfile(args), ))
+        exec_fh.flush()
+    submit_args = submit_parser.parse_args(["--execute", exec_fh.name])
     submit_args.volumes = [["/var/run/docker.sock", "/var/run/docker.sock"]]
     submit_args.privileged = True
     submit_args.watch = True
@@ -98,7 +102,6 @@ def build_docker_image(args):
     submit_args.environment = [
         dict(name="TAG", value="latest"),
         dict(name="REPO", value=args.name),
-        dict(name="DOCKERFILE_B64GZ", value=encode_dockerfile(args)),
         dict(name="AWS_DEFAULT_REGION", value=ARN.get_region()),
         dict(name="AWS_ACCOUNT_ID", value=ARN.get_account_id())
     ]

@@ -4,7 +4,7 @@ Manage AWS Batch jobs, queues, and compute environments.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, base64, collections, io, subprocess, json, time, re
+import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib
 from datetime import datetime
 
 from botocore.exceptions import ClientError
@@ -24,7 +24,9 @@ from .util.aws.spot import SpotFleetBuilder
 
 bash_cmd_preamble = ["/bin/bash", "-c", 'for i in "$@"; do eval "$i"; done', __name__]
 
-ebs_vol_mgr_shellcode = """iid=$(http http://169.254.169.254/latest/dynamic/instance-identity/document)
+ebs_vol_mgr_shellcode = """apt-get update -qq
+apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq
+iid=$(http http://169.254.169.254/latest/dynamic/instance-identity/document)
 aws configure set default.region $(echo "$iid" | jq -r .region)
 az=$(echo "$iid" | jq -r .availabilityZone)
 apt-get update
@@ -208,10 +210,21 @@ def get_command_and_env(args):
         shellcode += commands
 
     if args.execute:
-        payload = base64.b64encode(args.execute.read()).decode()
-        args.environment.append(dict(name="BATCH_SCRIPT_B64", value=payload))
+        bucket = ensure_s3_bucket("aegea-batch-jobs-{}".format(ARN.get_account_id()))
+
+        key_name = hashlib.sha256(args.execute.read()).hexdigest()
+        args.execute.seek(0)
+        bucket.upload_fileobj(args.execute, key_name)
+        payload_url = clients.s3.generate_presigned_url(
+            ClientMethod='get_object',
+            Params=dict(Bucket=bucket.name, Key=key_name),
+            ExpiresIn=3600 * 24 * 7
+        )
         shellcode += ['BATCH_SCRIPT=$(mktemp --tmpdir "$AWS_BATCH_CE_NAME.$AWS_BATCH_JQ_NAME.$AWS_BATCH_JOB_ID.XXXXX")',
-                      "echo $BATCH_SCRIPT_B64 | base64 -d > $BATCH_SCRIPT",
+                      "apt-get update -qq",
+                      "apt-get install -qqy --no-install-suggests --no-install-recommends curl ca-certificates gnupg",
+                      "set -x",
+                      "curl '{payload_url}' > $BATCH_SCRIPT".format(payload_url=payload_url),
                       "chmod +x $BATCH_SCRIPT",
                       "$BATCH_SCRIPT"]
     elif args.cwl:
