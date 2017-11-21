@@ -48,6 +48,6 @@ clean:
 	-rm -rf *.egg-info
 	-rm -rf .venv
 
-.PHONY: wheel lint test test_deps docs install clean version
+.PHONY: wheel lint test test_deps docs install clean version aegea/version.py setup.py
 
 include common.mk
