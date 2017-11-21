@@ -93,21 +93,21 @@ def build_docker_image(args):
     with tempfile.NamedTemporaryFile() as exec_fh:
         exec_fh.write(build_docker_image_shellcode % (encode_dockerfile(args), ))
         exec_fh.flush()
-    submit_args = submit_parser.parse_args(["--execute", exec_fh.name])
-    submit_args.volumes = [["/var/run/docker.sock", "/var/run/docker.sock"]]
-    submit_args.privileged = True
-    submit_args.watch = True
-    submit_args.dry_run = args.dry_run
-    submit_args.image = args.builder_image
-    submit_args.environment = [
-        dict(name="TAG", value="latest"),
-        dict(name="REPO", value=args.name),
-        dict(name="AWS_DEFAULT_REGION", value=ARN.get_region()),
-        dict(name="AWS_ACCOUNT_ID", value=ARN.get_account_id())
-    ]
-    builder_iam_role = ensure_iam_role(__name__, trust=["ecs-tasks"], policies=args.builder_iam_policies)
-    submit_args.job_role = builder_iam_role.name
-    job = submit(submit_args)
+        submit_args = submit_parser.parse_args(["--execute", exec_fh.name])
+        submit_args.volumes = [["/var/run/docker.sock", "/var/run/docker.sock"]]
+        submit_args.privileged = True
+        submit_args.watch = True
+        submit_args.dry_run = args.dry_run
+        submit_args.image = args.builder_image
+        submit_args.environment = [
+            dict(name="TAG", value="latest"),
+            dict(name="REPO", value=args.name),
+            dict(name="AWS_DEFAULT_REGION", value=ARN.get_region()),
+            dict(name="AWS_ACCOUNT_ID", value=ARN.get_account_id())
+        ]
+        builder_iam_role = ensure_iam_role(__name__, trust=["ecs-tasks"], policies=args.builder_iam_policies)
+        submit_args.job_role = builder_iam_role.name
+        job = submit(submit_args)
     return dict(job=job)
 
 parser = register_parser(build_docker_image, help="Build an Elastic Container Registry Docker image")
