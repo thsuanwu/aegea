@@ -82,13 +82,14 @@ def launch(args):
     ssh_host_key = new_ssh_key()
     user_data_args = dict(host_key=ssh_host_key,
                           commands=get_startup_commands(args, ARN.get_iam_username()),
-                          packages=args.packages)
+                          packages=args.packages,
+                          storage=args.storage)
     user_data_args.update(dict(args.cloud_config_data))
     launch_spec = dict(ImageId=args.ami,
                        KeyName=ssh_key_name,
                        SecurityGroupIds=[sg.id for sg in security_groups],
                        InstanceType=args.instance_type,
-                       BlockDeviceMappings=get_bdm(),
+                       BlockDeviceMappings=get_bdm(ebs_storage=args.storage),
                        UserData=get_user_data(**user_data_args))
     logger.info("Launch spec user data is %i bytes long", len(launch_spec["UserData"]))
     if args.iam_role:
@@ -167,12 +168,6 @@ def launch(args):
     add_ssh_host_key_to_known_hosts(hostkey_line([instance.public_dns_name], ssh_host_key))
     if args.wait_for_ssh:
         wait_for_port(instance.public_dns_name, 22)
-    if args.essential_services:
-        filter_args = dict(logGroupName="syslog", logStreamNames=[instance.private_dns_name], filterPattern="service",
-                           startTime=int((time.time()-900)*1000))
-        for event in paginate(clients.logs.get_paginator("filter_log_events"), **filter_args):
-            # print(event["timestamp"], event["message"])
-            raise NotImplementedError()
     logger.info("Launched %s in %s", instance, subnet)
     return dict(instance_id=instance.id)
 
@@ -200,7 +195,9 @@ parser.add_argument("--security-groups", nargs="+", metavar="SECURITY_GROUP")
 parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE")
 parser.add_argument("--wait-for-ssh", action="store_true",
                     help="Wait for launched instance to begin accepting SSH connections. Security groups and NACLs must permit SSH from launching host.")  # noqa
-parser.add_argument("--essential-services", nargs="+")
+parser.add_argument("--storage", nargs="+", metavar="MOUNTPOINT=SIZE_GB",
+                    type=lambda x: x.rstrip("GBgb").split("=", 1), default=[],
+                    help="At launch time, attach EBS volume(s) of this size, format and mount them.")
 parser.add_argument("--iam-role", default=__name__,
                     help="Pass this IAM role to the launched instance through an instance profile. Role credentials will become available in the instance metadata.")  # noqa
 parser.add_argument("--iam-policies", nargs="+", metavar="IAM_POLICY_NAME",

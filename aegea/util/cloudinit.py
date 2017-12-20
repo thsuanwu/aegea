@@ -51,8 +51,15 @@ def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
         tar.close()
         return targz.getvalue()
 
-def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, **kwargs):
+def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, storage=None, **kwargs):
     cloud_config_data = OrderedDict()
+    for i, (mountpoint, size_gb) in enumerate(storage):
+        cloud_config_data.setdefault("fs_setup", [])
+        cloud_config_data.setdefault("mounts", [])
+        device = "/dev/xvd" + chr(ord("z")-i)
+        fs_spec = dict(device=device, filesystem="ext4", partition="none")
+        cloud_config_data["fs_setup"].append(fs_spec)
+        cloud_config_data["mounts"].append([device, mountpoint, "auto", "defaults", "0", "2"])
     cloud_config_data["packages"] = packages or []
     cloud_config_data["runcmd"] = commands or []
     cloud_config_data["write_files"] = get_bootstrap_files(rootfs_skel_dirs or [])

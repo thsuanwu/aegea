@@ -347,9 +347,15 @@ def resolve_instance_id(name):
     except IndexError:
         raise AegeaException('Could not resolve "{}" to a known instance'.format(name))
 
-def get_bdm(max_devices=12):
+def get_bdm(max_devices=12, ebs_storage=frozenset()):
     # Note: d2.8xl and hs1.8xl have 24 devices
-    return [dict(VirtualName="ephemeral" + str(i), DeviceName="xvd" + chr(ord("b")+i)) for i in range(max_devices)]
+    bdm = [dict(VirtualName="ephemeral" + str(i), DeviceName="xvd" + chr(ord("b")+i)) for i in range(max_devices)]
+    ebs_bdm = []
+    for i, (mountpoint, size_gb) in enumerate(ebs_storage):
+        ebs_spec = dict(Encrypted=True, DeleteOnTermination=True, VolumeType="st1", VolumeSize=int(size_gb))
+        ebs_bdm.insert(0, dict(DeviceName="xvd" + chr(ord("z")-i), Ebs=ebs_spec))
+    bdm.extend(ebs_bdm)
+    return bdm
 
 def get_metadata(path):
     return requests.get("http://169.254.169.254/latest/meta-data/{}".format(path)).content.decode()

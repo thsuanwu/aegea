@@ -101,6 +101,8 @@ class TestAegea(unittest.TestCase):
     def test_dry_run_commands(self):
         unauthorized_ok = [dict(return_codes=[os.EX_OK]),
                            dict(return_codes=[1, os.EX_SOFTWARE], stderr="UnauthorizedOperation")]
+        self.call("aegea launch unittest --dry-run --storage /x=512 /y=1024",
+                  shell=True, expect=unauthorized_ok)
         self.call("aegea launch unittest --dry-run --no-verify-ssh-key-pem-file",
                   shell=True, expect=unauthorized_ok)
         self.call("aegea launch unittest --dry-run --spot --no-verify-ssh-key-pem-file",
