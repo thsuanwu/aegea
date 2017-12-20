@@ -1,3 +1,14 @@
+Changes for v2.1.0 (2017-12-20)
+===============================
+
+-  Beautify batch shellcode
+
+-  aegea launch: add support for EBS volumes via --storage
+
+-  aegea --log-level: Remove unneeded NOTSET level
+
+-  Expand documentation
+
 Changes for v2.0.9 (2017-11-21)
 ===============================
 
