@@ -51,7 +51,7 @@ def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
         tar.close()
         return targz.getvalue()
 
-def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, storage=None, **kwargs):
+def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, storage=frozenset(), **kwargs):
     cloud_config_data = OrderedDict()
     for i, (mountpoint, size_gb) in enumerate(storage):
         cloud_config_data.setdefault("fs_setup", [])
