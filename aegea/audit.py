@@ -13,6 +13,7 @@ from .util.printing import RED, GREEN, WHITE, page_output, format_table
 
 class Auditor(unittest.TestCase):
     cache = {}
+
     def runTest(self):
         pass
 
@@ -157,12 +158,12 @@ class Auditor(unittest.TestCase):
             print(bucket)
             try:
                 print("    Policy:", bucket.Policy().policy)
-            except:
+            except Exception:
                 pass
             for grant in bucket.Acl().grants:
                 try:
                     print("    Grant:", grant)
-                except:
+                except Exception:
                     pass
 
     def audit_2_4(self):

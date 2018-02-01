@@ -219,6 +219,7 @@ class DNSZone(VerboseRepr):
 class ARN:
     fields = "arn partition service region account_id resource".split()
     _default_region, _default_account_id, _default_iam_username = None, None, None
+
     def __init__(self, arn="arn:aws::::", **kwargs):
         self.__dict__.update(dict(zip(self.fields, arn.split(":", 5)), **kwargs))
         if "region" not in kwargs and not self.region:
@@ -245,10 +246,10 @@ class ARN:
             try:
                 user = resources.iam.CurrentUser().user
                 cls._default_iam_username = getattr(user, "name", ARN(user.arn).resource.split("/")[-1])
-            except:
+            except Exception:
                 try:
                     cls._default_iam_username = ARN(clients.sts.get_caller_identity()["Arn"]).resource.split("/")[-1]
-                except:
+                except Exception:
                     cls._default_iam_username = "unknown"
         return cls._default_iam_username
 

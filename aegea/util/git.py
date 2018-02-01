@@ -4,6 +4,7 @@ import os
 
 class GitHub:
     _session = None
+
     @classmethod
     def session(cls):
         if cls._session is None:

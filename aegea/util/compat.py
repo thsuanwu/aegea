@@ -12,12 +12,14 @@ if USING_PYTHON2:
     from ..packages.backports.shutil_get_terminal_size import get_terminal_size
     from ..packages.backports.tempfile import TemporaryDirectory
     import subprocess32 as subprocess
+
     def makedirs(name, mode=0o777, exist_ok=False):
         try:
             os.makedirs(name, mode)
         except OSError as e:
             if not (exist_ok and e.errno == errno.EEXIST and os.path.isdir(name)):
                 raise
+
     def median(data):
         data = sorted(data)
         n = len(data)
@@ -28,6 +30,7 @@ if USING_PYTHON2:
         else:
             i = n//2
             return (data[i - 1] + data[i])/2
+
     def timestamp(dt):
         if dt.tzinfo is None:
             from time import mktime

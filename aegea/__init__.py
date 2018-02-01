@@ -15,7 +15,7 @@ from io import open
 from .util.compat import USING_PYTHON2
 from .version import __version__
 
-if sys.version_info < (2, 7, 9): # See https://urllib3.readthedocs.io/en/latest/advanced-usage.html#sni-warning
+if sys.version_info < (2, 7, 9):  # See https://urllib3.readthedocs.io/en/latest/advanced-usage.html#sni-warning
     try:
         import botocore.vendored.requests.packages.urllib3.contrib.pyopenssl as p
         p.inject_into_urllib3()
@@ -32,6 +32,7 @@ _subparsers, _hidden_subparsers = {}, {}
 
 class AegeaConfig(tweak.Config):
     base_config_file = os.path.join(os.path.dirname(__file__), "base_config.yml")
+
     @property
     def config_files(self):
         return [self.base_config_file] + tweak.Config.config_files.fget(self)
@@ -121,7 +122,7 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
                            help=str([logging.getLevelName(i) for i in range(10, 60, 10)]),
                            choices={logging.getLevelName(i) for i in range(10, 60, 10)})
     subparser.set_defaults(entry_point=function)
-    if parent and sys.version_info < (2, 7, 9): # See https://bugs.python.org/issue9351
+    if parent and sys.version_info < (2, 7, 9):  # See https://bugs.python.org/issue9351
         parent._defaults.pop("entry_point", None)
     command = subparser.prog[len(parser.prog)+1:].replace("-", "_").replace(" ", "_")
     subparser.set_defaults(**config.get(command, {}))

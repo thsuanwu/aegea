@@ -454,6 +454,7 @@ def format_job_status(status):
 
 class LogReader:
     log_group_name, next_page_token = "/aws/batch/job", None
+
     def __init__(self, log_stream_name, head=None, tail=None):
         self.log_stream_name = log_stream_name
         self.head, self.tail = head, tail

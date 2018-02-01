@@ -1,5 +1,6 @@
 class Loader:
     cache = dict(resource={}, client={})
+
     def __init__(self, factory):
         self.factory = factory
 

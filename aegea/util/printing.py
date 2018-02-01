@@ -182,7 +182,7 @@ def page_output(content, pager=None, file=None):
     finally:
         try:
             pager_process.terminate()
-        except:
+        except BaseException:
             pass
 
 def get_field(item, field):

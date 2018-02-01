@@ -93,10 +93,10 @@ def modify(args):
     if args.iops:
         modify_args.update(Iops=args.iops)
     res = clients.ec2.modify_volume(**modify_args)["VolumeModification"]
-    #if args.wait:
-    #    waiter = make_waiter(clients.ec2.describe_volumes_modifications, "VolumesModifications[].ModificationState",
-    #                         "optimizing", "pathAny")
-    #    waiter.wait(VolumeIds=[args.volume_id])
+    # if args.wait:
+    #     waiter = make_waiter(clients.ec2.describe_volumes_modifications, "VolumesModifications[].ModificationState",
+    #                          "optimizing", "pathAny")
+    #     waiter.wait(VolumeIds=[args.volume_id])
     return res
 parser_modify = register_parser(modify, parent=ebs_parser, help="Change the size, type, or IOPS of an EBS volume")
 
