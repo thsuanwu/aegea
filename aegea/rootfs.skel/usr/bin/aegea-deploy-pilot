@@ -12,6 +12,7 @@ from datetime import datetime
 
 class ARN:
     fields = "arn partition service region account_id resource".split()
+
     def __init__(self, arn="arn:aws::::", **kwargs):
         self.__dict__.update(dict(zip(self.fields, arn.split(":", 5)), **kwargs))
 
