@@ -26,24 +26,24 @@ setuptools.setup(
     description="Amazon Web Services Operator Interface",
     long_description=open("README.rst").read(),
     install_requires=[
-        "boto3 >= 1.4.2, < 2",
-        "argcomplete >= 1.8.2, < 2",
-        "paramiko >= 2.1.1, < 3",
-        "requests >= 2.12.4, < 3",
-        "tweak >= 0.6.4, < 1",
-        "keymaker >= 0.3.3, < 1",
-        "pyyaml >= 3.11, < 4",
-        "python-dateutil >= 2.5.3, < 3",
-        "babel >= 2.3.4, < 3",
-        "ipwhois >= 0.13.0, < 1",
+        "boto3 >= 1.6.1, < 2",
+        "argcomplete >= 1.9.4, < 2",
+        "paramiko >= 2.4.0, < 3",
+        "requests >= 2.18.4, < 3",
+        "tweak >= 0.6.7, < 1",
+        "keymaker >= 0.5.1, < 1",
+        "pyyaml >= 3.12, < 4",
+        "python-dateutil >= 2.6.1, < 3",
+        "babel >= 2.5.3, < 3",
+        "ipwhois >= 1.0.0, < 2",
         "uritemplate >= 3.0.0, < 4",
-        "awscli >= 1.2.9",
-        "chalice >= 1.0.2"
+        "awscli >= 1.14.48, < 2",
+        "chalice >= 1.1.1, < 2"
     ],
     extras_require={
         ':python_version == "2.7"': [
             "enum34 >= 1.1.6, < 2",
-            "ipaddress >= 1.0.17, < 2",
+            "ipaddress >= 1.0.19, < 2",
             "subprocess32 >= 3.2.7, < 4"
         ]
     },
