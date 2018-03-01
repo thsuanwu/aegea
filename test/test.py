@@ -54,7 +54,7 @@ class TestAegea(unittest.TestCase):
         self.call(["aegea", "pricing"])
         self.call(["aegea", "ls", "-w9"])
         for ssh_cmd in "ssh", "scp":
-            self.call(["aegea", ssh_cmd, "nonexistent_instance"],
+            self.call(["aegea", ssh_cmd, "nonexistent_instance:"],
                       expect=[dict(return_codes=[1, os.EX_SOFTWARE], stderr="AegeaException: Could not resolve")])
         instance_id = json.loads(self.call(["aegea", "ls", "--json"]).stdout)[0]["id"]
         for subcommand in aegea.parser._actions[-1].choices:
@@ -62,7 +62,7 @@ class TestAegea(unittest.TestCase):
                       dict(return_codes=[1, os.EX_SOFTWARE],
                            stderr="(UnauthorizedOperation|AccessDenied|DryRunOperation)")]
             args = []
-            if subcommand in ("ssh", "put-alarm", "put_alarm", "batch"):
+            if subcommand in ("ssh", "scp", "put-alarm", "put_alarm", "batch"):
                 args += ["--help"]
             elif "_" in subcommand:
                 continue
