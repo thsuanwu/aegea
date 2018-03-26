@@ -1,3 +1,10 @@
+Changes for v2.1.1 (2018-03-26)
+===============================
+
+-  Bump pip ami build dependencies
+
+-  Add aegea scp
+
 Changes for v2.1.0 (2017-12-20)
 ===============================
 
