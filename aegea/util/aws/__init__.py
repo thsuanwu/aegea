@@ -319,6 +319,9 @@ def ensure_instance_profile(iam_role_name, policies=frozenset()):
     else:
         instance_profile = resources.iam.create_instance_profile(InstanceProfileName=iam_role_name)
         clients.iam.get_waiter("instance_profile_exists").wait(InstanceProfileName=iam_role_name)
+        # IAM eventual consistency is really bad on this one
+        print("Waiting for IAM instance profile to become available...")
+        time.sleep(8)
     role = ensure_iam_role(iam_role_name, policies=policies, trust=["ec2"])
     if not any(r.name == iam_role_name for r in instance_profile.roles):
         instance_profile.add_role(RoleName=role.name)
