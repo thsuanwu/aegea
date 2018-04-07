@@ -72,6 +72,9 @@ build_image:
     - git
     - aria2
     - sift
+    - ca-certificates
+    - apt-transport-https
+    - software-properties-common
 
 build_docker_image:
   base_image: ubuntu:16.04
@@ -104,7 +107,7 @@ build_ami:
     - "sed -i -e '/^PermitRootLogin/ s/.*/PermitRootLogin no/' /etc/ssh/sshd_config"
     - "update-grub"
     - "grub-install /dev/xvda"
-    - "pip3 install awscli-cwlogs==1.4.4 keymaker==0.5.2 boto3==1.6.16 awscli==1.14.63"
+    - "pip3 install awscli-cwlogs==1.4.4 keymaker==1.0.0 boto3==1.6.16 awscli==1.14.63"
     - "keymaker install"
     - "activate-global-python-argcomplete"
     - "dpkg-reconfigure debconf -f noninteractive -p critical"
