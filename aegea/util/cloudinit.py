@@ -12,7 +12,7 @@ from .aws import ensure_s3_bucket, clients
 def add_file_to_cloudinit_manifest(src_path, path, manifest):
     with open(src_path, "rb") as fh:
         content = fh.read()
-        manifest[path] = dict(path=path, permissions=oct(os.stat(src_path).st_mode)[-3:])
+        manifest[path] = dict(path=path, permissions='0'+oct(os.stat(src_path).st_mode)[-3:])
         try:
             manifest[path].update(content=content.decode())
         except UnicodeDecodeError:
