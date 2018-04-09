@@ -559,6 +559,17 @@ lambda_ls:
     - MemorySize
     - LastModified
 
+lambda_event_source_mappings:
+  columns:
+    - UUID
+    - BatchSize
+    - EventSourceArn
+    - FunctionArn
+    - LastModified
+    - LastProcessingResult
+    - State
+    - StateTransitionReason
+
 launch:
   commands: []
   packages: []

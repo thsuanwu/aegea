@@ -21,4 +21,10 @@ def ls(args):
     paginator = getattr(clients, "lambda").get_paginator("list_functions")
     page_output(tabulate(paginate(paginator), args, cell_transforms={"LastModified": Timestamp}))
 
-parser_ls = register_parser(ls, parent=lambda_parser)
+parser_ls = register_listing_parser(ls, parent=lambda_parser)
+
+def event_source_mappings(args):
+    paginator = getattr(clients, "lambda").get_paginator("list_event_source_mappings")
+    page_output(tabulate(paginate(paginator), args))
+
+parser_event_source_mappings = register_listing_parser(event_source_mappings, parent=lambda_parser)
