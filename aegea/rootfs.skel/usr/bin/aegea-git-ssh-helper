@@ -14,7 +14,8 @@ if args.user_at_host == "git@github.com" and args.command.startswith("git-upload
     owner, repo = shlex.split(args.command)[-1].split("/")
     if repo.endswith(".git"):
         repo = repo[:-len(".git")]
-    cmd = "ssh-agent bash -c 'aegea-get-secret deploy.{}.{} | ssh-add /dev/stdin; ssh {} {}'"
-    subprocess.check_call(cmd.format(owner, repo, args.user_at_host, args.command), shell=True)
+    get_secret_cmd = "aws secretsmanager get-secret-value --secret-id"
+    cmd = "ssh-agent bash -c '{} deploy.{}.{} | jq -r .SecretString | ssh-add /dev/stdin; ssh {} {}'"
+    subprocess.check_call(cmd.format(get_secret_cmd, owner, repo, args.user_at_host, args.command), shell=True)
 else:
     os.execvp("ssh", ["ssh", args.user_at_host, args.command])

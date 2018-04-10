@@ -103,6 +103,7 @@ build_ami:
     - cgmanager-utils
     - nmap
   commands:
+    - "echo region=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | head -c -1) >> /etc/aws.conf"
     - "sed -i -e '/cloudconfig/ d' /etc/fstab"
     - "sed -i -e '/^PermitRootLogin/ s/.*/PermitRootLogin no/' /etc/ssh/sshd_config"
     - "update-grub"
