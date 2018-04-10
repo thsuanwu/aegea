@@ -1,3 +1,16 @@
+Changes for v2.1.3 (2018-04-10)
+===============================
+
+-  Begin switching aegea secrets to secretsmanager
+
+-  Add Lambda listing parsers
+
+-  Bump deps and add common deps per @cschin request
+
+-  Fix permissions in cloudinit rootfs.skel input
+
+-  Accommodate IAM eventual consistency in instance profiles
+
 Changes for v2.1.2 (2018-04-05)
 ===============================
 
