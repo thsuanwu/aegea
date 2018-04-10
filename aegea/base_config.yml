@@ -570,6 +570,19 @@ lambda_event_source_mappings:
     - State
     - StateTransitionReason
 
+secrets_ls:
+  columns:
+    - Name
+    - Description
+    - KmsKeyId
+    - LastChangedDate
+    - LastAccessedDate
+    - RotationEnabled
+    - RotationLambdaARN
+    - LastRotatedDate
+    - ARN
+    - Tags
+
 launch:
   commands: []
   packages: []
