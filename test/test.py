@@ -203,7 +203,7 @@ class TestAegea(unittest.TestCase):
         deploy_utils_bindir = os.path.join(pkg_root, "aegea", "rootfs.skel", "usr", "bin")
         for script in glob.glob(deploy_utils_bindir + "/aegea*"):
             self.call([script, "--help"], expect=[dict(return_codes=[0, 1])])
-        for script in "aegea-deploy-pilot", "aegea-get-secret", "aegea-git-ssh-helper":
+        for script in "aegea-deploy-pilot", "aegea-git-ssh-helper":
             self.call(os.path.join(deploy_utils_bindir, script),
                       expect=[dict(return_codes=[2], stderr="(required|too few)")])
 
