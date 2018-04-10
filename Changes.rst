@@ -1,3 +1,10 @@
+Changes for v2.1.4 (2018-04-10)
+===============================
+
+-  Continue secrets migration
+
+-  Fix splitting of deploy systemd unit names
+
 Changes for v2.1.3 (2018-04-10)
 ===============================
 
