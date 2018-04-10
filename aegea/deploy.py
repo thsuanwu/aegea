@@ -15,7 +15,7 @@ To set up instances to track deployments, create a systemd service
 symlink like so:
 
     cd /etc/systemd/system/multi-user.target.wants
-    ln -s /lib/systemd/system/aegea-deploy@.service aegea-deploy@<owner>-<repo>-<branch>.service
+    ln -s /lib/systemd/system/aegea-deploy@.service aegea-deploy@<owner>-repo-<repo>-branch-<branch>.service
 
 Replace <owner>, <repo>, and <branch> with your GitHub user or org name,
 repo name, and branch to deploy from.
@@ -34,7 +34,7 @@ root to reload any services the app needs to run.
 
 You can also manually trigger a rebuild with a service reload:
 
-    service aegea-deploy@<owner>-<repo>-<branch> reload
+    service aegea-deploy@<owner>-repo-<repo>-branch-<branch> reload
 
 """
 
