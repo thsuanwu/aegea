@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys
+import os, sys, binascii
 
 from botocore.exceptions import ClientError
 
@@ -16,7 +16,8 @@ def get_public_key_from_pair(key):
     return key.get_name() + " " + key.get_base64()
 
 def key_fingerprint(key):
-    return key.get_name() + " " + ":".join("{:02x}".format(ord(i)) for i in key.get_fingerprint())
+    hex_fp = binascii.hexlify(key.get_fingerprint()).decode()
+    return key.get_name() + " " + ":".join(hex_fp[i:i+2] for i in range(0, len(hex_fp), 2))
 
 def get_ssh_key_path(name):
     return os.path.expanduser("~/.ssh/{}.pem".format(name))
