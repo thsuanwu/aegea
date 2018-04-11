@@ -1,3 +1,8 @@
+Changes for v2.1.6 (2018-04-11)
+===============================
+
+-  Fix Python compat issue in key_fingerprint
+
 Changes for v2.1.5 (2018-04-11)
 ===============================
 
