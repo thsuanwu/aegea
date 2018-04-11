@@ -1,3 +1,8 @@
+Changes for v2.1.5 (2018-04-11)
+===============================
+
+-  Fix queue naming in aegea-deploy-pilot
+
 Changes for v2.1.4 (2018-04-10)
 ===============================
 
