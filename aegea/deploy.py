@@ -157,7 +157,7 @@ def grant(args):
                                                 iam_group=None,
                                                 iam_user=None,
                                                 generate_ssh_key=True))
-        get_repo(private_repo).create_key(role.name, secret["ssh_public_key"])
+        get_repo(private_repo).create_key(__name__ + "." + role.name, secret["ssh_public_key"])
         logger.info("Created deploy key %s for IAM role %s to access GitHub repo %s",
                     secret["ssh_key_fingerprint"], role.name, private_repo)
 

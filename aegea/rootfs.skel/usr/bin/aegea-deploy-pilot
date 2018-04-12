@@ -52,14 +52,20 @@ def clone_and_build(branch, destination):
         run_git_command("checkout", "-B", branch, "--track", "origin/" + branch, cwd=deploy_dir)
     else:
         run_git_command("clone", "--recurse-submodules", "--branch", branch, "--depth=1", args.github_url, deploy_dir)
-    subprocess.check_call(["make", "-C", deploy_dir])
+    if "BUILD_COMMAND" in os.environ:
+        subprocess.check_call(os.environ["BUILD_COMMAND"], shell=True, cwd=deploy_dir, executable="/bin/bash")
+    else:
+        subprocess.check_call(["make", "-C", deploy_dir])
     os.symlink(deploy_dir, destination + "_staged")
     try:
         os.unlink(destination)
     except Exception:
         pass
     os.rename(destination + "_staged", destination)
-    subprocess.check_call(["make", "-C", deploy_dir, "reload"])
+    if "RELOAD_COMMAND" in os.environ:
+        subprocess.check_call(os.environ["RELOAD_COMMAND"], shell=True, cwd=deploy_dir, executable="/bin/bash")
+    else:
+        subprocess.check_call(["make", "-C", deploy_dir, "reload"])
 
 def update_status(**updates):
     try:
@@ -121,13 +127,17 @@ def parse_args():
     args = parser.parse_args()
 
     if "SYSTEMD_INSTANCE_NAME" in os.environ:
-        if "-repo-" in os.environ["SYSTEMD_INSTANCE_NAME"] and "-branch-" in os.environ["SYSTEMD_INSTANCE_NAME"]:
+        if "GITHUB_OWNER" in os.environ and "GITHUB_REPO" in os.environ and "GITHUB_BRANCH" in os.environ:
+            args.gh_owner_name = os.environ["GITHUB_OWNER"]
+            args.gh_repo_name = os.environ["GITHUB_REPO"]
+            args.branch = os.environ["GITHUB_BRANCH"]
+        elif "-repo-" in os.environ["SYSTEMD_INSTANCE_NAME"] and "-branch-" in os.environ["SYSTEMD_INSTANCE_NAME"]:
             args.gh_owner_name, repo_and_branch = os.environ["SYSTEMD_INSTANCE_NAME"].split("-repo-", 1)
             args.gh_repo_name, args.branch = repo_and_branch.split("-branch-", 1)
         else:
-            args.gh_owner_name, args.gh_repo_name, args.branch = os.environ["SYSTEMD_INSTANCE_NAME"].split("-", 2)[-3:]
+            args.gh_owner_name, args.gh_repo_name, args.branch = os.environ["SYSTEMD_INSTANCE_NAME"].split("-", 2)
     else:
-        args.gh_owner_name, args.gh_repo_name = args.repo.split("/")[-2:]
+        args.gh_owner_name, args.gh_repo_name = args.repo.split("/", 1)
 
     args.github_url = "git@github.com:{}/{}".format(args.gh_owner_name, args.gh_repo_name)
     args.deploy_location = os.path.abspath(os.path.join(args.deploy_location, args.gh_owner_name, args.gh_repo_name))
