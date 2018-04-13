@@ -1,5 +1,5 @@
 """
-Manage secrets (credentials) using an S3 bucket.
+Manage secrets (credentials) using AWS Secrets Manager.
 
 Secrets are credentials (private SSH keys, API keys, passwords, etc.)  for use
 by services that run in your AWS account. This utility does not manage AWS
@@ -63,19 +63,12 @@ def parse_principal(args):
         raise AegeaException('Please specify a principal with "--instance-profile" or "--iam-{role,user,group}".')
 
 def ensure_policy(principal, secret_arn):
-    policy_name = __name__ + "." + ARN(principal.arn).resource.replace("/", ".")
+    policy_name = "{}.{}.{}".format(__name__,
+                                    ARN(principal.arn).resource.replace("/", "."),
+                                    ARN(secret_arn).resource.split(":")[1].replace("/", "."))
     policy_doc = IAMPolicyBuilder(action="secretsmanager:GetSecretValue", resource=secret_arn)
     policy = ensure_iam_policy(policy_name, policy_doc)
     principal.attach_policy(PolicyArn=policy.arn)
-
-def old_ensure_policy(principal, bucket):
-    # Users are subject to the /user/${aws:userid} parametric bucket policy, so don't get policies attached to them
-    if principal.__class__.__name__ != "iam.User":
-        resource = "arn:aws:s3:::{bucket}/{prefix}/*".format(bucket=bucket.name, prefix=ARN(principal.arn).resource)
-        policy_name = __name__ + "." + ARN(principal.arn).resource.replace("/", ".")
-        policy_doc = IAMPolicyBuilder(action="s3:GetObject", resource=resource)
-        policy = ensure_iam_policy(policy_name, policy_doc)
-        principal.attach_policy(PolicyArn=policy.arn)
 
 def secrets(args):
     secrets_parser.print_help()

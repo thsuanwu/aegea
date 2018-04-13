@@ -120,18 +120,20 @@ def init_queue():
 def parse_args():
     logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", required="SYSTEMD_INSTANCE_NAME" not in os.environ)
-    parser.add_argument("--branch", required="SYSTEMD_INSTANCE_NAME" not in os.environ)
+    parser.add_argument("--repo",
+                        required="SYSTEMD_INSTANCE_NAME" not in os.environ and "GITHUB_REPO" not in os.environ)
+    parser.add_argument("--branch",
+                        required="SYSTEMD_INSTANCE_NAME" not in os.environ and "GITHUB_BRANCH" not in os.environ)
     parser.add_argument("--deploy-location", default="/opt")
     parser.add_argument("--deploy-key-name")
     args = parser.parse_args()
 
-    if "SYSTEMD_INSTANCE_NAME" in os.environ:
-        if "GITHUB_OWNER" in os.environ and "GITHUB_REPO" in os.environ and "GITHUB_BRANCH" in os.environ:
-            args.gh_owner_name = os.environ["GITHUB_OWNER"]
-            args.gh_repo_name = os.environ["GITHUB_REPO"]
-            args.branch = os.environ["GITHUB_BRANCH"]
-        elif "-repo-" in os.environ["SYSTEMD_INSTANCE_NAME"] and "-branch-" in os.environ["SYSTEMD_INSTANCE_NAME"]:
+    if "GITHUB_OWNER" in os.environ and "GITHUB_REPO" in os.environ and "GITHUB_BRANCH" in os.environ:
+        args.gh_owner_name = os.environ["GITHUB_OWNER"]
+        args.gh_repo_name = os.environ["GITHUB_REPO"]
+        args.branch = os.environ["GITHUB_BRANCH"]
+    elif "SYSTEMD_INSTANCE_NAME" in os.environ:
+        if "-repo-" in os.environ["SYSTEMD_INSTANCE_NAME"] and "-branch-" in os.environ["SYSTEMD_INSTANCE_NAME"]:
             args.gh_owner_name, repo_and_branch = os.environ["SYSTEMD_INSTANCE_NAME"].split("-repo-", 1)
             args.gh_repo_name, args.branch = repo_and_branch.split("-branch-", 1)
         else:
