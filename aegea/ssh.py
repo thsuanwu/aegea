@@ -14,6 +14,8 @@ MITM vulnerability.
 
 import os, sys, argparse, subprocess, string, functools
 
+import boto3
+
 from . import register_parser, logger
 from .util.aws import resolve_instance_id, resources, clients
 from .util.crypto import add_ssh_host_key_to_known_hosts
@@ -36,12 +38,22 @@ def resolve_instance_public_dns(name):
         add_ssh_host_key_to_known_hosts(instance.public_dns_name + " " + ssh_host_key + "\n")
     return instance.public_dns_name
 
+def get_iam_username():
+    try:
+        return resources.iam.CurrentUser().user.name
+    except Exception as e:
+        if "assumed-role" in str(e) and "botocore-session" in str(e):
+            cur_session = boto3.Session()._session
+            src_profile = cur_session.full_config["profiles"][cur_session.profile]["source_profile"]
+            src_session = boto3.Session(profile_name=src_profile)
+            return src_session.resource("iam").CurrentUser().user.name
+
 def ssh(args):
     prefix, at, name = args.name.rpartition("@")
     ssh_args = ["ssh", prefix + at + resolve_instance_public_dns(name)]
     if not (prefix or at):
         try:
-            ssh_args += ["-l", resources.iam.CurrentUser().user.name]
+            ssh_args += ["-l", get_iam_username()]
         except Exception:
             logger.info("Unable to determine IAM username, using local username")
     os.execvp("ssh", ssh_args + args.ssh_args)
@@ -61,7 +73,7 @@ def scp(args):
             hostname = resolve_instance_public_dns(hostname)
             if not (username or at):
                 try:
-                    username, at = resources.iam.CurrentUser().user.name, "@"
+                    username, at = get_iam_username(), "@"
                 except Exception:
                     logger.info("Unable to determine IAM username, using local username")
             args.scp_args[i] = username + at + hostname + colon + path
