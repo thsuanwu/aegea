@@ -1,3 +1,10 @@
+Changes for v2.2.0 (2018-05-03)
+===============================
+
+-  Get correct IAM username for cross-account SSH
+
+-  Bump dependencies
+
 Changes for v2.1.9 (2018-04-13)
 ===============================
 
