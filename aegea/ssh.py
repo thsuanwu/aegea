@@ -42,11 +42,12 @@ def get_iam_username():
     try:
         return resources.iam.CurrentUser().user.name
     except Exception as e:
-        if "assumed-role" in str(e) and "botocore-session" in str(e):
+        if "Must specify userName" in str(e) or ("assumed-role" in str(e) and "botocore-session" in str(e)):
             cur_session = boto3.Session()._session
             src_profile = cur_session.full_config["profiles"][cur_session.profile]["source_profile"]
             src_session = boto3.Session(profile_name=src_profile)
             return src_session.resource("iam").CurrentUser().user.name
+        raise
 
 def ssh(args):
     prefix, at, name = args.name.rpartition("@")
