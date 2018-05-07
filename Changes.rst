@@ -1,3 +1,10 @@
+Changes for v2.2.1 (2018-05-07)
+===============================
+
+-  Fix logic bug in aegea ssh username discovery
+
+-  aegea build-ami: Ubuntu 18.04 compatibility
+
 Changes for v2.2.0 (2018-05-03)
 ===============================
 
