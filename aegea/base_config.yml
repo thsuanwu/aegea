@@ -88,7 +88,7 @@ build_docker_image:
 
 build_ami:
   base_ami: auto
-  base_ami_product: com.ubuntu.cloud:server:16.04:amd64
+  base_ami_product: com.ubuntu.cloud:server:18.04:amd64
   rootfs_skel_dirs:
     - auto
   packages:
@@ -96,11 +96,9 @@ build_ami:
     - libhdf5-dev
     - libboost-dev
     - fail2ban
-    - emacs24-nox
     - byobu
     - keychain
     - colordiff
-    - cgmanager-utils
     - nmap
   commands:
     - "echo region=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | head -c -1) >> /etc/aws.conf"
@@ -112,7 +110,7 @@ build_ami:
     - "keymaker install"
     - "activate-global-python-argcomplete"
     - "dpkg-reconfigure debconf -f noninteractive -p critical"
-    - "apt-get install --yes virtualenv docker.io || true"
+    - 'apt-get install --yes virtualenv docker.io emacs$(if [[ "$(cat /etc/issue)" < "Ubuntu 18.04" ]]; then echo 24; fi)-nox || true'
     - "apt-get remove --yes popularity-contest postfix apport"
     - "if dpkg-query --show snapd; then apt-get remove --yes snapd; fi"
     - "apt-get autoremove --yes"

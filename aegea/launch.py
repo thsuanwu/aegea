@@ -168,7 +168,7 @@ def launch(args):
     add_ssh_host_key_to_known_hosts(hostkey_line([instance.public_dns_name], ssh_host_key))
     if args.wait_for_ssh:
         wait_for_port(instance.public_dns_name, 22)
-    logger.info("Launched %s in %s", instance, subnet)
+    logger.info("Launched %s in %s using %s", instance, subnet, args.ami)
     return dict(instance_id=instance.id)
 
 parser = register_parser(launch, help="Launch a new EC2 instance", description=__doc__)
