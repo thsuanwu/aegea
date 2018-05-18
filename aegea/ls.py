@@ -133,7 +133,7 @@ def logs(args):
         for stream in paginate(clients.logs.get_paginator("describe_log_streams"),
                                logGroupName=group["logGroupName"], orderBy="LastEventTime", descending=True):
             now = datetime.utcnow().replace(microsecond=0)
-            stream["lastIngestionTime"] = now - datetime.utcfromtimestamp(stream.get("lastIngestionTime", 0)//1000)
+            stream["lastIngestionTime"] = now - datetime.utcfromtimestamp(stream.get("lastIngestionTime", 0) // 1000)
             table.append(dict(group, **stream))
             n += 1
             if n >= args.max_streams_per_group:

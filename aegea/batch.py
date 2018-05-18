@@ -247,7 +247,7 @@ def get_command_and_env(args):
         args.privileged = True
         args.volumes.append(["/dev", "/dev"])
         for mountpoint, size_gb in args.storage:
-            shellcode += (ebs_vol_mgr_shellcode % tuple([size_gb] + [mountpoint]*5)).splitlines()
+            shellcode += (ebs_vol_mgr_shellcode % tuple([size_gb] + [mountpoint] * 5)).splitlines()
     elif args.efs_storage:
         args.privileged = True
         if "=" in args.efs_storage:
@@ -432,12 +432,12 @@ def ls(args, page_size=100):
         for s in args.status:
             job_ids.extend(j["jobId"] for j in clients.batch.list_jobs(jobQueue=q, jobStatus=s)["jobSummaryList"])
     for i in range(0, len(job_ids), page_size):
-        table.extend(clients.batch.describe_jobs(jobs=job_ids[i:i+page_size])["jobs"])
+        table.extend(clients.batch.describe_jobs(jobs=job_ids[i:i + page_size])["jobs"])
     page_output(tabulate(table, args, cell_transforms={"createdAt": Timestamp}))
 
-job_status_colors = dict(SUBMITTED=YELLOW(), PENDING=YELLOW(), RUNNABLE=BOLD()+YELLOW(),
+job_status_colors = dict(SUBMITTED=YELLOW(), PENDING=YELLOW(), RUNNABLE=BOLD() + YELLOW(),
                          STARTING=GREEN(), RUNNING=GREEN(),
-                         SUCCEEDED=BOLD()+GREEN(), FAILED=BOLD()+RED())
+                         SUCCEEDED=BOLD() + GREEN(), FAILED=BOLD() + RED())
 job_states = job_status_colors.keys()
 parser = register_listing_parser(ls, parent=batch_parser, help="List Batch jobs")
 parser.add_argument("--queues", nargs="+")

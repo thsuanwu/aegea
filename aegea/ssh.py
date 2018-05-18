@@ -14,10 +14,8 @@ MITM vulnerability.
 
 import os, sys, argparse, subprocess, string, functools
 
-import boto3
-
 from . import register_parser, logger
-from .util.aws import resolve_instance_id, resources, clients
+from .util.aws import resolve_instance_id, resources, clients, ARN
 from .util.crypto import add_ssh_host_key_to_known_hosts
 from .util.printing import BOLD
 from .util.exceptions import AegeaException
@@ -26,7 +24,7 @@ from .util.compat import lru_cache
 @lru_cache(8)
 def resolve_instance_public_dns(name):
     instance = resources.ec2.Instance(resolve_instance_id(name))
-    if not instance.public_dns_name:
+    if not getattr(instance, "public_dns_name", None):
         msg = "Unable to resolve public DNS name for {} (state: {})"
         raise AegeaException(msg.format(instance, getattr(instance, "state", {}).get("Name")))
 
@@ -38,23 +36,18 @@ def resolve_instance_public_dns(name):
         add_ssh_host_key_to_known_hosts(instance.public_dns_name + " " + ssh_host_key + "\n")
     return instance.public_dns_name
 
-def get_iam_username():
-    try:
-        return resources.iam.CurrentUser().user.name
-    except Exception as e:
-        if "Must specify userName" in str(e) or ("assumed-role" in str(e) and "botocore-session" in str(e)):
-            cur_session = boto3.Session()._session
-            src_profile = cur_session.full_config["profiles"][cur_session.profile]["source_profile"]
-            src_session = boto3.Session(profile_name=src_profile)
-            return src_session.resource("iam").CurrentUser().user.name
-        raise
+def get_linux_username():
+    username = ARN.get_iam_username()
+    assert username != "unknown"
+    username, at, domain = username.partition("@")
+    return username
 
 def ssh(args):
     prefix, at, name = args.name.rpartition("@")
     ssh_args = ["ssh", prefix + at + resolve_instance_public_dns(name)]
     if not (prefix or at):
         try:
-            ssh_args += ["-l", get_iam_username()]
+            ssh_args += ["-l", get_linux_username()]
         except Exception:
             logger.info("Unable to determine IAM username, using local username")
     os.execvp("ssh", ssh_args + args.ssh_args)
@@ -74,7 +67,7 @@ def scp(args):
             hostname = resolve_instance_public_dns(hostname)
             if not (username or at):
                 try:
-                    username, at = get_iam_username(), "@"
+                    username, at = get_linux_username(), "@"
                 except Exception:
                     logger.info("Unable to determine IAM username, using local username")
             args.scp_args[i] = username + at + hostname + colon + path

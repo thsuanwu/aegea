@@ -5,7 +5,7 @@ import requests
 from warnings import warn
 from datetime import datetime, timedelta
 
-import botocore.session
+import boto3, botocore.session
 from botocore.exceptions import ClientError
 from botocore.utils import parse_to_aware_datetime
 
@@ -246,9 +246,16 @@ class ARN:
             try:
                 user = resources.iam.CurrentUser().user
                 cls._default_iam_username = getattr(user, "name", ARN(user.arn).resource.split("/")[-1])
-            except Exception:
+            except Exception as e:
                 try:
-                    cls._default_iam_username = ARN(clients.sts.get_caller_identity()["Arn"]).resource.split("/")[-1]
+                    if "Must specify userName" in str(e) or ("assumed-role" in str(e) and "botocore-session" in str(e)):
+                        cur_session = boto3.Session()._session
+                        src_profile = cur_session.full_config["profiles"][cur_session.profile]["source_profile"]
+                        src_session = boto3.Session(profile_name=src_profile)
+                        cls._default_iam_username = src_session.resource("iam").CurrentUser().user.name
+                    else:
+                        caller_arn = ARN(clients.sts.get_caller_identity()["Arn"])
+                        cls._default_iam_username = caller_arn.resource.split("/")[-1]
                 except Exception:
                     cls._default_iam_username = "unknown"
         return cls._default_iam_username
@@ -339,7 +346,7 @@ def add_tags(resource, dry_run=False, **tags):
     return resource.create_tags(Tags=encode_tags(tags), DryRun=dry_run)
 
 def filter_by_tags(collection, **tags):
-    return collection.filter(Filters=[dict(Name="tag:"+k, Values=[v]) for k, v in tags.items()])
+    return collection.filter(Filters=[dict(Name="tag:" + k, Values=[v]) for k, v in tags.items()])
 
 def resolve_instance_id(name):
     filter_name = "dns-name" if name.startswith("ec2") and name.endswith("compute.amazonaws.com") else "tag:Name"
@@ -353,11 +360,11 @@ def resolve_instance_id(name):
 
 def get_bdm(max_devices=12, ebs_storage=frozenset()):
     # Note: d2.8xl and hs1.8xl have 24 devices
-    bdm = [dict(VirtualName="ephemeral" + str(i), DeviceName="xvd" + chr(ord("b")+i)) for i in range(max_devices)]
+    bdm = [dict(VirtualName="ephemeral" + str(i), DeviceName="xvd" + chr(ord("b") + i)) for i in range(max_devices)]
     ebs_bdm = []
     for i, (mountpoint, size_gb) in enumerate(ebs_storage):
         ebs_spec = dict(Encrypted=True, DeleteOnTermination=True, VolumeType="st1", VolumeSize=int(size_gb))
-        ebs_bdm.insert(0, dict(DeviceName="xvd" + chr(ord("z")-i), Ebs=ebs_spec))
+        ebs_bdm.insert(0, dict(DeviceName="xvd" + chr(ord("z") - i), Ebs=ebs_spec))
     bdm.extend(ebs_bdm)
     return bdm
 

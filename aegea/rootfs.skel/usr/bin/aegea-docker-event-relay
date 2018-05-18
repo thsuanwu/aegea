@@ -37,7 +37,7 @@ fields = "date event_type event resource_id event_data".split()
 docker_events = subprocess.Popen(['docker', 'events', '--filter', 'type=container'], stdout=subprocess.PIPE)
 logging.info("Listening to docker events")
 for event in docker_events.stdout:
-    message = dict(zip(fields, event.decode().strip().split(maxsplit=len(fields)-1)))
+    message = dict(zip(fields, event.decode().strip().split(maxsplit=len(fields) - 1)))
     event_data = message["event_data"].strip("()").split(", ")
     message["event_data"] = {i.partition("=")[0]: i.partition("=")[2] for i in event_data}
     try:

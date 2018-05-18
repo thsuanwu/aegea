@@ -137,7 +137,7 @@ def launch(args):
                 logger.info("Bidding ${}/hour for a {} spot instance".format(args.spot_price, args.instance_type))
                 res = clients.ec2.request_spot_instances(
                     SpotPrice=str(args.spot_price),
-                    ValidUntil=datetime.datetime.utcnow()+datetime.timedelta(hours=1),
+                    ValidUntil=datetime.datetime.utcnow() + datetime.timedelta(hours=1),
                     LaunchSpecification=launch_spec,
                     ClientToken=args.client_token,
                     DryRun=args.dry_run

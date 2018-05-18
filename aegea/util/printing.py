@@ -126,16 +126,17 @@ def format_table(table, column_names=None, column_specs=None, max_col_width=32, 
         else:
             return BOLD() + WHITE() + column_names[i] + ENDC()
 
-    formatted_table = [border("┌") + border("┬").join(border("─")*i for i in col_widths) + border("┐")]
+    formatted_table = [border("┌") + border("┬").join(border("─") * i for i in col_widths) + border("┐")]
     if len(my_col_names) > 0:
-        padded_column_names = [col_head(i) + " "*(col_widths[i]-len(my_col_names[i])) for i in range(len(my_col_names))]
+        padded_column_names = [col_head(i) + " " * (col_widths[i] - len(my_col_names[i]))
+                               for i in range(len(my_col_names))]
         formatted_table.append(border("│") + border("│").join(padded_column_names) + border("│"))
-        formatted_table.append(border("├") + border("┼").join(border("─")*i for i in col_widths) + border("┤"))
+        formatted_table.append(border("├") + border("┼").join(border("─") * i for i in col_widths) + border("┤"))
 
     for row in trunc_table:
-        padded_row = [row[i] + " "*(col_widths[i]-len(strip_ansi_codes(row[i]))) for i in range(len(row))]
+        padded_row = [row[i] + " " * (col_widths[i] - len(strip_ansi_codes(row[i]))) for i in range(len(row))]
         formatted_table.append(border("│") + border("│").join(padded_row) + border("│"))
-    formatted_table.append(border("└") + border("┴").join(border("─")*i for i in col_widths) + border("┘"))
+    formatted_table.append(border("└") + border("┴").join(border("─") * i for i in col_widths) + border("┘"))
 
     if auto_col_width:
         if not sys.stdout.isatty():
@@ -143,7 +144,7 @@ def format_table(table, column_names=None, column_specs=None, max_col_width=32, 
         table_width = len(strip_ansi_codes(formatted_table[0]))
         tty_cols, tty_rows = get_terminal_size()
         if table_width > max(tty_cols, 80):
-            return format_table(table, max_col_width=max_col_width-1, auto_col_width=True, **orig_col_args)
+            return format_table(table, max_col_width=max_col_width - 1, auto_col_width=True, **orig_col_args)
     return "\n".join(formatted_table)
 
 def page_output(content, pager=None, file=None):
@@ -245,13 +246,13 @@ def format_number(n, fractional_digits=2):
     if B < KB:
         return '{0}'.format(B)
     elif KB <= B < MB:
-        return '{0:.{precision}f}K'.format(B/KB, precision=fractional_digits)
+        return '{0:.{precision}f}K'.format(B / KB, precision=fractional_digits)
     elif MB <= B < GB:
-        return '{0:.{precision}f}M'.format(B/MB, precision=fractional_digits)
+        return '{0:.{precision}f}M'.format(B / MB, precision=fractional_digits)
     elif GB <= B < TB:
-        return '{0:.{precision}f}G'.format(B/GB, precision=fractional_digits)
+        return '{0:.{precision}f}G'.format(B / GB, precision=fractional_digits)
     elif TB <= B:
-        return '{0:.{precision}f}T'.format(B/TB, precision=fractional_digits)
+        return '{0:.{precision}f}T'.format(B / TB, precision=fractional_digits)
 
 def tabulate(collection, args, cell_transforms=None):
     if cell_transforms is None:

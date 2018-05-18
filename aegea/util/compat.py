@@ -26,10 +26,10 @@ if USING_PYTHON2:
         if n == 0:
             raise Exception("no median for empty data")
         if n % 2 == 1:
-            return data[n//2]
+            return data[n // 2]
         else:
-            i = n//2
-            return (data[i - 1] + data[i])/2
+            i = n // 2
+            return (data[i - 1] + data[i]) / 2
 
     def timestamp(dt):
         if dt.tzinfo is None:

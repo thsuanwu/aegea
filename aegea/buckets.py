@@ -29,11 +29,13 @@ def ls(args):
         bucket_region = bucket.LocationConstraint or "us-east-1"
         if bucket_region != cloudwatch.meta.client.meta.region_name:
             cloudwatch = boto3.Session(region_name=bucket_region).resource("cloudwatch")
-        data = get_cloudwatch_metric_stats("AWS/S3", "NumberOfObjects", start_time=datetime.utcnow()-timedelta(days=2),
+        data = get_cloudwatch_metric_stats("AWS/S3", "NumberOfObjects",
+                                           start_time=datetime.utcnow() - timedelta(days=2),
                                            end_time=datetime.utcnow(), period=3600, BucketName=bucket.name,
                                            StorageType="AllStorageTypes", resource=cloudwatch)
         bucket.NumberOfObjects = int(data["Datapoints"][-1]["Average"]) if data["Datapoints"] else None
-        data = get_cloudwatch_metric_stats("AWS/S3", "BucketSizeBytes", start_time=datetime.utcnow()-timedelta(days=2),
+        data = get_cloudwatch_metric_stats("AWS/S3", "BucketSizeBytes",
+                                           start_time=datetime.utcnow() - timedelta(days=2),
                                            end_time=datetime.utcnow(), period=3600, BucketName=bucket.name,
                                            StorageType="StandardStorage", resource=cloudwatch)
         bucket.BucketSizeBytes = format_number(data["Datapoints"][-1]["Average"]) if data["Datapoints"] else None

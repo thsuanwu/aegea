@@ -12,7 +12,7 @@ from .aws import ensure_s3_bucket, clients
 def add_file_to_cloudinit_manifest(src_path, path, manifest):
     with open(src_path, "rb") as fh:
         content = fh.read()
-        manifest[path] = dict(path=path, permissions='0'+oct(os.stat(src_path).st_mode)[-3:])
+        manifest[path] = dict(path=path, permissions='0' + oct(os.stat(src_path).st_mode)[-3:])
         try:
             manifest[path].update(content=content.decode())
         except UnicodeDecodeError:
@@ -56,7 +56,7 @@ def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=
     for i, (mountpoint, size_gb) in enumerate(storage):
         cloud_config_data.setdefault("fs_setup", [])
         cloud_config_data.setdefault("mounts", [])
-        device = "/dev/xvd" + chr(ord("z")-i)
+        device = "/dev/xvd" + chr(ord("z") - i)
         fs_spec = dict(device=device, filesystem="ext4", partition="none")
         cloud_config_data["fs_setup"].append(fs_spec)
         cloud_config_data["mounts"].append([device, mountpoint, "auto", "defaults", "0", "2"])

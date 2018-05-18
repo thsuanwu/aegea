@@ -17,7 +17,7 @@ def get_public_key_from_pair(key):
 
 def key_fingerprint(key):
     hex_fp = binascii.hexlify(key.get_fingerprint()).decode()
-    return key.get_name() + " " + ":".join(hex_fp[i:i+2] for i in range(0, len(hex_fp), 2))
+    return key.get_name() + " " + ":".join(hex_fp[i:i + 2] for i in range(0, len(hex_fp), 2))
 
 def get_ssh_key_path(name):
     return os.path.expanduser("~/.ssh/{}.pem".format(name))
