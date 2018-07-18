@@ -1,3 +1,8 @@
+Changes for v2.2.2 (2018-07-17)
+===============================
+
+-  Add volume type to batch submit command (#41)
+
 Changes for v2.2.1 (2018-05-07)
 ===============================
 
