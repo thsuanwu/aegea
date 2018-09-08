@@ -118,10 +118,37 @@ def acls(args):
 
 parser = register_filtering_parser(acls, help="List EC2 network ACLs")
 
+def print_log_events(args):
+    streams = []
+    for stream in paginate(clients.logs.get_paginator("describe_log_streams"),
+                           logGroupName=args.log_group, orderBy="LastEventTime", descending=True):
+        stream_name = stream["arn"].split(":")[-1]
+        first_event_ts = datetime.utcfromtimestamp(stream.get("firstEventTimestamp", 0) // 1000)
+        last_event_ts = datetime.utcfromtimestamp(stream.get("lastEventTimestamp", 0) // 1000)
+        if args.end_time and first_event_ts > args.end_time:
+            continue
+        if args.start_time and last_event_ts < args.start_time:
+            break
+        streams.append(stream_name)
+    for stream in streams:
+        get_log_events_args = dict(logGroupName=args.log_group, startFromHead=True, limit=100)
+        if args.start_time:
+            get_log_events_args.update(startTime=int(timestamp(args.start_time) * 1000))
+        if args.end_time:
+            get_log_events_args.update(endTime=int(timestamp(args.end_time) * 1000))
+        while True:
+            page = clients.logs.get_log_events(logStreamName=stream, **get_log_events_args)
+            for event in page["events"]:
+                if "timestamp" not in event or "message" not in event:
+                    continue
+                print(str(Timestamp(event["timestamp"])), event["message"])
+            if len(page["events"]) == 0 or "nextForwardToken" not in page:
+                break
+            get_log_events_args.update(nextToken=page["nextForwardToken"], limit=10000)
+
 def logs(args):
     if args.log_group and (args.log_stream or args.start_time or args.end_time):
-        args.pattern, args.follow = None, False
-        return grep(args)
+        return print_log_events(args)
     table = []
     group_cols = ["logGroupName"]
     stream_cols = ["logStreamName", "lastIngestionTime", "storedBytes"]
