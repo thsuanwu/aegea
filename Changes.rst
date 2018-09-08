@@ -1,3 +1,10 @@
+Changes for v2.2.4 (2018-09-07)
+===============================
+
+-  aegea logs: use get_log_events instead of filter_log_events for speed
+
+-  Begin aegea config
+
 Changes for v2.2.3 (2018-07-17)
 ===============================
 
