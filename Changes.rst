@@ -1,3 +1,8 @@
+Changes for v2.2.6 (2018-10-05)
+===============================
+
+-  Move chalice dependency to extras
+
 Changes for v2.2.5 (2018-10-05)
 ===============================
 
