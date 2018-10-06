@@ -1,3 +1,8 @@
+Changes for v2.2.5 (2018-10-05)
+===============================
+
+-  Update version range for tweak dependency
+
 Changes for v2.2.4 (2018-09-07)
 ===============================
 
