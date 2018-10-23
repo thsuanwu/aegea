@@ -28,7 +28,7 @@ setuptools.setup(
     install_requires=[
         "boto3 >= 1.7.4, < 2",
         "argcomplete >= 1.9.4, < 2",
-        "paramiko >= 2.4.1, < 3",
+        "paramiko >= 2.4.2, < 3",
         "requests >= 2.18.4, < 3",
         "tweak >= 0.6.7, < 2",
         "keymaker >= 1.0.3, < 2",
