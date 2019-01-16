@@ -59,6 +59,15 @@ ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER,
                         help="Arguments to pass to ssh; please see " + BOLD("man ssh") + " for details")
 
 def scp(args):
+    """
+    Transfer files to or from EC2 instance.
+
+    Use "--" to separate scp args from aegea args:
+
+        aegea scp -- -r local_dir instance_name:~/remote_dir
+    """
+    if args.scp_args[0] == "--":
+        del args.scp_args[0]
     user_or_hostname_chars = string.ascii_letters + string.digits
     for i, arg in enumerate(args.scp_args):
         if arg[0] in user_or_hostname_chars and ":" in arg:
@@ -73,7 +82,7 @@ def scp(args):
             args.scp_args[i] = username + at + hostname + colon + path
     os.execvp("scp", ["scp"] + args.scp_args)
 
-scp_parser = register_parser(scp, help="Transfer files to or from EC2 instance", description=__doc__,
+scp_parser = register_parser(scp, help="Transfer files to or from EC2 instance", description=scp.__doc__,
                              formatter_class=argparse.RawTextHelpFormatter)
 scp_parser.add_argument("scp_args", nargs=argparse.REMAINDER,
                         help="Arguments to pass to scp; please see " + BOLD("man scp") + " for details")
