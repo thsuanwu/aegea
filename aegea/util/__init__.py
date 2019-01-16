@@ -31,7 +31,7 @@ def validate_hostname(hostname):
         raise Exception("Hostname {} is longer than 255 characters".format(hostname))
     if hostname[-1] == ".":
         hostname = hostname[:-1]
-    allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
+    allowed = re.compile(r"(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
     if not all(allowed.match(x) for x in hostname.split(".")):
         raise Exception("Hostname {} is not RFC 1123 compliant".format(hostname))
 
@@ -45,7 +45,7 @@ class VerboseRepr:
         )
 
 def natural_sort(i):
-    return sorted(i, key=lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split("(\d+)", s)])
+    return sorted(i, key=lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", s)])
 
 def paginate(boto3_paginator, *args, **kwargs):
     for page in boto3_paginator.paginate(*args, **kwargs):

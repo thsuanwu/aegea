@@ -47,5 +47,5 @@ for requirement in args.requirements.readlines():
         assert res.json()
         print("==".join([requirement_name, version]))
     except Exception as e:
-        logging.warn("Unable to resolve version for %s in %s", requirement_name, args.series)
+        logging.warn("Unable to resolve version for %s in %s: %s", requirement_name, args.series, str(e))
         print(requirement.strip())

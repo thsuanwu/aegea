@@ -70,8 +70,7 @@ def initialize():
 def main(args=None):
     parsed_args = parser.parse_args(args=args)
     logger.setLevel(parsed_args.log_level)
-    has_attrs = (getattr(parsed_args, "sort_by", None) and
-                 getattr(parsed_args, "columns", None))
+    has_attrs = (getattr(parsed_args, "sort_by", None) and getattr(parsed_args, "columns", None))
     if has_attrs and parsed_args.sort_by not in parsed_args.columns:
         parsed_args.columns.append(parsed_args.sort_by)
     try:

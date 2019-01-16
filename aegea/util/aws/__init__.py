@@ -409,7 +409,7 @@ def get_pricing_data(offer, max_cache_age_days=30):
             raise Exception("Cache is too old, discard")
         with gzip.open(offer_filename) as fh:
             pricing_data = json.loads(fh.read().decode("utf-8"))
-    except Exception as e:
+    except Exception:
         logger.info("Fetching pricing data for %s. This may take time.", offer)
         url = offers_api + "/aws/{offer}/current/index.json".format(offer=offer)
         pricing_data = requests.get(url).json()
