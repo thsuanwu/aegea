@@ -407,8 +407,9 @@ def get_pricing_data(offer, max_cache_age_days=30):
         cache_date = datetime.fromtimestamp(os.path.getmtime(offer_filename))
         if cache_date < datetime.now() - timedelta(days=max_cache_age_days):
             raise Exception("Cache is too old, discard")
-        with gzip.open(offer_filename) as fh:
-            pricing_data = json.loads(fh.read().decode("utf-8"))
+        with gzip.open(offer_filename) as gz_fh:
+            with io.BufferedReader(gz_fh) as buf_fh:
+                pricing_data = json.loads(buf_fh.read().decode("utf-8"))
     except Exception:
         logger.info("Fetching pricing data for %s. This may take time.", offer)
         url = offers_api + "/aws/{offer}/current/index.json".format(offer=offer)
@@ -420,9 +421,11 @@ def get_pricing_data(offer, max_cache_age_days=30):
             print(e, file=sys.stderr)
     return pricing_data
 
-def get_ec2_products(region=None, instance_type=None, tenancy="Shared", operating_system="Linux"):
+def get_ec2_products(region=None, instance_type=None, tenancy="Shared", operating_system="Linux",
+                     pre_installed_sw="NA", capacitystatus="Used"):
     pricing_data = get_pricing_data("AmazonEC2")
-    required_attributes = dict(tenancy=tenancy, operatingSystem=operating_system)
+    required_attributes = dict(tenancy=tenancy, operatingSystem=operating_system, preInstalledSw=pre_installed_sw,
+                               capacitystatus=capacitystatus)
     if region:
         required_attributes.update(location=region_name(region))
     if instance_type:
@@ -437,6 +440,8 @@ def get_ec2_products(region=None, instance_type=None, tenancy="Shared", operatin
 
 def get_ondemand_price_usd(region, instance_type, **kwargs):
     for product in get_ec2_products(region=region, instance_type=instance_type, **kwargs):
+        if float(product["pricePerUnit"]["USD"]) == 0:
+            continue
         return product["pricePerUnit"]["USD"]
 
 def get_iam_role_for_instance(instance):
