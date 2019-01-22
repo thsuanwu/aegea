@@ -7,7 +7,7 @@ For help with individual commands, run ``aegea <command> --help``.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, logging, shutil, json, datetime, traceback, errno, warnings
+import os, sys, argparse, logging, shutil, json, datetime, traceback, errno, warnings, platform
 from textwrap import fill
 import tweak
 from botocore.exceptions import NoRegionError
@@ -61,7 +61,12 @@ def initialize():
         description="{}: {}".format(BOLD() + RED() + __name__.capitalize() + ENDC(), fill(__doc__.strip())),
         formatter_class=argparse.RawTextHelpFormatter
     )
-    parser.add_argument("--version", action="version", version="%(prog)s {version}".format(version=__version__))
+    parser.add_argument("--version", action="version", version="%(prog)s {}\n{} {}\n{}".format(
+        __version__,
+        platform.python_implementation(),
+        platform.python_version(),
+        platform.platform()
+    ))
 
     def help(args):
         parser.print_help()
