@@ -1,3 +1,14 @@
+Changes for v2.2.7 (2019-01-21)
+===============================
+
+-  Debug and optimize EC2 pricing API client
+
+-  Allow passing of options to scp
+
+-  Fix linter errors
+
+-  Avoid CVE-2018-1000805
+
 Changes for v2.2.6 (2018-10-05)
 ===============================
 
