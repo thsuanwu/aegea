@@ -1,3 +1,8 @@
+Changes for v2.2.8 (2019-01-22)
+===============================
+
+-  Fix logic error in selecting private DNS zone in aegea launch
+
 Changes for v2.2.7 (2019-01-21)
 ===============================
 
