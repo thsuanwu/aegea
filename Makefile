@@ -13,15 +13,14 @@ aegea/version.py: setup.py
 	echo "__version__ = '$$(python setup.py --version)'" > $@
 
 test_deps:
-	pip install coverage flake8 pytest pytest-cov
+	pip install coverage flake8
 
 lint: test_deps
 	./setup.py flake8
 	flake8 --filename='*' $$(grep -r -l '/usr/bin/env python' aegea/missions aegea/rootfs.skel scripts)
 
 test: test_deps lint
-	mkdir -p "$${CIRCLE_TEST_REPORTS:-.}/pytest"
-	pytest --capture=no --cov=aegea --cov-config .coveragerc test/test.py --junit-xml "$${CIRCLE_TEST_REPORTS:-.}/pytest/junit.xml"
+	coverage run --source=$$(python setup.py --name) ./test/test.py
 
 init_docs:
 	cd docs; sphinx-quickstart

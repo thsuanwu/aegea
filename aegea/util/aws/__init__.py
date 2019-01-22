@@ -145,7 +145,10 @@ def ensure_s3_bucket(name=None, policy=None):
     if name is None:
         name = "aegea-assets-{}".format(ARN.get_account_id())
     bucket = resources.s3.Bucket(name)
-    bucket.create()
+    if ARN.get_region() == "us-east-1":
+        bucket.create()
+    else:
+        bucket.create(CreateBucketConfiguration=dict(LocationConstraint=ARN.get_region()))
     bucket.wait_until_exists()
     if policy:
         bucket.Policy().put(Policy=str(policy))

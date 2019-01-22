@@ -3,7 +3,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, unittest, collections, itertools, copy, re, subprocess, importlib, pkgutil, json, datetime, glob
+import os, sys, unittest, collections, itertools, copy, re, subprocess, importlib, pkgutil, json, datetime, glob, time
 
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, pkg_root)
@@ -22,6 +22,7 @@ for importer, modname, is_pkg in pkgutil.iter_modules(aegea.__path__):
 
 class TestAegea(unittest.TestCase):
     SubprocessResult = collections.namedtuple("SubprocessResult", "stdout stderr returncode")
+
     def setUp(self):
         pass
 
@@ -87,7 +88,7 @@ class TestAegea(unittest.TestCase):
             elif subcommand == "pricing":
                 args += ["AmazonEC2", "--json"]
             elif subcommand == "billing":
-                continue # FIXME
+                continue  # FIXME
                 args += ["ls", "--min-cost", "0.1"]
                 if "AWS_BILLING_REPORTS_BUCKET" in os.environ:
                     args += ["--billing-reports-bucket", os.environ["AWS_BILLING_REPORTS_BUCKET"]]
@@ -210,14 +211,17 @@ class TestAegea(unittest.TestCase):
     def test_secrets(self):
         unauthorized_ok = [dict(return_codes=[os.EX_OK]),
                            dict(return_codes=[1, os.EX_SOFTWARE], stderr="(AccessDenied|NoSuchKey)")]
-        self.call("test_secret=test aegea secrets put test_secret --iam-role aegea.launch",
+        secret_name = "test_secret_{}".format(int(time.time()))
+        self.call("{s}=test aegea secrets put {s} --iam-role aegea.launch".format(s=secret_name),
                   shell=True, expect=unauthorized_ok)
-        self.call("aegea secrets put test_secret --generate-ssh-key --iam-role aegea.launch",
+        self.call("aegea secrets put {s} --generate-ssh-key --iam-role aegea.launch".format(s=secret_name),
                   shell=True, expect=unauthorized_ok)
         self.call("aegea secrets ls", shell=True, expect=unauthorized_ok)
         self.call("aegea secrets ls --json", shell=True, expect=unauthorized_ok)
-        self.call("aegea secrets get test_secret --iam-role aegea.launch", shell=True, expect=unauthorized_ok)
-        self.call("aegea secrets delete test_secret --iam-role aegea.launch", shell=True, expect=unauthorized_ok)
+        self.call("aegea secrets get {s} --iam-role aegea.launch".format(s=secret_name), shell=True,
+                  expect=unauthorized_ok)
+        self.call("aegea secrets delete {s} --iam-role aegea.launch".format(s=secret_name), shell=True,
+                  expect=unauthorized_ok)
 
     @unittest.skipUnless("GH_AUTH" in os.environ, "requires GitHub credentials")
     def test_git_utils(self):

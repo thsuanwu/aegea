@@ -90,7 +90,7 @@ def build_docker_image(args):
     args.tags += ["AegeaVersion={}".format(__version__),
                   'description="Built by {} for {}"'.format(__name__, ARN.get_iam_username())]
     ensure_ecr_repo(args.name, read_access=args.read_access)
-    with tempfile.NamedTemporaryFile() as exec_fh:
+    with tempfile.NamedTemporaryFile(mode="wt") as exec_fh:
         exec_fh.write(build_docker_image_shellcode % (encode_dockerfile(args), ))
         exec_fh.flush()
         submit_args = submit_parser.parse_args(["--execute", exec_fh.name])
