@@ -63,7 +63,7 @@ class TestAegea(unittest.TestCase):
                       dict(return_codes=[1, os.EX_SOFTWARE],
                            stderr="(UnauthorizedOperation|AccessDenied|DryRunOperation)")]
             args = []
-            if subcommand in ("ssh", "scp", "put-alarm", "put_alarm", "batch"):
+            if subcommand in ("ssh", "scp", "put-alarm", "put_alarm", "batch", "config"):
                 args += ["--help"]
             elif "_" in subcommand:
                 continue
