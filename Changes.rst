@@ -1,3 +1,10 @@
+Changes for v2.2.9 (2019-01-22)
+===============================
+
+-  Expand aegea –version to print platform details
+
+-  Test fixes
+
 Changes for v2.2.8 (2019-01-22)
 ===============================
 
