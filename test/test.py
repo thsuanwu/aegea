@@ -86,7 +86,7 @@ class TestAegea(unittest.TestCase):
                                 "ecr", "lambda"):
                 args += ["ls"]
             elif subcommand == "pricing":
-                args += ["AmazonEC2", "--json"]
+                args += ["AmazonS3", "--json"]
             elif subcommand == "billing":
                 continue  # FIXME
                 args += ["ls", "--min-cost", "0.1"]
