@@ -30,7 +30,7 @@ setuptools.setup(
         "argcomplete >= 1.9.4, < 2",
         "paramiko >= 2.4.2, < 3",
         "requests >= 2.18.4, < 3",
-        "tweak >= 0.6.7, < 2",
+        "tweak >= 1.0.2, < 2",
         "keymaker >= 1.0.3, < 2",
         "pyyaml >= 3.12, < 4",
         "python-dateutil >= 2.7.2, < 3",

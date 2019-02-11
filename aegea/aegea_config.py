@@ -11,13 +11,13 @@ from .util import paginate
 from .util.aws import resources, clients
 from .util.printing import page_output, format_table
 
-def config(args):
-    config_parser.print_help()
+def configure(args):
+    configure_parser.print_help()
 
-config_parser = register_parser(config,
-                                help=__doc__.strip(),
-                                description=__doc__,
-                                formatter_class=argparse.RawTextHelpFormatter)
+configure_parser = register_parser(configure,
+                                   help=__doc__.strip(),
+                                   description=__doc__,
+                                   formatter_class=argparse.RawTextHelpFormatter)
 
 def ls(args):
     from . import config, tweak
@@ -32,7 +32,7 @@ def ls(args):
     collect_kv(config, "", collector)
     page_output(format_table(collector))
 
-ls_parser = register_listing_parser(ls, parent=config_parser)
+ls_parser = register_listing_parser(ls, parent=configure_parser)
 
 def get(args):
     """Get an Aegea configuration parameter by name"""
@@ -41,14 +41,30 @@ def get(args):
         config = getattr(config, key)
     print(json.dumps(config))
 
-get_parser = register_parser(get, parent=config_parser)
+get_parser = register_parser(get, parent=configure_parser)
 get_parser.add_argument("key")
 
 def set(args):
-    """Get an Aegea configuration parameter to a given value"""
-    raise NotImplementedError()
+    """Set an Aegea configuration parameter to a given value"""
+    from . import config, tweak
 
-set_parser = register_parser(set, parent=config_parser)
+    class ConfigSaver(tweak.Config):
+        @property
+        def config_files(self):
+            return [config.config_files[2]]
+
+    config_saver = ConfigSaver(use_yaml=True, save_on_exit=False)
+    c = config_saver
+    for key in args.key.split(".")[:-1]:
+        try:
+            c = c[key]
+        except KeyError:
+            c[key] = {}
+            c = c[key]
+    c[args.key.split(".")[-1]] = json.loads(args.value) if args.json else args.value
+    config_saver.save()
+
+set_parser = register_parser(set, parent=configure_parser)
 set_parser.add_argument("key")
 set_parser.add_argument("value")
 
@@ -56,4 +72,4 @@ def sync(args):
     """Save Aegea configuration to your AWS IAM account, or retrieve a previously saved configuration"""
     raise NotImplementedError()
 
-sync_parser = register_listing_parser(sync, parent=config_parser)
+sync_parser = register_listing_parser(sync, parent=configure_parser)
