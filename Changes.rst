@@ -1,3 +1,10 @@
+Changes for v2.3.0 (2019-02-11)
+===============================
+
+-  Implement aegea lambda update
+
+-  Implement aegea configure set
+
 Changes for v2.2.9 (2019-01-22)
 ===============================
 
