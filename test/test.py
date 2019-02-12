@@ -63,7 +63,7 @@ class TestAegea(unittest.TestCase):
                       dict(return_codes=[1, os.EX_SOFTWARE],
                            stderr="(UnauthorizedOperation|AccessDenied|DryRunOperation)")]
             args = []
-            if subcommand in ("ssh", "scp", "put-alarm", "put_alarm", "batch", "config"):
+            if subcommand in ("ssh", "scp", "put-alarm", "put_alarm", "batch"):
                 args += ["--help"]
             elif "_" in subcommand:
                 continue
@@ -83,7 +83,7 @@ class TestAegea(unittest.TestCase):
             elif subcommand == "rm":
                 args += [resolve_ami()]
             elif subcommand in ("secrets", "rds", "elb", "flow-logs", "deploy", "zones", "ebs", "buckets", "efs",
-                                "ecr", "lambda"):
+                                "ecr", "lambda", "configure"):
                 args += ["ls"]
             elif subcommand == "pricing":
                 args += ["AmazonS3", "--json"]
