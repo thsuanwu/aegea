@@ -42,6 +42,7 @@ import os, sys, argparse, subprocess, json, copy
 from botocore.exceptions import ClientError
 from botocore.paginate import Paginator
 
+from . import logger
 from .ls import register_parser, register_listing_parser
 from .util import paginate
 from .util.aws import ARN, IAMPolicyBuilder, resources, clients, expect_error_codes, ensure_iam_policy
@@ -60,7 +61,8 @@ def parse_principal(args):
     elif args.iam_user:
         return resources.iam.User(args.iam_user)
     else:
-        raise AegeaException('Please specify a principal with "--instance-profile" or "--iam-{role,user,group}".')
+        logger.warn('You did not specify anyone to grant access this secret. '
+                    'You can specify a principal with "--instance-profile" or "--iam-{role,user,group}".')
 
 def ensure_policy(principal, secret_arn):
     policy_name = "{}.{}.{}".format(__name__,
@@ -103,7 +105,8 @@ def put(args):
         res = clients.secretsmanager.create_secret(Name=args.secret_name, SecretString=secret_value)
     except clients.secretsmanager.exceptions.ResourceExistsException:
         res = clients.secretsmanager.put_secret_value(SecretId=args.secret_name, SecretString=secret_value)
-    ensure_policy(parse_principal(args), res["ARN"])
+    if parse_principal(args):
+        ensure_policy(parse_principal(args), res["ARN"])
     if args.generate_ssh_key:
         return dict(ssh_public_key=hostkey_line(hostnames=[], key=ssh_key).strip(),
                     ssh_key_fingerprint=key_fingerprint(ssh_key))
