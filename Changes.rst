@@ -1,3 +1,8 @@
+Changes for v2.3.1 (2019-03-04)
+===============================
+
+-  Allow empty principal in aegea secrets put
+
 Changes for v2.3.0 (2019-02-11)
 ===============================
 
