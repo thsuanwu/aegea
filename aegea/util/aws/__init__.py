@@ -90,20 +90,27 @@ def availability_zones():
     for az in clients.ec2.describe_availability_zones()["AvailabilityZones"]:
         yield az["ZoneName"]
 
-def ensure_subnet(vpc):
+def ensure_subnet(vpc, availability_zone=None):
+    if availability_zone is not None and availability_zone not in availability_zones():
+        msg = "Unknown availability zone {} (choose from {})"
+        raise AegeaException(msg.format(availability_zone, list(availability_zones())))
     for subnet in vpc.subnets.all():
+        if availability_zone is not None and subnet.availability_zone != availability_zone:
+            continue
         break
     else:
         from ipaddress import ip_network
         from ... import config
         subnet_cidrs = ip_network(str(config.vpc.cidr[ARN.get_region()])).subnets(new_prefix=config.vpc.subnet_prefix)
+        subnets = {}
         for az, subnet_cidr in zip(availability_zones(), subnet_cidrs):
             logger.info("Creating subnet with CIDR %s in %s, %s", subnet_cidr, vpc, az)
-            subnet = resources.ec2.create_subnet(VpcId=vpc.id, CidrBlock=str(subnet_cidr), AvailabilityZone=az)
-            clients.ec2.get_waiter("subnet_available").wait(SubnetIds=[subnet.id])
-            add_tags(subnet, Name=__name__)
-            clients.ec2.modify_subnet_attribute(SubnetId=subnet.id,
+            subnets[az] = resources.ec2.create_subnet(VpcId=vpc.id, CidrBlock=str(subnet_cidr), AvailabilityZone=az)
+            clients.ec2.get_waiter("subnet_available").wait(SubnetIds=[subnets[az].id])
+            add_tags(subnets[az], Name=__name__)
+            clients.ec2.modify_subnet_attribute(SubnetId=subnets[az].id,
                                                 MapPublicIpOnLaunch=dict(Value=config.vpc.map_public_ip_on_launch))
+        subnet = subnets[availability_zone] if availability_zone is not None else list(subnets.values())[0]
     return subnet
 
 def ensure_ingress_rule(security_group, **kwargs):

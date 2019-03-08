@@ -70,7 +70,7 @@ def launch(args):
         vpc = resources.ec2.Vpc(subnet.vpc_id)
     else:
         vpc = ensure_vpc()
-        subnet = ensure_subnet(vpc)
+        subnet = ensure_subnet(vpc, availability_zone=args.availability_zone)
     if not subnet.map_public_ip_on_launch:
         raise AegeaException("Subnets without public IP mapping are not supported")
 
