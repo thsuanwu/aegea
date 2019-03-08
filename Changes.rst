@@ -1,3 +1,8 @@
+Changes for v2.3.2 (2019-03-08)
+===============================
+
+-  aegea launch: Match subnet if AZ is specified
+
 Changes for v2.3.1 (2019-03-04)
 ===============================
 
