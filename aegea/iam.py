@@ -6,6 +6,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os, sys, argparse, collections, random, string
 
+import botocore
+
 from . import config, logger
 from .ls import register_parser, register_listing_parser
 from .util import Timestamp, paginate, hashabledict
@@ -37,7 +39,10 @@ def users(args):
         return ">>>" if row.user_id == current_user.user_id else ""
 
     def describe_mfa(cell, row):
-        return "Enabled" if list(row.mfa_devices.all()) else "Disabled"
+        try:
+            return "Enabled" if list(row.mfa_devices.all()) else "Disabled"
+        except botocore.exceptions.ClientError:
+            return "Unknown"
     users = list(resources.iam.users.all())
     for user in users:
         user.cur, user.mfa = "", ""
