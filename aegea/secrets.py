@@ -61,7 +61,7 @@ def parse_principal(args):
     elif args.iam_user:
         return resources.iam.User(args.iam_user)
     else:
-        logger.warn('You did not specify anyone to grant access this secret. '
+        logger.warn('You did not specify anyone to grant access to this secret. '
                     'You can specify a principal with "--instance-profile" or "--iam-{role,user,group}".')
 
 def ensure_policy(principal, secret_arn):
