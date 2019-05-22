@@ -1,3 +1,8 @@
+Changes for v2.3.4 (2019-05-21)
+===============================
+
+-  Fix for v2.3.3 (release only committed changes)
+
 Changes for v2.3.3 (2019-05-21)
 ===============================
 
