@@ -20,7 +20,7 @@ lint: test_deps
 	flake8 --filename='*' $$(grep -r -l '/usr/bin/env python' aegea/missions aegea/rootfs.skel scripts)
 
 test: test_deps lint
-	coverage run --source=$$(python setup.py --name) ./test/test.py
+	coverage run --source=$$(python setup.py --name) -m unittest discover --start-directory test --top-level-directory . --verbose
 
 init_docs:
 	cd docs; sphinx-quickstart
