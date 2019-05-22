@@ -1,3 +1,8 @@
+Changes for v2.3.6 (2019-05-22)
+===============================
+
+-  aegea batch: include parameter hash in job definiton
+
 Changes for v2.3.5 (2019-05-21)
 ===============================
 
