@@ -1,3 +1,8 @@
+Changes for v2.3.5 (2019-05-21)
+===============================
+
+Reset job definition namespace
+
 Changes for v2.3.4 (2019-05-21)
 ===============================
 
