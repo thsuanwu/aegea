@@ -65,6 +65,8 @@ class TestAegea(unittest.TestCase):
             args = []
             if subcommand in ("ssh", "scp", "put-alarm", "put_alarm", "batch"):
                 args += ["--help"]
+            elif subcommand == "top" and sys.version_info < (3, 5):
+                continue  # concurrent.futures.ThreadPoolExecutor thread count autotune introduced in 3.5
             elif "_" in subcommand:
                 continue
             elif subcommand == "build-docker-image":

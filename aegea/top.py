@@ -1,20 +1,31 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys
+import os, sys, concurrent.futures
 from datetime import datetime
+
+import boto3
+import botocore.exceptions
 
 from . import register_parser
 from .util.printing import format_table, page_output
 
-def top(args):
-    import boto3
-    table = []
-    columns = ["Region", "Instances", "AMIs"]
-    for region in boto3.Session().get_available_regions("ec2"):
+def get_stats_for_region(region):
+    try:
         session = boto3.Session(region_name=region)
         num_instances = len(list(session.resource("ec2").instances.all()))
         num_amis = len(list(session.resource("ec2").images.filter(Owners=["self"])))
-        table.append([region, num_instances, num_amis])
+        num_vpcs = len(list(session.resource("ec2").vpcs.all()))
+        num_enis = len(list(session.resource("ec2").network_interfaces.all()))
+        num_volumes = len(list(session.resource("ec2").volumes.all()))
+    except botocore.exceptions.ClientError:
+        num_instances, num_amis, num_vpcs, num_enis, num_volumes = ["Access denied"] * 5
+    return [region, num_instances, num_amis, num_vpcs, num_enis, num_volumes]
+
+def top(args):
+    table = []
+    columns = ["Region", "Instances", "AMIs", "VPCs", "Network interfaces", "EBS volumes"]
+    executor = concurrent.futures.ThreadPoolExecutor()
+    table = list(executor.map(get_stats_for_region, boto3.Session().get_available_regions("ec2")))
     page_output(format_table(table, column_names=columns, max_col_width=args.max_col_width))
 
 parser = register_parser(top, help='Show an overview of AWS resources per region')
