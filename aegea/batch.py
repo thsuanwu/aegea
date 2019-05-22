@@ -338,12 +338,13 @@ def ensure_job_definition(args):
     container_props.update(jobRoleArn=iam_role.arn)
     expect_job_defn = dict(status="ACTIVE", type="container", parameters={},
                            retryStrategy={'attempts': args.retry_attempts}, containerProperties=container_props)
-    job_defn_name = __name__.replace(".", "_") + "_job"
+    job_hash = hashlib.sha256(json.dumps(container_props, sort_keys=True).encode()).hexdigest()[:8]
+    job_defn_name = __name__.replace(".", "_") + "_job_" + job_hash
     for job_defn in paginate(clients.batch.get_paginator('describe_job_definitions'), jobDefinitionName=job_defn_name):
         job_defn_desc = {k: job_defn.pop(k) for k in ("jobDefinitionName", "jobDefinitionArn", "revision")}
         if job_defn == expect_job_defn:
             return job_defn_desc
-    return clients.batch.register_job_definition(jobDefinitionName=__name__.replace(".", "_"),
+    return clients.batch.register_job_definition(jobDefinitionName=job_defn_name,
                                                  type="container",
                                                  containerProperties=container_props,
                                                  retryStrategy=dict(attempts=args.retry_attempts))
