@@ -1,3 +1,10 @@
+Changes for v2.3.3 (2019-05-21)
+===============================
+
+-  aegea batch: Look for a matching job definition before creating one
+
+-  Avoid crashing when no access is given to MFA status
+
 Changes for v2.3.2 (2019-03-08)
 ===============================
 
