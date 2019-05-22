@@ -321,11 +321,13 @@ def ensure_job_definition(args):
     if args.ecs_image:
         args.image = get_ecr_image_uri(args.ecs_image)
     container_props = {k: getattr(args, k) for k in ("image", "vcpus", "memory", "privileged")}
+    container_props.update(volumes=[], mountPoints=[], resourceRequirements=[], environment=[], command=[])
     if args.volumes:
-        container_props.update(volumes=[], mountPoints=[])
         for i, (host_path, guest_path) in enumerate(args.volumes):
             container_props["volumes"].append({"host": {"sourcePath": host_path}, "name": "vol%d" % i})
             container_props["mountPoints"].append({"sourceVolume": "vol%d" % i, "containerPath": guest_path})
+    if args.gpus:
+        container_props["resourceRequirements"].append({"type": "GPU", "value": str(args.gpus)})
     iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"],
                                policies=["AmazonEC2FullAccess", "AmazonDynamoDBFullAccess", "AmazonS3FullAccess"])
     if args.ulimits:
@@ -334,6 +336,13 @@ def ensure_job_definition(args):
             name, value = ulimit.split(":", 1)
             container_props["ulimits"].append(dict(name=name, hardLimit=int(value), softLimit=int(value)))
     container_props.update(jobRoleArn=iam_role.arn)
+    expect_job_defn = dict(status="ACTIVE", type="container", parameters={},
+                           retryStrategy={'attempts': args.retry_attempts}, containerProperties=container_props)
+    job_defn_name = __name__.replace(".", "_")
+    for job_defn in paginate(clients.batch.get_paginator('describe_job_definitions'), jobDefinitionName=job_defn_name):
+        job_defn_desc = {k: job_defn.pop(k) for k in ("jobDefinitionName", "jobDefinitionArn", "revision")}
+        if job_defn == expect_job_defn:
+            return job_defn_desc
     return clients.batch.register_job_definition(jobDefinitionName=__name__.replace(".", "_"),
                                                  type="container",
                                                  containerProperties=container_props,
@@ -354,7 +363,7 @@ def submit(args):
     if args.job_definition_arn is None:
         jd_res = ensure_job_definition(args)
         args.job_definition_arn = jd_res["jobDefinitionArn"]
-        args.name = "{}_{}".format(jd_res["jobDefinitionName"], jd_res["revision"])
+        args.name = args.name or "{}_{}".format(jd_res["jobDefinitionName"], jd_res["revision"])
     submit_args = dict(jobName=args.name,
                        jobQueue=args.queue,
                        dependsOn=[dict(jobId=dep) for dep in args.depends_on],
@@ -402,6 +411,7 @@ ecs_img_arg = img_group.add_argument("--ecs-image", "--ecr-image", "-i", metavar
                                      help="Name of Docker image residing in this account's Elastic Container Registry")
 ecs_img_arg.completer = ecr_image_name_completer
 group.add_argument("--vcpus", type=int, default=1)
+group.add_argument("--gpus", type=int, default=0)
 group.add_argument("--ulimits", nargs="*",
                    help="Separate ulimit name and value with colon, for example: --ulimits nofile:20000",
                    default=["nofile:100000"])
