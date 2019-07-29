@@ -322,6 +322,38 @@ ecr_ls:
     - imageSizeInBytes
     - policy
 
+ecs_clusters:
+  columns:
+    - clusterName
+    - status
+    - registeredContainerInstancesCount
+    - runningTasksCount
+    - pendingTasksCount
+    - activeServicesCount
+    - tags
+
+ecs_tasks:
+  columns:
+    - taskArn
+    - taskDefinitionArn
+    - containerInstanceArn
+    - lastStatus
+    - desiredStatus
+    - cpu
+    - memory
+    - startedBy
+    - version
+    - stoppedReason
+    - stopCode
+    - createdAt
+    - launchType
+
+ecs_launch:
+  memory: 1024
+  image: ubuntu:19.04
+  fargate_cpu: "1 vCPU"
+  fargate_memory: "2 GB"
+    
 sirs:
   columns:
     - SpotInstanceRequestId

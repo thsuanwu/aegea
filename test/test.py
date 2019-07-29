@@ -100,6 +100,8 @@ class TestAegea(unittest.TestCase):
                 args += [instance_id, "test=test test2=test"]
             elif subcommand == "untag":
                 args += [instance_id, "test test2"]
+            elif subcommand == "ecs":
+                args += ["clusters"]
             self.call(["aegea", subcommand] + args, expect=expect)
 
     def test_dry_run_commands(self):
