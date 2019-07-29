@@ -1,3 +1,10 @@
+Changes for v2.4.0 (2019-07-29)
+===============================
+
+-  Add aegea ecs
+
+-  aegea top: don’t crash on access deny; parallelize query
+
 Changes for v2.3.6 (2019-05-22)
 ===============================
 
