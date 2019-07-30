@@ -14,7 +14,8 @@ from .util.printing import page_output, tabulate
 from .util.exceptions import AegeaException
 from .util.compat import lru_cache
 from .util.aws import (ARN, resources, clients, resolve_instance_id, resolve_security_group, get_elb_dns_aliases,
-                       DNSZone, ensure_vpc, expect_error_codes, availability_zones)
+                       ensure_vpc, expect_error_codes, availability_zones)
+from .util.aws.dns import DNSZone
 
 def elb(args):
     elb_parser.print_help()

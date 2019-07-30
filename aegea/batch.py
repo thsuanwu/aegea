@@ -21,6 +21,7 @@ from .util.aws import (ARN, resources, clients, expect_error_codes, ensure_iam_r
                        make_waiter, ensure_vpc, ensure_security_group, ensure_s3_bucket, ensure_log_group,
                        IAMPolicyBuilder, resolve_ami)
 from .util.aws.spot import SpotFleetBuilder
+from .util.aws.logs import CloudwatchLogReader
 
 bash_cmd_preamble = ["/bin/bash", "-c", 'for i in "$@"; do eval "$i"; done', __name__]
 
@@ -467,34 +468,8 @@ parser.add_argument("job_id")
 def format_job_status(status):
     return job_status_colors[status] + status + ENDC()
 
-class LogReader:
-    log_group_name, next_page_token = "/aws/batch/job", None
-
-    def __init__(self, log_stream_name, head=None, tail=None):
-        self.log_stream_name = log_stream_name
-        self.head, self.tail = head, tail
-        self.next_page_key = "nextForwardToken" if self.tail is None else "nextBackwardToken"
-
-    def __iter__(self):
-        page = None
-        get_args = dict(logGroupName=self.log_group_name, logStreamName=self.log_stream_name,
-                        limit=min(self.head or 10000, self.tail or 10000))
-        get_args["startFromHead"] = True if self.tail is None else False
-        if self.next_page_token:
-            get_args["nextToken"] = self.next_page_token
-        while True:
-            page = clients.logs.get_log_events(**get_args)
-            for event in page["events"]:
-                if "timestamp" in event and "message" in event:
-                    yield event
-            get_args["nextToken"] = page[self.next_page_key]
-            if self.head is not None or self.tail is not None or len(page["events"]) == 0:
-                break
-        if page:
-            LogReader.next_page_token = page[self.next_page_key]
-
 def get_logs(args):
-    for event in LogReader(args.log_stream_name, head=args.head, tail=args.tail):
+    for event in CloudwatchLogReader(args.log_stream_name, head=args.head, tail=args.tail):
         print(str(Timestamp(event["timestamp"])), event["message"])
 
 def save_job_desc(job_desc):

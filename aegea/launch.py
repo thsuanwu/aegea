@@ -22,9 +22,10 @@ from . import register_parser, logger, config
 
 from .util import wait_for_port, validate_hostname, paginate
 from .util.cloudinit import get_user_data
-from .util.aws import (ensure_vpc, ensure_subnet, ensure_security_group, DNSZone, get_client_token, ensure_log_group,
-                       ensure_instance_profile, add_tags, resolve_security_group, get_bdm, resolve_instance_id,
-                       expect_error_codes, resolve_ami, get_ondemand_price_usd, resources, clients, ARN)
+from .util.aws import (ensure_vpc, ensure_subnet, ensure_security_group, ensure_log_group, ensure_instance_profile,
+                       add_tags, resolve_security_group, get_bdm, resolve_instance_id, expect_error_codes, resolve_ami,
+                       get_ondemand_price_usd, resources, clients, ARN)
+from .util.aws.dns import DNSZone, get_client_token
 from .util.aws.spot import SpotFleetBuilder
 from .util.crypto import new_ssh_key, add_ssh_host_key_to_known_hosts, ensure_ssh_key, hostkey_line
 from .util.exceptions import AegeaException

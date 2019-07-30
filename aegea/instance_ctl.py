@@ -2,7 +2,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os, sys
 from . import register_parser, config
-from .util.aws import DNSZone, resources, clients, resolve_instance_id, add_tags
+from .util.aws import resources, clients, resolve_instance_id, add_tags
+from .util.aws.dns import DNSZone
 
 def resolve_instance_ids(input_names):
     ids = [n for n in input_names if n.startswith("i-")]

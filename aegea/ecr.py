@@ -15,8 +15,8 @@ from .util import Timestamp, paginate, hashabledict
 from .util.printing import format_table, page_output, get_field, get_cell, tabulate
 from .util.exceptions import AegeaException
 from .util.compat import lru_cache
-from .util.aws import (ARN, resources, clients, resolve_instance_id, resolve_security_group, get_elb_dns_aliases,
-                       DNSZone, ensure_vpc, expect_error_codes, IAMPolicyBuilder)
+from .util.aws import clients
+from .util.aws.dns import DNSZone
 
 def ecr(args):
     ecr_parser.print_help()

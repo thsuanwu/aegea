@@ -1,5 +1,14 @@
 """
 Manage AWS Elastic Container Service (ECS) resources, including Fargate tasks.
+
+FIXME
+- avoid proliferation of task versions
+- unify handling of command and other parameters with batch (common arg group?)
+- rename to "aegea ecs run" for consistency with api naming; suppress alias with "aegea ecs launch"
+- aegea ecs run --watch - same semantics as batch watch
+- container mgmt integration
+- allow to specify task role separately
+- allow executor role to fetch from ECR by default
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -10,9 +19,10 @@ from botocore.exceptions import ClientError
 
 from .ls import register_parser, register_listing_parser
 from .util import Timestamp, paginate
+from .util.compat import USING_PYTHON2
 from .util.printing import page_output, tabulate
 from .util.aws import ARN, clients, ensure_security_group, ensure_vpc, ensure_iam_role, ensure_log_group
-from .batch import LogReader
+from .util.aws.logs import CloudwatchLogReader
 
 def ecs(args):
     ecs_parser.print_help()
@@ -50,7 +60,7 @@ parser.add_argument("--cluster")
 parser.add_argument("--desired-status", choices={"RUNNING", "STOPPED"})
 parser.add_argument("--launch-type", choices={"EC2", "FARGATE"})
 
-def launch(args):
+def run(args):
     vpc = ensure_vpc()
     clients.ecs.create_cluster(clusterName=args.cluster)
     log_config = {
@@ -67,12 +77,13 @@ def launch(args):
                           memory=args.memory,
                           command=args.command,
                           logConfiguration=log_config)
-    iam_role = ensure_iam_role("aegea.fargate", trust=["ecs-tasks"], policies=["service-role/AWSBatchServiceRole"])
+    exec_role = ensure_iam_role(args.execution_role, trust=["ecs-tasks"], policies=["service-role/AWSBatchServiceRole"])
+    task_role = ensure_iam_role(args.task_role)
     clients.ecs.register_task_definition(family=args.task_name,
                                          containerDefinitions=[container_defn],
                                          requiresCompatibilities=["FARGATE"],
-                                         executionRoleArn=iam_role.arn,
-                                         taskRoleArn=iam_role.arn,
+                                         executionRoleArn=exec_role.arn,
+                                         taskRoleArn=task_role.arn,
                                          networkMode="awsvpc",
                                          cpu=args.fargate_cpu,
                                          memory=args.fargate_memory)
@@ -81,7 +92,7 @@ def launch(args):
             'subnets': [
                 subnet.id for subnet in vpc.subnets.all()
             ],
-            'securityGroups': [ensure_security_group("aegea.fargate", vpc).id],
+            'securityGroups': [ensure_security_group(args.security_group, vpc).id],
             'assignPublicIp': 'ENABLED'
         }
     }
@@ -92,19 +103,24 @@ def launch(args):
     task_arn = res["tasks"][0]["taskArn"]
     task_uuid = ARN(task_arn).resource.split("/")[1]
 
-    class FargateLogReader(LogReader):
-        log_group_name = args.task_name
-
     while res["tasks"][0]["lastStatus"] != "STOPPED":
         print(task_arn, res["tasks"][0]["lastStatus"])
         time.sleep(1)
         res = clients.ecs.describe_tasks(cluster=args.cluster, tasks=[task_arn])
 
-    for event in FargateLogReader("/".join([args.task_name, args.task_name, task_uuid])):
+    for event in CloudwatchLogReader("/".join([args.task_name, args.task_name, task_uuid]),
+                                     log_group_name=args.task_name):
         print(event["message"])
 
-parser = register_parser(launch, parent=ecs_parser, help="Run a Fargate task")
+register_parser_args = dict(parent=ecs_parser, help="Run a Fargate task")
+if not USING_PYTHON2:
+    register_parser_args["aliases"] = ["launch"]
+
+parser = register_parser(run, **register_parser_args)
 parser.add_argument("command", nargs="*")
+parser.add_argument("--execution-role", default=__name__)
+parser.add_argument("--task-role", default=__name__)
+parser.add_argument("--security-group", default=__name__)
 parser.add_argument("--cluster", default=__name__.replace(".", "_"))
 parser.add_argument("--task-name", default=__name__.replace(".", "_"))
 parser.add_argument("--memory", type=int, help="Container memory in MB")

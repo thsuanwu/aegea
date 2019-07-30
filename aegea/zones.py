@@ -8,7 +8,8 @@ import os, sys, argparse
 
 from . import register_parser
 from .util import paginate
-from .util.aws import DNSZone, clients
+from .util.aws import clients
+from .util.aws.dns import DNSZone
 from .util.printing import get_field, page_output, format_table
 
 def zones(args):
