@@ -9,6 +9,7 @@ FIXME
 - container mgmt integration
 - allow to specify task role separately
 - allow executor role to fetch from ECR by default
+- implement https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-task-storage.html
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -17,12 +18,14 @@ import argparse, time
 
 from botocore.exceptions import ClientError
 
+from .batch import add_command_args
 from .ls import register_parser, register_listing_parser
 from .util import Timestamp, paginate
 from .util.compat import USING_PYTHON2
 from .util.printing import page_output, tabulate
 from .util.aws import ARN, clients, ensure_security_group, ensure_vpc, ensure_iam_role, ensure_log_group
 from .util.aws.logs import CloudwatchLogReader
+from .util.aws.batch import get_command_and_env
 
 def ecs(args):
     ecs_parser.print_help()
@@ -61,6 +64,8 @@ parser.add_argument("--desired-status", choices={"RUNNING", "STOPPED"})
 parser.add_argument("--launch-type", choices={"EC2", "FARGATE"})
 
 def run(args):
+    args.storage = args.efs_storage = None
+    command, environment = get_command_and_env(args)
     vpc = ensure_vpc()
     clients.ecs.create_cluster(clusterName=args.cluster)
     log_config = {
@@ -75,7 +80,8 @@ def run(args):
     container_defn = dict(name=args.task_name,
                           image=args.image,
                           memory=args.memory,
-                          command=args.command,
+                          command=command,
+                          environment=environment,
                           logConfiguration=log_config)
     exec_role = ensure_iam_role(args.execution_role, trust=["ecs-tasks"], policies=["service-role/AWSBatchServiceRole"])
     task_role = ensure_iam_role(args.task_role)
@@ -117,7 +123,7 @@ if not USING_PYTHON2:
     register_parser_args["aliases"] = ["launch"]
 
 parser = register_parser(run, **register_parser_args)
-parser.add_argument("command", nargs="*")
+add_command_args(parser)
 parser.add_argument("--execution-role", default=__name__)
 parser.add_argument("--task-role", default=__name__)
 parser.add_argument("--security-group", default=__name__)

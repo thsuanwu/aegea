@@ -348,7 +348,7 @@ ecs_tasks:
     - createdAt
     - launchType
 
-ecs_launch:
+ecs_run:
   memory: 1024
   image: ubuntu:19.04
   fargate_cpu: "1 vCPU"
