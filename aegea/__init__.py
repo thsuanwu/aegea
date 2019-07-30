@@ -42,6 +42,13 @@ class AegeaConfig(tweak.Config):
     def user_config_dir(self):
         return os.path.join(self._user_config_home, self._name)
 
+class AegeaHelpFormatter(argparse.RawTextHelpFormatter):
+    def _get_help_string(self, action):
+        default = get_config_for_prog(self._prog).get(action.dest)
+        if default is not None and not isinstance(default, list):
+            return action.help + " (default: {})".format(default)
+        return action.help
+
 def initialize():
     global config, parser
     from .util.printing import BOLD, RED, ENDC
@@ -59,7 +66,7 @@ def initialize():
 
     parser = argparse.ArgumentParser(
         description="{}: {}".format(BOLD() + RED() + __name__.capitalize() + ENDC(), fill(__doc__.strip())),
-        formatter_class=argparse.RawTextHelpFormatter
+        formatter_class=AegeaHelpFormatter
     )
     parser.add_argument("--version", action="version", version="%(prog)s {}\n{} {}\n{}".format(
         __version__,
@@ -106,6 +113,10 @@ def main(args=None):
             del result["ResponseMetadata"]
         print(json.dumps(result, indent=2, default=lambda x: str(x)))
 
+def get_config_for_prog(prog):
+    command = prog.split(" ", 1)[-1].replace("-", "_").replace(" ", "_")
+    return config.get(command, {})
+
 def register_parser(function, parent=None, name=None, **add_parser_args):
     if config is None:
         initialize()
@@ -116,6 +127,7 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
         _subparsers[parent.prog] = parent.add_subparsers()
     if "_" in parser_name and not USING_PYTHON2:
         add_parser_args["aliases"] = [parser_name]
+    add_parser_args.setdefault("formatter_class", AegeaHelpFormatter)
     subparser = _subparsers[parent.prog].add_parser(parser_name.replace("_", "-"), **add_parser_args)
     if "_" in parser_name and USING_PYTHON2:
         _subparsers[parent.prog]._name_parser_map[parser_name] = subparser
@@ -129,8 +141,7 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
     subparser.set_defaults(entry_point=function)
     if parent and sys.version_info < (2, 7, 9):  # See https://bugs.python.org/issue9351
         parent._defaults.pop("entry_point", None)
-    command = subparser.prog[len(parser.prog) + 1:].replace("-", "_").replace(" ", "_")
-    subparser.set_defaults(**config.get(command, {}))
+    subparser.set_defaults(**get_config_for_prog(subparser.prog))
     if subparser.description is None:
         subparser.description = add_parser_args.get("help", function.__doc__)
     return subparser

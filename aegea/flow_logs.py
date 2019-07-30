@@ -12,8 +12,7 @@ from .util.aws import ARN, resources, clients, ensure_iam_role, ensure_vpc, expe
 def flow_logs(args):
     flow_logs_parser.print_help()
 
-flow_logs_parser = register_parser(flow_logs, help="Manage EC2 VPC flow logs", description=__doc__,
-                                   formatter_class=argparse.RawTextHelpFormatter)
+flow_logs_parser = register_parser(flow_logs, help="Manage EC2 VPC flow logs", description=__doc__)
 
 def create(args):
     if args.resource and args.resource.startswith("vpc-"):

@@ -21,8 +21,7 @@ from .util.aws import (ARN, resources, clients, resolve_instance_id, resolve_sec
 def ecr(args):
     ecr_parser.print_help()
 
-ecr_parser = register_parser(ecr, help="Manage Elastic Container Registry resources", description=__doc__,
-                             formatter_class=argparse.RawTextHelpFormatter)
+ecr_parser = register_parser(ecr, help="Manage Elastic Container Registry resources", description=__doc__)
 
 def ls(args):
     table = []

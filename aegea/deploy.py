@@ -56,8 +56,7 @@ from .util.aws import (ARN, resources, clients, IAMPolicyBuilder, resolve_instan
 def deploy(args):
     deploy_parser.print_help()
 
-deploy_parser = register_parser(deploy, help="Manage deployments of GitHub repositories", description=__doc__,
-                                formatter_class=argparse.RawTextHelpFormatter)
+deploy_parser = register_parser(deploy, help="Manage deployments of GitHub repositories", description=__doc__)
 
 def configure(args):
     repo = get_repo(args.repo)

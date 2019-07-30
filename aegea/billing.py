@@ -24,8 +24,7 @@ from .util.aws import ARN, clients, resources, ensure_s3_bucket, IAMPolicyBuilde
 def billing(args):
     billing_parser.print_help()
 
-billing_parser = register_parser(billing, help="Configure and view AWS cost and usage reports", description=__doc__,
-                                 formatter_class=argparse.RawTextHelpFormatter)
+billing_parser = register_parser(billing, help="Configure and view AWS cost and usage reports", description=__doc__)
 
 def configure(args):
     bucket_name = args.billing_reports_bucket.format(account_id=ARN.get_account_id())

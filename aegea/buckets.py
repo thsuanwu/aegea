@@ -15,8 +15,7 @@ from .util.printing import format_table, page_output, get_field, get_cell, tabul
 def buckets(args):
     buckets_parser.print_help()
 
-buckets_parser = register_parser(buckets, help="Manage S3 buckets", description=__doc__,
-                                 formatter_class=argparse.RawTextHelpFormatter)
+buckets_parser = register_parser(buckets, help="Manage S3 buckets", description=__doc__)
 
 def ls(args):
     """

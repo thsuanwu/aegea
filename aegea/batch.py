@@ -127,8 +127,7 @@ mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2
 def batch(args):
     batch_parser.print_help()
 
-batch_parser = register_parser(batch, help="Manage AWS Batch resources", description=__doc__,
-                               formatter_class=argparse.RawTextHelpFormatter)
+batch_parser = register_parser(batch, help="Manage AWS Batch resources", description=__doc__)
 
 def queues(args):
     table = clients.batch.describe_job_queues()["jobQueues"]

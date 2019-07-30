@@ -75,10 +75,7 @@ def ensure_policy(principal, secret_arn):
 def secrets(args):
     secrets_parser.print_help()
 
-secrets_parser = register_parser(secrets,
-                                 help="Manage application credentials (secrets)",
-                                 description=__doc__,
-                                 formatter_class=argparse.RawTextHelpFormatter)
+secrets_parser = register_parser(secrets, help="Manage application credentials (secrets)", description=__doc__)
 
 def ls(args):
     list_secrets_paginator = Paginator(method=clients.secretsmanager.list_secrets,

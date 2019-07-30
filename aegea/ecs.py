@@ -17,8 +17,7 @@ from .batch import LogReader
 def ecs(args):
     ecs_parser.print_help()
 
-ecs_parser = register_parser(ecs, help="Manage Elastic Container Service resources", description=__doc__,
-                             formatter_class=argparse.RawTextHelpFormatter)
+ecs_parser = register_parser(ecs, help="Manage Elastic Container Service resources", description=__doc__)
 
 def clusters(args):
     if not args.clusters:
@@ -108,7 +107,7 @@ parser = register_parser(launch, parent=ecs_parser, help="Run a Fargate task")
 parser.add_argument("command", nargs="*")
 parser.add_argument("--cluster", default=__name__.replace(".", "_"))
 parser.add_argument("--task-name", default=__name__.replace(".", "_"))
-parser.add_argument("--memory", type=int)
-parser.add_argument("--fargate-cpu")
+parser.add_argument("--memory", type=int, help="Container memory in MB")
+parser.add_argument("--fargate-cpu", help="Execution vCPU count")
 parser.add_argument("--fargate-memory")
 parser.add_argument("--image")

@@ -15,8 +15,7 @@ from .util.aws import ARN, clients, encode_tags
 def rds(args):
     rds_parser.print_help()
 
-rds_parser = register_parser(rds, help="Manage RDS resources", description=__doc__,
-                             formatter_class=argparse.RawTextHelpFormatter)
+rds_parser = register_parser(rds, help="Manage RDS resources", description=__doc__)
 
 def add_tags(resource, prefix, key):
     resource_id = ":".join([prefix, resource[key]])

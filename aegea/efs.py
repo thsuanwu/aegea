@@ -19,8 +19,7 @@ from .util.compat import lru_cache
 def efs(args):
     efs_parser.print_help()
 
-efs_parser = register_parser(efs, help="Manage Elastic Filesystem resources", description=__doc__,
-                             formatter_class=argparse.RawTextHelpFormatter)
+efs_parser = register_parser(efs, help="Manage Elastic Filesystem resources", description=__doc__)
 
 def ls(args):
     table = []

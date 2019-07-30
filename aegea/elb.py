@@ -19,8 +19,7 @@ from .util.aws import (ARN, resources, clients, resolve_instance_id, resolve_sec
 def elb(args):
     elb_parser.print_help()
 
-elb_parser = register_parser(elb, help="Manage Elastic Load Balancers", description=__doc__,
-                             formatter_class=argparse.RawTextHelpFormatter)
+elb_parser = register_parser(elb, help="Manage Elastic Load Balancers", description=__doc__)
 
 def ls(args):
     @lru_cache()
