@@ -1,3 +1,10 @@
+Changes for v2.5.0 (2019-07-30)
+===============================
+
+-  aegea ecs run improvements
+
+-  Print simple defaults in help messages; consolidate help formatting
+
 Changes for v2.4.0 (2019-07-29)
 ===============================
 
