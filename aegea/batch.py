@@ -225,7 +225,8 @@ def add_job_defn_args(parser):
     ecs_img_help = "Name of Docker image residing in this account's Elastic Container Registry"
     ecs_img_arg = img_group.add_argument("--ecs-image", "--ecr-image", "-i", metavar="REPO[:TAG]", help=ecs_img_help)
     ecs_img_arg.completer = ecr_image_name_completer
-    parser.add_argument("--volumes", nargs="+", metavar="HOST_PATH=GUEST_PATH", type=lambda x: x.split("=", 1), default=[])
+    parser.add_argument("--volumes", nargs="+", metavar="HOST_PATH=GUEST_PATH", type=lambda x: x.split("=", 1),
+                        default=[])
     parser.add_argument("--memory-mb", dest="memory", type=int, default=1024)
 
 add_command_args(submit_parser)
