@@ -1,15 +1,5 @@
 """
 Manage AWS Elastic Container Service (ECS) resources, including Fargate tasks.
-
-FIXME
-- avoid proliferation of task versions
-- unify handling of command and other parameters with batch (common arg group?)
-- rename to "aegea ecs run" for consistency with api naming; suppress alias with "aegea ecs launch"
-- aegea ecs run --watch - same semantics as batch watch
-- container mgmt integration
-- allow to specify task role separately
-- allow executor role to fetch from ECR by default
-- implement https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-task-storage.html
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -18,12 +8,14 @@ import argparse, time
 
 from botocore.exceptions import ClientError
 
-from .batch import add_command_args
+from . import logger
+from .batch import add_command_args, add_job_defn_args, set_ulimits, set_volumes, get_ecr_image_uri
 from .ls import register_parser, register_listing_parser
 from .util import Timestamp, paginate
 from .util.compat import USING_PYTHON2
-from .util.printing import page_output, tabulate
-from .util.aws import ARN, clients, ensure_security_group, ensure_vpc, ensure_iam_role, ensure_log_group
+from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
+from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_iam_role, ensure_log_group,
+                       expect_error_codes)
 from .util.aws.logs import CloudwatchLogReader
 from .util.aws.batch import get_command_and_env
 
@@ -77,12 +69,18 @@ def run(args):
         }
     }
     ensure_log_group(log_config["options"]["awslogs-group"])
+
+    if args.ecs_image:
+        args.image = get_ecr_image_uri(args.ecs_image)
+
     container_defn = dict(name=args.task_name,
                           image=args.image,
                           memory=args.memory,
                           command=command,
                           environment=environment,
                           logConfiguration=log_config)
+    set_volumes(args, container_defn)
+    set_ulimits(args, container_defn)
     exec_role = ensure_iam_role(args.execution_role, trust=["ecs-tasks"], policies=["service-role/AWSBatchServiceRole"])
     task_role = ensure_iam_role(args.task_role)
     clients.ecs.register_task_definition(family=args.task_name,
@@ -107,16 +105,11 @@ def run(args):
                                launchType="FARGATE",
                                networkConfiguration=network_config)
     task_arn = res["tasks"][0]["taskArn"]
-    task_uuid = ARN(task_arn).resource.split("/")[1]
-
-    while res["tasks"][0]["lastStatus"] != "STOPPED":
-        print(task_arn, res["tasks"][0]["lastStatus"])
-        time.sleep(1)
-        res = clients.ecs.describe_tasks(cluster=args.cluster, tasks=[task_arn])
-
-    for event in CloudwatchLogReader("/".join([args.task_name, args.task_name, task_uuid]),
-                                     log_group_name=args.task_name):
-        print(event["message"])
+    if args.watch:
+        watch(watch_parser.parse_args([args.task_name, task_arn, "--cluster", args.cluster]))
+    elif args.wait:
+        raise NotImplementedError()
+    return res["tasks"][0]
 
 register_parser_args = dict(parent=ecs_parser, help="Run a Fargate task")
 if not USING_PYTHON2:
@@ -124,12 +117,46 @@ if not USING_PYTHON2:
 
 parser = register_parser(run, **register_parser_args)
 add_command_args(parser)
-parser.add_argument("--execution-role", default=__name__)
-parser.add_argument("--task-role", default=__name__)
+add_job_defn_args(parser)
+parser.add_argument("--execution-role", metavar="IAM_ROLE", default=__name__)
+parser.add_argument("--task-role", metavar="IAM_ROLE", default=__name__)
 parser.add_argument("--security-group", default=__name__)
 parser.add_argument("--cluster", default=__name__.replace(".", "_"))
 parser.add_argument("--task-name", default=__name__.replace(".", "_"))
-parser.add_argument("--memory", type=int, help="Container memory in MB")
 parser.add_argument("--fargate-cpu", help="Execution vCPU count")
 parser.add_argument("--fargate-memory")
-parser.add_argument("--image")
+
+task_status_colors = dict(PROVISIONING=YELLOW(), PENDING=BOLD() + YELLOW(), ACTIVATING=BOLD() + YELLOW(),
+                          RUNNING=GREEN(),
+                          DEACTIVATING=BOLD() + GREEN(), STOPPING=BOLD() + GREEN(), DEPROVISIONING=BOLD() + GREEN(),
+                          STOPPED=BOLD() + GREEN())
+
+def format_task_status(status):
+    return task_status_colors[status] + status + ENDC()
+
+def watch(args):
+    task_uuid = ARN(args.task_arn).resource.split("/")[1]
+    logger.info("Watching task %s (%s)", task_uuid, args.cluster)
+    last_status = None
+    while last_status != "STOPPED":
+        task_desc = clients.ecs.describe_tasks(cluster=args.cluster, tasks=[args.task_arn])["tasks"][0]
+        if task_desc["lastStatus"] != last_status:
+            logger.info("Task %s %s", args.task_arn, format_task_status(task_desc["lastStatus"]))
+            last_status = task_desc["lastStatus"]
+        try:
+            for event in CloudwatchLogReader("/".join([args.task_name, args.task_name, task_uuid]),
+                                             log_group_name=args.task_name):
+                print(str(Timestamp(event["timestamp"])), event["message"])
+        except ClientError as e:
+            expect_error_codes(e, "ResourceNotFoundException")
+        time.sleep(1)
+
+watch_parser = register_parser(watch, parent=ecs_parser, help="Monitor a running ECS Fargate task and stream its logs")
+watch_parser.add_argument("task_name")
+watch_parser.add_argument("task_arn")
+watch_parser.add_argument("--cluster", default=__name__.replace(".", "_"))
+lines_group = watch_parser.add_mutually_exclusive_group()
+lines_group.add_argument("--head", type=int, nargs="?", const=10,
+                         help="Retrieve this number of lines from the beginning of the log (default 10)")
+lines_group.add_argument("--tail", type=int, nargs="?", const=10,
+                         help="Retrieve this number of lines from the end of the log (default 10)")

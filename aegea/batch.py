@@ -117,24 +117,30 @@ def get_ecr_image_uri(tag):
 def ensure_ecr_image(tag):
     pass
 
-def ensure_job_definition(args):
-    if args.ecs_image:
-        args.image = get_ecr_image_uri(args.ecs_image)
-    container_props = {k: getattr(args, k) for k in ("image", "vcpus", "memory", "privileged")}
-    container_props.update(volumes=[], mountPoints=[], resourceRequirements=[], environment=[], command=[])
-    if args.volumes:
-        for i, (host_path, guest_path) in enumerate(args.volumes):
-            container_props["volumes"].append({"host": {"sourcePath": host_path}, "name": "vol%d" % i})
-            container_props["mountPoints"].append({"sourceVolume": "vol%d" % i, "containerPath": guest_path})
-    if args.gpus:
-        container_props["resourceRequirements"].append({"type": "GPU", "value": str(args.gpus)})
-    iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"],
-                               policies=["AmazonEC2FullAccess", "AmazonDynamoDBFullAccess", "AmazonS3FullAccess"])
+def set_ulimits(args, container_props):
     if args.ulimits:
         container_props.setdefault("ulimits", [])
         for ulimit in args.ulimits:
             name, value = ulimit.split(":", 1)
             container_props["ulimits"].append(dict(name=name, hardLimit=int(value), softLimit=int(value)))
+
+def set_volumes(args, container_props):
+    if args.volumes:
+        for i, (host_path, guest_path) in enumerate(args.volumes):
+            container_props["volumes"].append({"host": {"sourcePath": host_path}, "name": "vol%d" % i})
+            container_props["mountPoints"].append({"sourceVolume": "vol%d" % i, "containerPath": guest_path})
+
+def ensure_job_definition(args):
+    if args.ecs_image:
+        args.image = get_ecr_image_uri(args.ecs_image)
+    container_props = {k: getattr(args, k) for k in ("image", "vcpus", "memory", "privileged")}
+    container_props.update(volumes=[], mountPoints=[], resourceRequirements=[], environment=[], command=[])
+    set_volumes(args, container_props)
+    set_ulimits(args, container_props)
+    if args.gpus:
+        container_props["resourceRequirements"].append({"type": "GPU", "value": str(args.gpus)})
+    iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"],
+                               policies=["AmazonEC2FullAccess", "AmazonDynamoDBFullAccess", "AmazonS3FullAccess"])
     container_props.update(jobRoleArn=iam_role.arn)
     expect_job_defn = dict(status="ACTIVE", type="container", parameters={},
                            retryStrategy={'attempts': args.retry_attempts}, containerProperties=container_props)
@@ -193,38 +199,43 @@ submit_parser.add_argument("--name")
 submit_parser.add_argument("--queue", default=__name__.replace(".", "_"))
 submit_parser.add_argument("--depends-on", nargs="+", metavar="JOB_ID", default=[])
 submit_parser.add_argument("--job-definition-arn")
-group = submit_parser.add_mutually_exclusive_group()
-group.add_argument("--watch", action="store_true", help="Monitor submitted job, stream log until job completes")
-group.add_argument("--wait", action="store_true", help="Block on job. Exit with code 0 if job succeeded, 1 if failed")
 
 def add_command_args(parser):
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--watch", action="store_true", help="Monitor submitted job, stream log until job completes")
+    group.add_argument("--wait", action="store_true",
+                       help="Block on job. Exit with code 0 if job succeeded, 1 if failed")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--command", nargs="+", help="Run these commands as the job (using " + BOLD("bash -c") + ")")
     group.add_argument("--execute", type=argparse.FileType("rb"), metavar="EXECUTABLE",
                        help="Read this executable file and run it as the job")
     group.add_argument("--cwl", metavar="CWL_DEFINITION",
                        help="Read this Common Workflow Language definition file and run it as the job")
+    parser.add_argument("--cwl-input", type=argparse.FileType("rb"), metavar="CWLINPUT", default=sys.stdin,
+                        help="With --cwl, use this file as the CWL job input (default: stdin)")
     parser.add_argument("--environment", nargs="+", metavar="NAME=VALUE",
                         type=lambda x: dict(zip(["name", "value"], x.split("=", 1))), default=[])
 
+def add_job_defn_args(parser):
+    parser.add_argument("--ulimits", nargs="*",
+                        help="Separate ulimit name and value with colon, for example: --ulimits nofile:20000",
+                        default=["nofile:100000"])
+    img_group = parser.add_mutually_exclusive_group()
+    img_group.add_argument("--image", default="ubuntu", help="Docker image URL to use for running job/task")
+    ecs_img_help = "Name of Docker image residing in this account's Elastic Container Registry"
+    ecs_img_arg = img_group.add_argument("--ecs-image", "--ecr-image", "-i", metavar="REPO[:TAG]", help=ecs_img_help)
+    ecs_img_arg.completer = ecr_image_name_completer
+    parser.add_argument("--volumes", nargs="+", metavar="HOST_PATH=GUEST_PATH", type=lambda x: x.split("=", 1), default=[])
+    parser.add_argument("--memory-mb", dest="memory", type=int, default=1024)
+
 add_command_args(submit_parser)
-submit_parser.add_argument("--cwl-input", type=argparse.FileType("rb"), metavar="CWLINPUT", default=sys.stdin,
-                           help="With --cwl, use this file as the CWL job input (default: stdin)")
+
 group = submit_parser.add_argument_group(title="job definition parameters", description="""
 See http://docs.aws.amazon.com/batch/latest/userguide/job_definitions.html""")
-img_group = group.add_mutually_exclusive_group()
-img_group.add_argument("--image", default="ubuntu", help="Docker image URL to use for running Batch job")
-ecs_img_arg = img_group.add_argument("--ecs-image", "--ecr-image", "-i", metavar="REPO[:TAG]",
-                                     help="Name of Docker image residing in this account's Elastic Container Registry")
-ecs_img_arg.completer = ecr_image_name_completer
+add_job_defn_args(group)
 group.add_argument("--vcpus", type=int, default=1)
 group.add_argument("--gpus", type=int, default=0)
-group.add_argument("--ulimits", nargs="*",
-                   help="Separate ulimit name and value with colon, for example: --ulimits nofile:20000",
-                   default=["nofile:100000"])
-group.add_argument("--memory-mb", dest="memory", type=int, default=1024)
 group.add_argument("--privileged", action="store_true", default=False)
-group.add_argument("--volumes", nargs="+", metavar="HOST_PATH=GUEST_PATH", type=lambda x: x.split("=", 1), default=[])
 group.add_argument("--volume-type", choices={"standard", "io1", "gp2", "sc1", "st1"},
                    help="io1, PIOPS SSD; gp2, general purpose SSD; sc1, cold HDD; st1, throughput optimized HDD")
 group.add_argument("--parameters", nargs="+", metavar="NAME=VALUE", type=lambda x: x.split("=", 1), default=[])
@@ -311,7 +322,7 @@ def watch(args):
             get_logs(args)
         if "statusReason" in job_desc:
             logger.info("Job %s: %s", args.job_id, job_desc["statusReason"])
-        time.sleep(0.2)
+        time.sleep(1)
 
 get_logs_parser = register_parser(get_logs, parent=batch_parser, help="Retrieve logs for a Batch job")
 get_logs_parser.add_argument("log_stream_name")
