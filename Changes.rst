@@ -1,3 +1,8 @@
+Changes for v2.5.1 (2019-08-07)
+===============================
+
+-  aegea launch: prefer AMIs built by current user or by Aegea
+
 Changes for v2.5.0 (2019-07-30)
 ===============================
 
