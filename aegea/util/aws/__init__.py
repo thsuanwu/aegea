@@ -321,15 +321,30 @@ def expect_error_codes(exception, *codes):
         raise
 
 def resolve_ami(ami=None, **tags):
+    """
+    Find an AMI by ID, name, or tags.
+    - If an ID is given, it is returned with no validation; otherwise, selects the most recent AMI from:
+    - All available AMIs in this account with the Owner tag equal to this user's IAM username (filtered by tags given);
+    - If no AMIs found, all available AMIs in this account with the AegeaVersion tag present (filtered by tags given);
+    - If no AMIs found, all available AMIs in this account (filtered by tags given).
+    Return the AMI with the most recent creation date.
+    """
     if ami is None or not ami.startswith("ami-"):
         if ami is None:
             filters = dict(Owners=["self"], Filters=[dict(Name="state", Values=["available"])])
         else:
             filters = dict(Owners=["self"], Filters=[dict(Name="name", Values=[ami])])
-        amis = resources.ec2.images.filter(**filters)
+        all_amis = resources.ec2.images.filter(**filters)
         if tags:
-            amis = filter_by_tags(amis, **tags)
-        amis = sorted(amis, key=lambda x: x.creation_date)
+            all_amis = filter_by_tags(all_amis, **tags)
+
+        current_user_amis = all_amis.filter(Filters=[dict(Name="tag:Owner", Values=[ARN.get_iam_username()])])
+        amis = sorted(current_user_amis, key=lambda x: x.creation_date)
+        if len(amis) == 0:
+            aegea_amis = all_amis.filter(Filters=[dict(Name="tag-key", Values=["AegeaVersion"])])
+            amis = sorted(aegea_amis, key=lambda x: x.creation_date)
+            if len(amis) == 0:
+                amis = sorted(all_amis, key=lambda x: x.creation_date)
         if not amis:
             raise AegeaException("Could not resolve AMI {}".format(dict(tags, ami=ami)))
         ami = amis[-1].id

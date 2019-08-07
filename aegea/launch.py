@@ -178,7 +178,7 @@ parser.add_argument("--commands", nargs="+", metavar="COMMAND", help="Commands t
 parser.add_argument("--packages", nargs="+", metavar="PACKAGE", help="APT packages to install on host upon startup")
 parser.add_argument("--ssh-key-name")
 parser.add_argument("--no-verify-ssh-key-pem-file", dest="verify_ssh_key_pem_file", action="store_false")
-parser.add_argument("--ami", help="AMI to use for the instance. Default: the most recently built AMI in the account")
+parser.add_argument("--ami", help="AMI to use for the instance. Default: " + resolve_ami.__doc__)
 parser.add_argument("--ami-tags", nargs="+", metavar="NAME=VALUE", help="Use the most recent AMI with these tags")
 parser.add_argument("--spot", action="store_true")
 parser.add_argument("--duration-hours", type=float, help="Terminate the spot instance after this number of hours")
@@ -193,7 +193,7 @@ parser.add_argument("--client-token", help="Token used to identify your instance
 parser.add_argument("--subnet")
 parser.add_argument("--availability-zone", "--az")
 parser.add_argument("--security-groups", nargs="+", metavar="SECURITY_GROUP")
-parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE")
+parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE", help="Tags to apply to launched instances.")
 parser.add_argument("--wait-for-ssh", action="store_true",
                     help="Wait for launched instance to begin accepting SSH connections. Security groups and NACLs must permit SSH from launching host.")  # noqa
 parser.add_argument("--storage", nargs="+", metavar="MOUNTPOINT=SIZE_GB",
