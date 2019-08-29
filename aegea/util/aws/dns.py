@@ -33,8 +33,10 @@ class DNSZone(VerboseRepr):
                                                          VPC=dict(VPCRegion=ARN.get_region(), VPCId=vpc.vpc_id))
                 self.zone = res["HostedZone"]
             else:
-                msg = "Found {} private DNS zones; unable to determine zone to use. Set the dns.private_zone key in Aegea config" # noqa
-                raise AegeaException(msg.format(len(private_zones)))
+                msg = ("Found multiple private DNS zones: {}. "
+                       'Unable to determine zone to use. Please use the "--no-dns" option '
+                       'or run "aegea configure set dns.private_zone ZONE_NAME" to set the zone to use.')
+                raise AegeaException(msg.format(", ".join('"{}"'.format(zone["Name"]) for zone in private_zones)))
         else:
             raise AegeaException("Unable to determine DNS zone to use")
         self.zone_id = os.path.basename(self.zone["Id"])
