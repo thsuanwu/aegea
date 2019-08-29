@@ -43,6 +43,10 @@ def get_linux_username():
     return username
 
 def ssh(args):
+    if "ServerAliveInterval" not in " ".join(args.ssh_args):
+        args.ssh_args.extend(["-o", "ServerAliveInterval={}".format(args.server_alive_interval)])
+    if "ServerAliveCountMax" not in " ".join(args.ssh_args):
+        args.ssh_args.extend(["-o", "ServerAliveCountMax={}".format(args.server_alive_count_max)])
     prefix, at, name = args.name.rpartition("@")
     ssh_args = ["ssh", prefix + at + resolve_instance_public_dns(name)]
     if not (prefix or at):
@@ -56,6 +60,8 @@ ssh_parser = register_parser(ssh, help="Connect to an EC2 instance", description
 ssh_parser.add_argument("name")
 ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER,
                         help="Arguments to pass to ssh; please see " + BOLD("man ssh") + " for details")
+ssh_parser.add_argument("--server-alive-interval", help=argparse.SUPPRESS)
+ssh_parser.add_argument("--server-alive-count-max", help=argparse.SUPPRESS)
 
 def scp(args):
     """

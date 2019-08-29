@@ -619,6 +619,10 @@ launch:
   packages: []
   cloud_config_data: {}
 
+ssh:
+  server_alive_interval: 15
+  server_alive_count_max: 20
+
 managed_iam_groups:
   aegea.launch:
     - AmazonEC2FullAccess
