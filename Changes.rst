@@ -1,3 +1,8 @@
+Changes for v2.5.2 (2019-08-28)
+===============================
+
+-  aegea ssh: turn on ServerAliveInterval by default
+
 Changes for v2.5.1 (2019-08-07)
 ===============================
 
