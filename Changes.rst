@@ -1,3 +1,8 @@
+Changes for v2.5.3 (2019-08-29)
+===============================
+
+-  aegea launch: Improve help in DNS error message
+
 Changes for v2.5.2 (2019-08-28)
 ===============================
 
