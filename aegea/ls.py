@@ -120,8 +120,11 @@ parser = register_filtering_parser(acls, help="List EC2 network ACLs")
 
 def print_log_events(args):
     streams = []
-    for stream in paginate(clients.logs.get_paginator("describe_log_streams"),
-                           logGroupName=args.log_group, orderBy="LastEventTime", descending=True):
+    if args.log_stream:
+        describe_log_streams_args = dict(logGroupName=args.log_group, logStreamNamePrefix=args.log_stream)
+    else:
+        describe_log_streams_args = dict(logGroupName=args.log_group, orderBy="LastEventTime", descending=True)
+    for stream in paginate(clients.logs.get_paginator("describe_log_streams"), **describe_log_streams_args):
         stream_name = stream["arn"].split(":")[-1]
         first_event_ts = datetime.utcfromtimestamp(stream.get("firstEventTimestamp", 0) // 1000)
         last_event_ts = datetime.utcfromtimestamp(stream.get("lastEventTimestamp", 0) // 1000)
