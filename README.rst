@@ -72,7 +72,7 @@ Aegea ECS Run
 ~~~~~~~~~~~~~
 The `ECS Fargate <https://aws.amazon.com/fargate/>`_ API is an interface to the AWS container-based virtualization platform,
 Firecracker. ECS Fargate allows you to run workloads in fully managed containers: no instances run in your account; you are billed by
-the minute of container use, and containers usually start up within 20 seconds. Use the ``aegea ecs run`` command to interact with
+the second of container use, and containers usually start up within 20 seconds. Use the ``aegea ecs run`` command to interact with
 ECS Fargate. Most ``aegea batch`` semantics are applicable to ``aegea ecs``, which interacts with ECS via the "one shot"
 `ECS RunTask <https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_RunTask.html>`_ API.
 
