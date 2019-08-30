@@ -168,7 +168,8 @@ def get_command_and_env(args):
             Params=dict(Bucket=bucket.name, Key=key_name),
             ExpiresIn=3600 * 24 * 7
         )
-        shellcode += ['BATCH_SCRIPT=$(mktemp --tmpdir "$AWS_BATCH_CE_NAME.$AWS_BATCH_JQ_NAME.$AWS_BATCH_JOB_ID.XXXXX")',
+        tmpdir_fmt = "${AWS_BATCH_CE_NAME:-$AWS_EXECUTION_ENV}.${AWS_BATCH_JQ_NAME:-}.${AWS_BATCH_JOB_ID:-}.XXXXX"
+        shellcode += ['BATCH_SCRIPT=$(mktemp --tmpdir "{tmpdir_fmt}")'.format(tmpdir_fmt=tmpdir_fmt),
                       "apt-get update -qq",
                       "apt-get install -qqy --no-install-suggests --no-install-recommends curl ca-certificates gnupg",
                       "curl '{payload_url}' > $BATCH_SCRIPT".format(payload_url=payload_url),

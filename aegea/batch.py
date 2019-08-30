@@ -221,7 +221,8 @@ def add_job_defn_args(parser):
                         help="Separate ulimit name and value with colon, for example: --ulimits nofile:20000",
                         default=["nofile:100000"])
     img_group = parser.add_mutually_exclusive_group()
-    img_group.add_argument("--image", default="ubuntu", help="Docker image URL to use for running job/task")
+    img_group.add_argument("--image", default="ubuntu", metavar="DOCKER_IMAGE",
+                           help="Docker image URL to use for running job/task")
     ecs_img_help = "Name of Docker image residing in this account's Elastic Container Registry"
     ecs_img_arg = img_group.add_argument("--ecs-image", "--ecr-image", "-i", metavar="REPO[:TAG]", help=ecs_img_help)
     ecs_img_arg.completer = ecr_image_name_completer
