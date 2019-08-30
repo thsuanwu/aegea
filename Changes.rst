@@ -1,3 +1,8 @@
+Changes for v2.5.6 (2019-08-30)
+===============================
+
+-  aegea ecs run: set trust policy; allow IAM policies to be updated
+
 Changes for v2.5.5 (2019-08-30)
 ===============================
 
