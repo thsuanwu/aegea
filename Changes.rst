@@ -1,3 +1,10 @@
+Changes for v2.5.4 (2019-08-29)
+===============================
+
+-  aegea ecs watch: Fix for breaking change in ECS API
+
+-  aegea logs: fix bug where log_stream was ignored
+
 Changes for v2.5.3 (2019-08-29)
 ===============================
 
