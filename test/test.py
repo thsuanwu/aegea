@@ -164,6 +164,38 @@ class TestAegea(unittest.TestCase):
                                   {"Action": [], "Effect": "Deny"}]}
         self.assertEqual(json.loads(str(policy)), expected)
 
+        policy = IAMPolicyBuilder(expected)
+        self.assertEqual(json.loads(str(policy)), expected)
+        self.assertEqual(len(policy.policy["Statement"]), 2)
+        policy.add_statement(principal="arn:aws:iam::account-id:user/foo",
+                             action=["s3:GetObject", "s3:PutObject"],
+                             resource=["arn:aws:s3:::examplebucket"])
+        self.assertEqual(len(policy.policy["Statement"]), 2)
+        policy.add_statement(principal="arn:aws:iam::account-id:user/foo",
+                             action="s3:GetObject",
+                             resource="arn:aws:s3:::examplebucket")
+        self.assertEqual(len(policy.policy["Statement"]), 2)
+        policy.add_statement(principal="arn:aws:iam::account-id:user/foo",
+                             action=["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+                             resource=["arn:aws:s3:::examplebucket"])
+        self.assertEqual(len(policy.policy["Statement"]), 3)
+        policy.add_statement(principal="arn:aws:iam::account-id:user/foo",
+                             action=["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+                             resource=["arn:aws:s3:::examplebucket"])
+        self.assertEqual(len(policy.policy["Statement"]), 3)
+        policy.add_statement(principal="arn:aws:iam::account-id:user/foo",
+                             action=["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+                             resource=["arn:aws:s3:::examplebucket2"])
+        self.assertEqual(len(policy.policy["Statement"]), 4)
+        policy.add_statement(principal="arn:aws:iam::account-id:user/bar",
+                             action=["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+                             resource=["arn:aws:s3:::examplebucket2"])
+        self.assertEqual(len(policy.policy["Statement"]), 5)
+        policy.add_statement(effect="Deny")
+        self.assertEqual(len(policy.policy["Statement"]), 6)
+        policy.add_statement()
+        self.assertEqual(len(policy.policy["Statement"]), 7)
+
     def test_aws_utils(self):
         if not USING_PYTHON2:
             self.assertTrue(isinstance(get_ondemand_price_usd("us-east-1", "t2.micro"), str))

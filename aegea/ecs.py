@@ -82,7 +82,7 @@ def run(args):
     set_volumes(args, container_defn)
     set_ulimits(args, container_defn)
     exec_role = ensure_iam_role(args.execution_role, trust=["ecs-tasks"], policies=["service-role/AWSBatchServiceRole"])
-    task_role = ensure_iam_role(args.task_role)
+    task_role = ensure_iam_role(args.task_role, trust=["ecs-tasks"])
     clients.ecs.register_task_definition(family=args.task_name,
                                          containerDefinitions=[container_defn],
                                          requiresCompatibilities=["FARGATE"],

@@ -15,18 +15,6 @@ from ..exceptions import AegeaException
 from ..compat import str
 from . import clients, resources
 
-def get_assume_role_policy_doc(*principals):
-    # See http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Principal
-    p = IAMPolicyBuilder()
-    for principal in principals:
-        if isinstance(principal, dict):
-            p.add_statement(principal=principal, action="sts:AssumeRole")
-        elif hasattr(principal, "arn"):
-            p.add_statement(principal={"AWS": principal.arn}, action="sts:AssumeRole")
-        else:
-            p.add_statement(principal={"Service": principal + ".amazonaws.com"}, action="sts:AssumeRole")
-    return json.dumps(p.policy)
-
 def locate_ami(product, region=None, channel="releases", stream="released", root_store="ssd", virt="hvm"):
     """
     Examples::
@@ -209,16 +197,50 @@ class ARN:
         return ":".join(getattr(self, field) for field in self.fields)
 
 class IAMPolicyBuilder:
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.policy = dict(Version="2012-10-17", Statement=[])
+        if args:
+            if len(args) > 1 or not isinstance(args[0], dict):
+                raise AegeaException("IAMPolicyBuilder: Expected one policy document")
+            self.policy = json.loads(json.dumps(args[0]))
         if kwargs:
             self.add_statement(**kwargs)
 
+    def contains(self, principal, action, effect, resource):
+        for statement in self.policy["Statement"]:
+            if "Condition" in statement or "NotAction" in statement or "NotResource" in statement:
+                continue
+
+            if statement.get("Principal") != principal or statement.get("Effect") != effect:
+                continue
+
+            if isinstance(statement.get("Action"), list) and isinstance(action, list):
+                if not set(action).issubset(statement["Action"]):
+                    continue
+            elif isinstance(statement.get("Action"), list) and isinstance(action, str):
+                if action not in statement["Action"]:
+                    continue
+            elif action != statement.get("Action"):
+                continue
+
+            if isinstance(statement.get("Resource"), list) and isinstance(resource, list):
+                if not set(resource).issubset(statement["Resource"]):
+                    continue
+            elif isinstance(statement.get("Resource"), list) and isinstance(resource, str):
+                if resource not in statement["Resource"]:
+                    continue
+            elif resource != statement.get("Resource"):
+                continue
+
+            return True
+
     def add_statement(self, principal=None, action=None, effect="Allow", resource=None):
+        if principal and not isinstance(principal, dict):
+            principal = dict(AWS=principal)
+        if self.contains(principal=principal, action=action, effect=effect, resource=resource):
+            return
         statement = dict(Action=[], Effect=effect)
         if principal:
-            if not isinstance(principal, dict):
-                principal = dict(AWS=principal)
             statement["Principal"] = principal
         self.policy["Statement"].append(statement)
         if action:
@@ -235,13 +257,29 @@ class IAMPolicyBuilder:
         self.policy["Statement"][-1].setdefault("Resource", [])
         self.policy["Statement"][-1]["Resource"].append(resource)
 
+    def add_assume_role_principals(self, principals):
+        # See http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Principal
+        for principal in principals:
+            if isinstance(principal, dict):
+                self.add_statement(principal=principal, action="sts:AssumeRole")
+            elif hasattr(principal, "arn"):
+                self.add_statement(principal={"AWS": principal.arn}, action="sts:AssumeRole")
+            else:
+                self.add_statement(principal={"Service": principal + ".amazonaws.com"}, action="sts:AssumeRole")
+
     def __str__(self):
         return json.dumps(self.policy)
 
 def ensure_iam_role(name, policies=frozenset(), trust=frozenset()):
-    return ensure_iam_entity(name, policies=policies, collection=resources.iam.roles,
+    role = ensure_iam_entity(name, policies=policies, collection=resources.iam.roles,
                              constructor=resources.iam.create_role, RoleName=name,
-                             AssumeRolePolicyDocument=get_assume_role_policy_doc(*trust))
+                             AssumeRolePolicyDocument=str(IAMPolicyBuilder().add_assume_role_principals(trust)))
+    trust_policy = IAMPolicyBuilder(role.assume_role_policy_document)
+    trust_policy.add_assume_role_principals(trust)
+    if trust_policy.policy != role.assume_role_policy_document:
+        logger.debug("Updating trust policy for %s", role)
+        role.AssumeRolePolicy().update(PolicyDocument=str(trust_policy))
+    return role
 
 def ensure_iam_group(name, policies=frozenset()):
     return ensure_iam_entity(name, policies=policies, collection=resources.iam.groups,
