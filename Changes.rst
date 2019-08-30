@@ -1,3 +1,8 @@
+Changes for v2.5.5 (2019-08-30)
+===============================
+
+-  aegea ecs run: fix –execute env var expectations
+
 Changes for v2.5.4 (2019-08-29)
 ===============================
 
