@@ -214,20 +214,16 @@ class IAMPolicyBuilder:
             if statement.get("Principal") != principal or statement.get("Effect") != effect:
                 continue
 
-            if isinstance(statement.get("Action"), list) and isinstance(action, list):
-                if not set(action).issubset(statement["Action"]):
-                    continue
-            elif isinstance(statement.get("Action"), list) and isinstance(action, str):
-                if action not in statement["Action"]:
+            if isinstance(statement.get("Action"), list):
+                actions = set(action) if isinstance(action, list) else set([action])
+                if not actions.issubset(statement["Action"]):
                     continue
             elif action != statement.get("Action"):
                 continue
 
-            if isinstance(statement.get("Resource"), list) and isinstance(resource, list):
-                if not set(resource).issubset(statement["Resource"]):
-                    continue
-            elif isinstance(statement.get("Resource"), list) and isinstance(resource, str):
-                if resource not in statement["Resource"]:
+            if isinstance(statement.get("Resource"), list):
+                resources = set(resource) if isinstance(resource, list) else set([resource])
+                if not resources.issubset(statement["Resource"]):
                     continue
             elif resource != statement.get("Resource"):
                 continue
