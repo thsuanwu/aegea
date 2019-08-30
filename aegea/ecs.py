@@ -135,20 +135,25 @@ def format_task_status(status):
     return task_status_colors[status] + status + ENDC()
 
 def watch(args):
-    task_uuid = ARN(args.task_arn).resource.split("/")[1]
-    logger.info("Watching task %s (%s)", task_uuid, args.cluster)
-    last_status = None
+    _, _, task_id = ARN(args.task_arn).resource.split("/")
+    logger.info("Watching task %s (%s)", task_id, args.cluster)
+    last_status, events_received = None, 0
     while last_status != "STOPPED":
-        task_desc = clients.ecs.describe_tasks(cluster=args.cluster, tasks=[args.task_arn])["tasks"][0]
-        if task_desc["lastStatus"] != last_status:
-            logger.info("Task %s %s", args.task_arn, format_task_status(task_desc["lastStatus"]))
-            last_status = task_desc["lastStatus"]
+        res = clients.ecs.describe_tasks(cluster=args.cluster, tasks=[args.task_arn])
+        if len(res["tasks"]) == 1:
+            task_desc = res["tasks"][0]
+            if task_desc["lastStatus"] != last_status:
+                logger.info("Task %s %s", args.task_arn, format_task_status(task_desc["lastStatus"]))
+                last_status = task_desc["lastStatus"]
         try:
-            for event in CloudwatchLogReader("/".join([args.task_name, args.task_name, task_uuid]),
+            for event in CloudwatchLogReader("/".join([args.task_name, args.task_name, task_id]),
                                              log_group_name=args.task_name):
                 print(str(Timestamp(event["timestamp"])), event["message"])
+                events_received += 1
         except ClientError as e:
             expect_error_codes(e, "ResourceNotFoundException")
+        if last_status is None and events_received > 0:
+            break  # Logs retrieved successfully but task record is no longer in ECS
         time.sleep(1)
 
 watch_parser = register_parser(watch, parent=ecs_parser, help="Monitor a running ECS Fargate task and stream its logs")
