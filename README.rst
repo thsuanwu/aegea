@@ -35,16 +35,11 @@ Before you do this, you will also need to install some system library dependenci
 Run ``aws configure`` to configure `IAM <https://aws.amazon.com/iam/>`_ access credentials that will be used by the
 ``aws`` and ``aegea`` commands. You can create a new IAM key at https://console.aws.amazon.com/iam/home#/users.
 
-**Ubuntu 12.04**: Use ``pip install cffi`` instead of ``apt-get install python-cffi``. Update your Python packaging utilities:
-``for p in six setuptools packaging pip setuptools; do pip install --upgrade $p; hash -r; done``.
-
 **Local install**: run ``make install`` in this directory.
 
 **No root access; user-local install**: Use ``make install_venv`` to install aegea in its own virtualenv. The last line of the 
 output shows how to activate the virtualenv. The version of virtualenv packaged in Ubuntu 12.04 is too old; use
 ``pip install --upgrade --user virtualenv`` to upgrade it.
-
-**OS X with Homebrew Python**: Run ``brew link --force openssl``.
 
 Aegea Batch
 ~~~~~~~~~~~
@@ -72,6 +67,14 @@ https://console.aws.amazon.com/batch/home?region=us-east-1#/compute-environments
 
 AWS Batch launches and manages `ECS <https://aws.amazon.com/ecs/>`_ host instances to execute your jobs. You can see the
 host instances by running ``aegea ls``.
+
+Aegea ECS Run
+~~~~~~~~~~~~~
+The `ECS Fargate <https://aws.amazon.com/fargate/>`_ API is an interface to the AWS container-based virtualization platform,
+Firecracker. ECS Fargate allows you to run workloads in fully managed containers: no instances run in your account; you are billed by
+the minute of container use, and containers usually start up within 20 seconds. Use the ``aegea ecs run`` command to interact with
+ECS Fargate. Most ``aegea batch`` semantics are applicable to ``aegea ecs``, which interacts with ECS via the "one shot"
+`ECS RunTask <https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_RunTask.html>`_ API.
 
 Configuration management
 ~~~~~~~~~~~~~~~~~~~~~~~~
