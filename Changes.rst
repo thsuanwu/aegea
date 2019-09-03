@@ -1,3 +1,10 @@
+Changes for v2.5.7 (2019-09-02)
+===============================
+
+-  aegea ecs run: utilize 4G scratch space
+
+-  aegea ecs run: forward exit code from container
+
 Changes for v2.5.6 (2019-08-30)
 ===============================
 
