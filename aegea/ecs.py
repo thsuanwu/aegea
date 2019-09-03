@@ -78,7 +78,8 @@ def run(args):
                           memory=args.memory,
                           command=command,
                           environment=environment,
-                          logConfiguration=log_config)
+                          logConfiguration=log_config,
+                          mountPoints=[dict(sourceVolume="scratch", containerPath="/mnt")])
     set_volumes(args, container_defn)
     set_ulimits(args, container_defn)
     exec_role = ensure_iam_role(args.execution_role, trust=["ecs-tasks"], policies=["service-role/AWSBatchServiceRole"])
@@ -90,7 +91,8 @@ def run(args):
                                          taskRoleArn=task_role.arn,
                                          networkMode="awsvpc",
                                          cpu=args.fargate_cpu,
-                                         memory=args.fargate_memory)
+                                         memory=args.fargate_memory,
+                                         volumes=[dict(name="scratch", host={})])
     network_config = {
         'awsvpcConfiguration': {
             'subnets': [
