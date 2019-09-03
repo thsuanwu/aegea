@@ -4,7 +4,7 @@ Manage AWS Elastic Container Service (ECS) resources, including Fargate tasks.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import argparse, time
+import argparse, time, json
 
 from botocore.exceptions import ClientError
 
@@ -109,7 +109,12 @@ def run(args):
         watch(watch_parser.parse_args([args.task_name, task_arn, "--cluster", args.cluster]))
     elif args.wait:
         raise NotImplementedError()
-    return res["tasks"][0]
+    if args.watch or args.wait:
+        res = clients.ecs.describe_tasks(cluster=args.cluster, tasks=[task_arn])
+        print(json.dumps(res["tasks"][0], indent=2, default=lambda x: str(x)))
+        return SystemExit(res["tasks"][0]["containers"][0]["exitCode"])
+    else:
+        return res["tasks"][0]
 
 register_parser_args = dict(parent=ecs_parser, help="Run a Fargate task")
 if not USING_PYTHON2:
