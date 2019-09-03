@@ -38,8 +38,7 @@ Run ``aws configure`` to configure `IAM <https://aws.amazon.com/iam/>`_ access c
 **Local install**: run ``make install`` in this directory.
 
 **No root access; user-local install**: Use ``make install_venv`` to install aegea in its own virtualenv. The last line of the 
-output shows how to activate the virtualenv. The version of virtualenv packaged in Ubuntu 12.04 is too old; use
-``pip install --upgrade --user virtualenv`` to upgrade it.
+output shows how to activate the virtualenv.
 
 Aegea Batch
 ~~~~~~~~~~~
