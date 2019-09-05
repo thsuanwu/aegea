@@ -13,7 +13,7 @@ from . import register_parser
 from .ls import add_name, filter_collection, filter_and_tabulate, register_filtering_parser
 from .util import Timestamp, paginate
 from .util.printing import format_table, page_output, get_field, get_cell, tabulate
-from .util.aws import ARN, resources, clients, ensure_vpc, ensure_subnet, resolve_instance_id, add_tags
+from .util.aws import ARN, resources, clients, ensure_vpc, ensure_subnet, resolve_instance_id, encode_tags
 from .util.compat import lru_cache
 
 def ebs(args):
@@ -39,8 +39,11 @@ def snapshots(args):
 parser = register_filtering_parser(snapshots, parent=ebs_parser, help="List EC2 EBS snapshots")
 
 def create(args):
-    tags = dict(tag.split("=", 1) for tag in args.tags)
+    if not args.size:
+        raise SystemExit("Argument --size-gb is required")
     create_args = dict(Size=args.size)
+    if args.tags:
+        create_args.update(TagSpecifications=[dict(ResourceType="volume", Tags=encode_tags(args.tags))])
     for arg in "dry_run snapshot_id availability_zone volume_type iops encrypted kms_key_id".split():
         if getattr(args, arg) is not None:
             create_args["".join(x.capitalize() for x in arg.split("_"))] = getattr(args, arg)
@@ -48,8 +51,6 @@ def create(args):
         create_args["AvailabilityZone"] = ensure_subnet(ensure_vpc()).availability_zone
     res = clients.ec2.create_volume(**create_args)
     clients.ec2.get_waiter('volume_available').wait(VolumeIds=[res["VolumeId"]])
-    if tags:
-        add_tags(resources.ec2.Volume(res["VolumeId"]), **tags)
     return res
 
 parser_create = register_parser(create, parent=ebs_parser, help="Create an EBS volume")
