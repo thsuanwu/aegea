@@ -1,3 +1,9 @@
+Changes for v2.6.0 (2019-09-06)
+===============================
+
+-  Updates to aegea ebs and aegea batch submit to better support EBS
+   volume management
+
 Changes for v2.5.8 (2019-09-06)
 ===============================
 
