@@ -10,12 +10,12 @@ from ... import __version__
 bash_cmd_preamble = ["/bin/bash", "-c", 'for i in "$@"; do eval "$i"; done', __name__]
 
 ebs_vol_mgr_shellcode = """
-sed -i -e "s|/archive.ubuntu.com|/%s.ec2.archive.ubuntu.com|g" /etc/apt/sources.list
-
-apt-get update
-apt-get install -y --no-install-suggests --no-install-recommends httpie awscli jq python3-{pip,setuptools,wheel}
-pip3 install aegea==%s
-aegea ebs create --size-gb %s --volume-type %s --format mkfs.ext4 --mount %s
+sed -i -e "s|/archive.ubuntu.com|/{region}.ec2.archive.ubuntu.com|g" /etc/apt/sources.list
+apt-get update -qq
+apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq python3-{{pip,setuptools,wheel}}
+pip3 install aegea=={aegea_version}
+trap "echo Detaching EBS volume at {mountpoint}; aegea ebs detach --unmount --delete {mountpoint}" EXIT
+aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --attach --format mkfs.ext4 --mount {mountpoint}
 """
 
 ebs_vol_mgr_shellcode = "\n".join(
@@ -49,6 +49,7 @@ def get_command_and_env(args):
         "set -a",
         "if [ -f /etc/environment ]; then source /etc/environment; fi",
         "if [ -f /etc/default/locale ]; then source /etc/default/locale; else export LC_ALL=C.UTF-8 LANG=C.UTF-8; fi",
+        "export AWS_DEFAULT_REGION=" + ARN.get_region(),
         "set +a",
         "if [ -f /etc/profile ]; then source /etc/profile; fi",
         "set -euo pipefail"
@@ -60,8 +61,11 @@ def get_command_and_env(args):
             volume_type = "st1"
             if args.volume_type:
                 volume_type = args.volume_type
-            ebs_vol_mgr_shellcode_vars = (ARN.get_region(), __version__, size_gb, volume_type, mountpoint)
-            shellcode += (ebs_vol_mgr_shellcode % ebs_vol_mgr_shellcode_vars).splitlines()
+            shellcode += (ebs_vol_mgr_shellcode.format(region=ARN.get_region(),
+                                                       aegea_version=__version__,
+                                                       size_gb=size_gb,
+                                                       volume_type=volume_type,
+                                                       mountpoint=mountpoint)).splitlines()
     elif args.efs_storage:
         args.privileged = True
         if "=" in args.efs_storage:

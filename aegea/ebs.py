@@ -44,6 +44,8 @@ def snapshots(args):
 parser = register_filtering_parser(snapshots, parent=ebs_parser, help="List EC2 EBS snapshots")
 
 def create(args):
+    if (args.format or args.mount) and not args.attach:
+        raise SystemExit("Arguments --format and --mount require --attach")
     if not args.size:
         raise SystemExit("Argument --size-gb is required")
     create_args = dict(Size=args.size)
@@ -60,7 +62,6 @@ def create(args):
     res = clients.ec2.create_volume(**create_args)
     clients.ec2.get_waiter("volume_available").wait(VolumeIds=[res["VolumeId"]])
     if args.attach:
-        print(parser_attach.parse_args([res["VolumeId"]], namespace=args))
         return attach(parser_attach.parse_args([res["VolumeId"]], namespace=args))
     return res
 
