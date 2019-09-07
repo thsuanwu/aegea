@@ -1,3 +1,8 @@
+Changes for v2.6.1 (2019-09-06)
+===============================
+
+-  aegea batch submit: EBS shellcode fixes
+
 Changes for v2.6.0 (2019-09-06)
 ===============================
 
