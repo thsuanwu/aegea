@@ -219,6 +219,7 @@ iam_policies:
 ebs_ls:
   resource: ec2
   subresource: Volume
+  sort_by: create_time
   columns:
     - id
     - size
