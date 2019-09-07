@@ -137,10 +137,10 @@ def attach(args):
                 time.sleep(1)
     if args.format:
         logger.info("Formatting %s (%s)", args.volume_id, find_devnode(args.volume_id))
-        subprocess.check_call(args.format + " " + find_devnode(args.volume_id), shell=True)
+        subprocess.check_call(args.format + " " + find_devnode(args.volume_id), shell=True, stdout=sys.stderr.buffer)
     if args.mount:
         logger.info("Mounting %s at %s", args.volume_id, args.mount)
-        subprocess.check_call(["mount", find_devnode(args.volume_id), args.mount])
+        subprocess.check_call(["mount", find_devnode(args.volume_id), args.mount], stdout=sys.stderr.buffer)
     return res
 parser_attach = register_parser(attach, parent=ebs_parser, help="Attach an EBS volume to an EC2 instance")
 parser_attach.add_argument("volume_id").completer = complete_volume_id

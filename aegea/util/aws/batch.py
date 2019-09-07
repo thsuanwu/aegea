@@ -14,8 +14,9 @@ sed -i -e "s|/archive.ubuntu.com|/{region}.ec2.archive.ubuntu.com|g" /etc/apt/so
 apt-get update -qq
 apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq python3-{{pip,setuptools,wheel}}
 pip3 install aegea=={aegea_version}
-trap "echo Detaching EBS volume at {mountpoint}; aegea ebs detach --unmount --delete {mountpoint}" EXIT
-aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --attach --format mkfs.ext4 --mount {mountpoint}
+aegea_ebs_cleanup() {{ echo Detaching EBS volume $aegea_ebs_vol_id; aegea ebs detach --unmount --delete $aegea_ebs_vol_id; }}
+trap aegea_ebs_cleanup EXIT
+aegea_ebs_vol_id=$(aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --attach --format mkfs.ext4 --mount {mountpoint} | jq -r .VolumeId)
 """
 
 ebs_vol_mgr_shellcode = "\n".join(
