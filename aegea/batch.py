@@ -246,7 +246,9 @@ group.add_argument("--job-role", metavar="IAM_ROLE", default=__name__ + ".worker
 group.add_argument("--storage", nargs="+", metavar="MOUNTPOINT=SIZE_GB",
                    type=lambda x: x.rstrip("GBgb").split("=", 1), default=[])
 group.add_argument("--efs-storage", action="store", dest="efs_storage", default=False,
-                   help="mount nfs drive to the mount point specified. i.e. --efs-storage /mnt")
+                   help="Mount EFS network filesystem to the mount point specified. Example: --efs-storage /mnt")
+group.add_argument("--mount-instance-storage", nargs="?", const="/mnt",
+                   help="Assemble (MD RAID0), format and mount ephemeral instance storage on this mount point")
 submit_parser.add_argument("--timeout",
                            help="Terminate (and possibly restart) the job after this time (use suffix s, m, h, d, w)")
 submit_parser.add_argument("--retry-attempts", type=int, default=1,

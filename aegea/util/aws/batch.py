@@ -9,25 +9,40 @@ from ... import __version__
 
 bash_cmd_preamble = ["/bin/bash", "-c", 'for i in "$@"; do eval "$i"; done', __name__]
 
-ebs_vol_mgr_shellcode = """
+env_mgr_shellcode = """
+set -a
+if [ -f /etc/environment ]; then source /etc/environment; fi
+if [ -f /etc/default/locale ]; then source /etc/default/locale; else export LC_ALL=C.UTF-8 LANG=C.UTF-8; fi
+export AWS_DEFAULT_REGION={region}
+set +a
+if [ -f /etc/profile ]; then source /etc/profile; fi
+set -euo pipefail
+"""
+
+apt_mgr_shellcode = """
 sed -i -e "s|/archive.ubuntu.com|/{region}.ec2.archive.ubuntu.com|g" /etc/apt/sources.list
-apt-get update -qq
+apt-get update -qq"""
+
+ebs_vol_mgr_shellcode = apt_mgr_shellcode + """
 apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq python3-{{pip,setuptools,wheel}}
 pip3 install aegea=={aegea_version}
 aegea_ebs_cleanup() {{ echo Detaching EBS volume $aegea_ebs_vol_id; aegea ebs detach --unmount --delete $aegea_ebs_vol_id; }}
 trap aegea_ebs_cleanup EXIT
 aegea_ebs_vol_id=$(aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --attach --format mkfs.ext4 --mount {mountpoint} | jq -r .VolumeId)
-"""
-
-ebs_vol_mgr_shellcode = "\n".join(
-    [l.strip() for l in ebs_vol_mgr_shellcode.replace("\\\n", "").splitlines() if l.strip() and not l.startswith("#")]
-)
+"""  # noqa
 
 efs_vol_shellcode = """mkdir -p {efs_mountpoint}
 MAC=$(curl http://169.254.169.254/latest/meta-data/mac)
 export SUBNET_ID=$(curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/$MAC/subnet-id)
 NFS_ENDPOINT=$(echo "$AEGEA_EFS_DESC" | jq -r ".[] | select(.SubnetId == env.SUBNET_ID) | .IpAddress")
 mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 $NFS_ENDPOINT:/ {efs_mountpoint}"""
+
+instance_storage_mgr_shellcode = apt_mgr_shellcode + """
+apt-get install -qqy --no-install-suggests --no-install-recommends mdadm
+aegea_bd=(/dev/disk/by-id/nvme-Amazon_EC2_NVMe_Instance_Storage_*)
+if [ ! -e /dev/md0 ]; then mdadm --create /dev/md0 --force --auto=yes --level=0 --chunk=256 --raid-devices=${{#aegea_bd[@]}} ${{aegea_bd[@]}}; mkfs.ext4 -L aegea-ephemeral -E lazy_itable_init,lazy_journal_init /dev/md0; fi
+mount -L aegea-ephemeral {mountpoint}
+"""  # noqa
 
 def ensure_dynamodb_table(name, hash_key_name, read_capacity_units=5, write_capacity_units=5):
     try:
@@ -46,27 +61,23 @@ def ensure_dynamodb_table(name, hash_key_name, read_capacity_units=5, write_capa
 
 def get_command_and_env(args):
     # shellcode = ['for var in ${{!AWS_BATCH_@}}; do echo "{}.env.$var=${{!var}}"; done'.format(__name__)]
-    shellcode = [
-        "set -a",
-        "if [ -f /etc/environment ]; then source /etc/environment; fi",
-        "if [ -f /etc/default/locale ]; then source /etc/default/locale; else export LC_ALL=C.UTF-8 LANG=C.UTF-8; fi",
-        "export AWS_DEFAULT_REGION=" + ARN.get_region(),
-        "set +a",
-        "if [ -f /etc/profile ]; then source /etc/profile; fi",
-        "set -euo pipefail"
-    ]
-    if args.storage:
+    shellcode = env_mgr_shellcode.strip().format(region=ARN.get_region()).splitlines()
+    if args.mount_instance_storage or args.storage:
         args.privileged = True
         args.volumes.append(["/dev", "/dev"])
+    if args.mount_instance_storage:
+        shellcode += instance_storage_mgr_shellcode.strip().format(region=ARN.get_region(),
+                                                                   mountpoint=args.mount_instance_storage).splitlines()
+    if args.storage:
         for mountpoint, size_gb in args.storage:
             volume_type = "st1"
             if args.volume_type:
                 volume_type = args.volume_type
-            shellcode += (ebs_vol_mgr_shellcode.format(region=ARN.get_region(),
-                                                       aegea_version=__version__,
-                                                       size_gb=size_gb,
-                                                       volume_type=volume_type,
-                                                       mountpoint=mountpoint)).splitlines()
+            shellcode += ebs_vol_mgr_shellcode.format(region=ARN.get_region(),
+                                                      aegea_version=__version__,
+                                                      size_gb=size_gb,
+                                                      volume_type=volume_type,
+                                                      mountpoint=mountpoint).splitlines()
     elif args.efs_storage:
         args.privileged = True
         if "=" in args.efs_storage:
