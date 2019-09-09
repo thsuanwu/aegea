@@ -1,3 +1,8 @@
+Changes for v2.6.5 (2019-09-09)
+===============================
+
+-  Add aegea batch update-compute-environment
+
 Changes for v2.6.4 (2019-09-09)
 ===============================
 
