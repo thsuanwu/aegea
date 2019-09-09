@@ -102,6 +102,22 @@ cce_parser.add_argument("--service-role", default=__name__ + ".service")
 cce_parser.add_argument("--ecs-container-instance-ami")
 cce_parser.add_argument("--ecs-container-instance-ami-tags")
 
+def update_compute_environment(args):
+    update_compute_environment_args = dict(computeEnvironment=args.name, computeResources={})
+    if args.min_vcpus:
+        update_compute_environment_args["computeResources"].update(minvCpus=args.min_vcpus)
+    if args.desired_vcpus:
+        update_compute_environment_args["computeResources"].update(desiredvCpus=args.desired_vcpus)
+    if args.max_vcpus:
+        update_compute_environment_args["computeResources"].update(maxvCpus=args.max_vcpus)
+    return clients.batch.update_compute_environment(**update_compute_environment_args)
+
+uce_parser = register_parser(update_compute_environment, parent=batch_parser, help="Update a Batch compute environment")
+uce_parser.add_argument("name")
+uce_parser.add_argument("--min-vcpus", type=int)
+uce_parser.add_argument("--desired-vcpus", type=int)
+uce_parser.add_argument("--max-vcpus", type=int)
+
 def delete_compute_environment(args):
     clients.batch.update_compute_environment(computeEnvironment=args.name, state="DISABLED")
     wtr = make_waiter(clients.batch.describe_compute_environments, "computeEnvironments[].status", "VALID", "pathAny")
