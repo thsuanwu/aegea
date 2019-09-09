@@ -1,3 +1,9 @@
+Changes for v2.6.3 (2019-09-09)
+===============================
+
+-  aegea.util.aws.ensure_iam_role: Fix trust policy handling bug for new
+   roles
+
 Changes for v2.6.2 (2019-09-08)
 ===============================
 
