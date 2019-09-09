@@ -326,6 +326,8 @@ def watch(args):
             get_logs(args)
         if "statusReason" in job_desc:
             logger.info("Job %s: %s", args.job_id, job_desc["statusReason"])
+        if job_desc.get("container", {}).get("exitCode"):
+            return SystemExit(job_desc["container"]["exitCode"])
         time.sleep(1)
 
 get_logs_parser = register_parser(get_logs, parent=batch_parser, help="Retrieve logs for a Batch job")
