@@ -1,3 +1,8 @@
+Changes for v2.6.2 (2019-09-08)
+===============================
+
+-  aegea batch: Use ephemeral storage
+
 Changes for v2.6.1 (2019-09-06)
 ===============================
 
