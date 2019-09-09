@@ -1,3 +1,8 @@
+Changes for v2.6.4 (2019-09-09)
+===============================
+
+-  aegea batch watch: Forward exit code from job
+
 Changes for v2.6.3 (2019-09-09)
 ===============================
 
