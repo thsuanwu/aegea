@@ -267,9 +267,11 @@ class IAMPolicyBuilder:
         return json.dumps(self.policy)
 
 def ensure_iam_role(name, policies=frozenset(), trust=frozenset()):
+    assume_role_policy = IAMPolicyBuilder()
+    assume_role_policy.add_assume_role_principals(trust)
     role = ensure_iam_entity(name, policies=policies, collection=resources.iam.roles,
                              constructor=resources.iam.create_role, RoleName=name,
-                             AssumeRolePolicyDocument=str(IAMPolicyBuilder().add_assume_role_principals(trust)))
+                             AssumeRolePolicyDocument=str(assume_role_policy))
     trust_policy = IAMPolicyBuilder(role.assume_role_policy_document)
     trust_policy.add_assume_role_principals(trust)
     if trust_policy.policy != role.assume_role_policy_document:
