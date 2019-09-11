@@ -10,7 +10,9 @@ sys.path.insert(0, pkg_root)  # noqa
 import aegea
 from aegea.util import Timestamp
 from aegea.util.cloudinit import get_user_data
-from aegea.util.aws import resolve_ami, IAMPolicyBuilder, locate_ami, get_ondemand_price_usd, ARN, get_public_ip_ranges
+from aegea.util.aws import (resolve_ami, IAMPolicyBuilder, locate_ami, get_ondemand_price_usd, ARN,
+                            get_public_ip_ranges, ensure_s3_bucket, encode_tags, decode_tags, filter_by_tags,
+                            clients, resources, get_bdm, get_iam_role_for_instance, make_waiter)
 from aegea.util.aws.dns import DNSZone
 from aegea.util.aws.spot import SpotFleetBuilder
 from aegea.util.exceptions import AegeaException
@@ -213,6 +215,18 @@ class TestAegea(unittest.TestCase):
         d = dict(x={}, y=[1, 2])
         c = Config(save_on_exit=False, _parent=self, _data=d)
         self.assertEquals(get_user_data(foo=c, bar=2), get_user_data(bar=2, foo=c))
+        ensure_s3_bucket()
+        self.assertEqual(encode_tags(["foo=bar"]), [{'Key': 'foo', 'Value': 'bar'}])
+        self.assertEqual(encode_tags(dict(foo="bar")), [{'Key': 'foo', 'Value': 'bar'}])
+        self.assertEqual(decode_tags([dict(Key="foo", Value="bar")]), {'foo': 'bar'})
+        filter_by_tags(resources.ec2.instances, Name="")
+        self.assertEqual(get_bdm(),
+                         [dict(VirtualName="ephemeral" + str(i), DeviceName="xvd" + chr(ord("b") + i))
+                          for i in range(12)])
+        # for instance in resources.ec2.instances.all():
+        #     get_iam_role_for_instance(instance.id)
+        #     break
+        make_waiter(clients.efs.describe_file_systems, "FileSystems[].LifeCycleState", "available", "pathAny")
 
     def test_locate_ami(self):
         self.assertTrue(locate_ami("com.ubuntu.cloud:server:16.04:amd64", "us-east-1").startswith("ami-"))
