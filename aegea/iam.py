@@ -43,10 +43,19 @@ def users(args):
             return "Enabled" if list(row.mfa_devices.all()) else "Disabled"
         except botocore.exceptions.ClientError:
             return "Unknown"
+
+    def describe_access_keys(cell):
+        return ", ".join([k.id + ": " + k.status for k in cell.all()])
+
     users = list(resources.iam.users.all())
     for user in users:
         user.cur, user.mfa = "", ""
-    cell_transforms = {"cur": mark_cur_user, "policies": get_policies_for_principal, "mfa": describe_mfa}
+    cell_transforms = {
+        "cur": mark_cur_user,
+        "policies": get_policies_for_principal,
+        "mfa": describe_mfa,
+        "access_keys": describe_access_keys
+    }
     page_output(tabulate(users, args, cell_transforms=cell_transforms))
 
 parser = register_listing_parser(users, parent=iam_parser, help="List IAM users")

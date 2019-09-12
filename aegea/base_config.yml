@@ -183,6 +183,7 @@ iam_users:
     - groups
     - policies
     - mfa
+    - access_keys
 
 iam_groups:
   resource: iam
