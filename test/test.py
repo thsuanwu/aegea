@@ -215,7 +215,7 @@ class TestAegea(unittest.TestCase):
         d = dict(x={}, y=[1, 2])
         c = Config(save_on_exit=False, _parent=self, _data=d)
         self.assertEquals(get_user_data(foo=c, bar=2), get_user_data(bar=2, foo=c))
-        ensure_s3_bucket()
+        # ensure_s3_bucket()
         self.assertEqual(encode_tags(["foo=bar"]), [{'Key': 'foo', 'Value': 'bar'}])
         self.assertEqual(encode_tags(dict(foo="bar")), [{'Key': 'foo', 'Value': 'bar'}])
         self.assertEqual(decode_tags([dict(Key="foo", Value="bar")]), {'foo': 'bar'})
