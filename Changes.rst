@@ -1,3 +1,12 @@
+Changes for v2.6.6 (2019-09-12)
+===============================
+
+-  Correctly process ebs_vol_mgr_shellcode string
+
+-  aegea iam users: print access keys
+
+-  aegea ecs run: Allow Fargate executor to fetch ECR images
+
 Changes for v2.6.5 (2019-09-09)
 ===============================
 
