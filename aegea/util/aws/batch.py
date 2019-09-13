@@ -73,11 +73,11 @@ def get_command_and_env(args):
             volume_type = "st1"
             if args.volume_type:
                 volume_type = args.volume_type
-            shellcode += ebs_vol_mgr_shellcode.format(region=ARN.get_region(),
-                                                      aegea_version=__version__,
-                                                      size_gb=size_gb,
-                                                      volume_type=volume_type,
-                                                      mountpoint=mountpoint).splitlines()
+            shellcode += ebs_vol_mgr_shellcode.strip().format(region=ARN.get_region(),
+                                                              aegea_version=__version__,
+                                                              size_gb=size_gb,
+                                                              volume_type=volume_type,
+                                                              mountpoint=mountpoint).splitlines()
     elif args.efs_storage:
         args.privileged = True
         if "=" in args.efs_storage:
