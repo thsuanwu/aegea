@@ -1,3 +1,8 @@
+Changes for v2.6.7 (2019-09-16)
+===============================
+
+-  aegea ebs: Use FS labels to track EBS volumes on non-NVMe instances
+
 Changes for v2.6.6 (2019-09-12)
 ===============================
 
