@@ -102,11 +102,16 @@ def find_volume_id(mountpoint):
     return re.search(r"Elastic_Block_Store_(vol[\w]+)", devnode_link).group(1).replace("vol", "vol-")
 
 def find_devnode(volume_id):
-    for devnode in os.listdir("/dev/disk/by-id"):
-        if "Elastic_Block_Store" in devnode and volume_id.replace("-", "") in devnode:
-            return "/dev/disk/by-id/" + devnode
-    else:
-        raise Exception("Could not find devnode for {}".format(volume_id))
+    if os.path.exists("/dev/disk/by-id"):
+        for devnode in os.listdir("/dev/disk/by-id"):
+            if "Elastic_Block_Store" in devnode and volume_id.replace("-", "") in devnode:
+                return "/dev/disk/by-id/" + devnode
+    if os.path.exists("/dev/disk/by-label/" + get_fs_label(volume_id)):
+        return "/dev/disk/by-label/" + get_fs_label(volume_id)
+    raise Exception("Could not find devnode for {}".format(volume_id))
+
+def get_fs_label(volume_id):
+    return "aegv" + volume_id[4:12]
 
 def attach(args):
     if args.instance is None:
@@ -137,7 +142,8 @@ def attach(args):
                 time.sleep(1)
     if args.format:
         logger.info("Formatting %s (%s)", args.volume_id, find_devnode(args.volume_id))
-        subprocess.check_call(args.format + " " + find_devnode(args.volume_id), shell=True, stdout=sys.stderr.buffer)
+        command = args.format + " -L " + get_fs_label(args.volume_id) + " " + find_devnode(args.volume_id)
+        subprocess.check_call(command, shell=True, stdout=sys.stderr.buffer)
     if args.mount:
         logger.info("Mounting %s at %s", args.volume_id, args.mount)
         subprocess.check_call(["mount", find_devnode(args.volume_id), args.mount], stdout=sys.stderr.buffer)
