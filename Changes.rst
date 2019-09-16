@@ -1,3 +1,8 @@
+Changes for v2.6.8 (2019-09-16)
+===============================
+
+-  aegea ebs create: make return value invariant on options
+
 Changes for v2.6.7 (2019-09-16)
 ===============================
 
