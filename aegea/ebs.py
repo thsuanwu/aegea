@@ -62,7 +62,7 @@ def create(args):
     res = clients.ec2.create_volume(**create_args)
     clients.ec2.get_waiter("volume_available").wait(VolumeIds=[res["VolumeId"]])
     if args.attach:
-        return attach(parser_attach.parse_args([res["VolumeId"]], namespace=args))
+        attach(parser_attach.parse_args([res["VolumeId"]], namespace=args))
     return res
 
 parser_create = register_parser(create, parent=ebs_parser, help="Create an EBS volume")
