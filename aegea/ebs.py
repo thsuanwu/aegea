@@ -108,6 +108,9 @@ def find_devnode(volume_id):
                 return "/dev/disk/by-id/" + devnode
     if os.path.exists("/dev/disk/by-label/" + get_fs_label(volume_id)):
         return "/dev/disk/by-label/" + get_fs_label(volume_id)
+    attachment = resources.ec2.Volume(volume_id).attachments[0]
+    if get_metadata("instance-id") == attachment["InstanceId"] and os.path.exists("/dev/" + attachment["Device"]):
+        return "/dev/" + attachment["Device"]
     raise Exception("Could not find devnode for {}".format(volume_id))
 
 def get_fs_label(volume_id):
