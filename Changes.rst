@@ -1,3 +1,8 @@
+Changes for v2.6.9 (2019-09-16)
+===============================
+
+-  aegea ebs attach: Fall back to Xen device name
+
 Changes for v2.6.8 (2019-09-16)
 ===============================
 
