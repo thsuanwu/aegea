@@ -1,3 +1,8 @@
+Changes for v2.6.11 (2019-09-18)
+================================
+
+-  aegea ebs detach: continue on unmount failure
+
 Changes for v2.6.10 (2019-09-18)
 ================================
 
