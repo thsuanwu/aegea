@@ -28,7 +28,7 @@ apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli
 pip3 install aegea=={aegea_version}
 aegea_ebs_cleanup() {{ echo Detaching EBS volume $aegea_ebs_vol_id; aegea ebs detach --unmount --delete $aegea_ebs_vol_id; }}
 trap aegea_ebs_cleanup EXIT
-aegea_ebs_vol_id=$(aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --tags managedBy=aegea --attach --format mkfs.ext4 --mount {mountpoint} | jq -r .VolumeId)
+aegea_ebs_vol_id=$(aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --attach --format mkfs.ext4 --mount {mountpoint} | jq -r .VolumeId)
 """  # noqa
 
 efs_vol_shellcode = """mkdir -p {efs_mountpoint}

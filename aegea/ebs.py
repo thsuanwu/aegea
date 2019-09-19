@@ -73,7 +73,7 @@ parser_create.add_argument("--snapshot-id")
 parser_create.add_argument("--availability-zone")
 parser_create.add_argument("--encrypted", action="store_true")
 parser_create.add_argument("--kms-key-id")
-parser_create.add_argument("--tags", nargs="+", default=[], metavar="TAG_NAME=VALUE")
+parser_create.add_argument("--tags", nargs="+", metavar="TAG_NAME=VALUE")
 parser_create.add_argument("--attach", action="store_true",
                            help="Attach volume to this instance (only valid when running on EC2)")
 

@@ -217,6 +217,10 @@ iam_policies:
     - attachment_count
   sort_by: attachment_count
 
+ebs_create:
+  tags:
+    - managedBy=aegea
+
 ebs_ls:
   resource: ec2
   subresource: Volume
