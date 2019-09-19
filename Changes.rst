@@ -1,3 +1,8 @@
+Changes for v2.6.10 (2019-09-18)
+================================
+
+-  aegea ebs: Always print create response even if attach fails
+
 Changes for v2.6.9 (2019-09-16)
 ===============================
 
