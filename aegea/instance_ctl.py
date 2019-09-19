@@ -30,13 +30,12 @@ def reboot(args):
     clients.ec2.reboot_instances(InstanceIds=ids, DryRun=args.dry_run)
 
 def terminate(args):
-    dns_zone = DNSZone(config.dns.get("private_zone"))
     ids, names = resolve_instance_ids(args.names)
     clients.ec2.terminate_instances(InstanceIds=ids, DryRun=args.dry_run)
     for name in names:
         # FIXME: when terminating by id, look up and delete DNS name
         if not args.dry_run:
-            dns_zone.delete(name)
+            DNSZone().delete(name)
 
 def rename(args):
     """Supply two names: Existing instance name or ID, and new name to assign to the instance."""

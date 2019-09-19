@@ -48,8 +48,7 @@ def launch(args):
     if args.spot_price or args.duration_hours or args.cores or args.min_mem_per_core_gb:
         args.spot = True
     if args.use_dns:
-        dns_zone = DNSZone(config.dns.get("private_zone"))
-        config.dns.private_zone = dns_zone.zone["Name"]
+        dns_zone = DNSZone()
     ssh_key_name = ensure_ssh_key(name=args.ssh_key_name, base_name=__name__,
                                   verify_pem_file=args.verify_ssh_key_pem_file)
     # TODO: move all account init checks into init helper with region-specific semaphore on s3

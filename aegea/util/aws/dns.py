@@ -1,6 +1,6 @@
 import os, time
 
-from ... import logger
+from ... import config, logger
 from .. import VerboseRepr, paginate
 from ..exceptions import AegeaException
 from . import ARN, clients, ensure_vpc
@@ -12,34 +12,31 @@ def get_client_token(iam_username, service):
     return tok[:64]
 
 class DNSZone(VerboseRepr):
-    def __init__(self, zone_name=None, use_unique_private_zone=True, create_default_private_zone=True):
-        if zone_name:
-            self.zone = clients.route53.list_hosted_zones_by_name(DNSName=zone_name)["HostedZones"][0]
-            assert self.zone["Name"].rstrip(".") == zone_name.rstrip(".")
-        elif use_unique_private_zone:
-            private_zones = []
-            for zone in paginate(clients.route53.get_paginator("list_hosted_zones")):
-                if zone.get("Config", {}).get("PrivateZone") is True:
-                    private_zones.append(zone)
-            if len(private_zones) == 1:
-                self.zone = private_zones[0]
-            elif len(private_zones) == 0 and create_default_private_zone:
+    def __init__(self, zone_name=None, create_default_private_zone=True):
+        if zone_name is None:
+            zone_name = config.dns.private_zone
+        try:
+            self.zone = self.find(zone_name)
+        except AegeaException:
+            if zone_name == config.dns.private_zone and create_default_private_zone:
                 vpc = ensure_vpc()
                 vpc.modify_attribute(EnableDnsSupport=dict(Value=True))
                 vpc.modify_attribute(EnableDnsHostnames=dict(Value=True))
-                res = clients.route53.create_hosted_zone(Name="aegea.",
+                res = clients.route53.create_hosted_zone(Name=config.dns.private_zone,
                                                          CallerReference=get_client_token(None, "route53"),
                                                          HostedZoneConfig=dict(PrivateZone=True),
                                                          VPC=dict(VPCRegion=ARN.get_region(), VPCId=vpc.vpc_id))
                 self.zone = res["HostedZone"]
             else:
-                msg = ("Found multiple private DNS zones: {}. "
-                       'Unable to determine zone to use. Please use the "--no-dns" option '
-                       'or run "aegea configure set dns.private_zone ZONE_NAME" to set the zone to use.')
-                raise AegeaException(msg.format(", ".join('"{}"'.format(zone["Name"]) for zone in private_zones)))
-        else:
-            raise AegeaException("Unable to determine DNS zone to use")
+                raise AegeaException("Unable to determine DNS zone to use")
         self.zone_id = os.path.basename(self.zone["Id"])
+
+    @staticmethod
+    def find(zone_name):
+        zones = clients.route53.list_hosted_zones_by_name(DNSName=zone_name)["HostedZones"]
+        if len(zones) != 1 or zones[0]["Name"].rstrip(".") != zone_name.rstrip("."):
+            raise AegeaException('Route53 DNS Zone "{}" not found'.format(zone_name))
+        return zones[0]
 
     def update(self, names, values, action="UPSERT", record_type="CNAME", ttl=60):
         def format_rrs(name, value):
