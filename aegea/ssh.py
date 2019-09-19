@@ -12,7 +12,7 @@ the prompt to save the instance public key and the resulting transient
 MITM vulnerability.
 """
 
-import os, sys, argparse, subprocess, string, functools
+import os, sys, argparse, string
 
 from . import register_parser, logger
 from .util.aws import resolve_instance_id, resources, clients, ARN

@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys
-from . import register_parser, config
+from . import register_parser
 from .util.aws import resources, clients, resolve_instance_id, add_tags
 from .util.aws.dns import DNSZone
 

@@ -6,15 +6,13 @@ To delete EBS volumes or snapshots, use ``aegea rm``.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, getpass, re, subprocess, time, json
-from datetime import datetime
+import os, sys, re, subprocess, time, json
 
 from botocore.exceptions import ClientError
 
 from . import register_parser, logger
 from .ls import add_name, filter_collection, filter_and_tabulate, register_filtering_parser
-from .util import Timestamp, paginate
-from .util.printing import format_table, page_output, get_field, get_cell, tabulate
+from .util.printing import page_output, get_cell, tabulate
 from .util.aws import ARN, resources, clients, ensure_vpc, ensure_subnet, resolve_instance_id, encode_tags, get_metadata
 from .util.compat import lru_cache
 

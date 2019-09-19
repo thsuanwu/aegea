@@ -4,9 +4,8 @@ Manage AWS Lambda functions and their event sources
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, collections, random, string, hashlib, base64
+import os, sys, argparse, hashlib, base64
 
-from . import config, logger
 from .ls import register_parser, register_listing_parser
 from .util import Timestamp, paginate
 from .util.printing import page_output, tabulate

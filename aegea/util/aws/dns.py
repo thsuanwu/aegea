@@ -28,7 +28,7 @@ class DNSZone(VerboseRepr):
                                                          VPC=dict(VPCRegion=ARN.get_region(), VPCId=vpc.vpc_id))
                 self.zone = res["HostedZone"]
             else:
-                raise AegeaException("Unable to determine DNS zone to use")
+                raise
         self.zone_id = os.path.basename(self.zone["Id"])
 
     @staticmethod

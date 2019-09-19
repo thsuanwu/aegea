@@ -6,15 +6,12 @@ To delete EFS filesystems, use ``aegea rm``.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, getpass, base64
-from datetime import datetime
+import os, sys, argparse, base64
 
 from . import register_parser
-from .ls import add_name, filter_collection, filter_and_tabulate, register_listing_parser
-from .util import Timestamp, paginate
-from .util.printing import format_table, page_output, get_field, get_cell, tabulate
-from .util.aws import clients, ensure_vpc, ensure_subnet, encode_tags, make_waiter, ensure_security_group
-from .util.compat import lru_cache
+from .ls import register_listing_parser
+from .util.printing import page_output, tabulate
+from .util.aws import clients, ensure_vpc, encode_tags, make_waiter, ensure_security_group
 
 def efs(args):
     efs_parser.print_help()

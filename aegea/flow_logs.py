@@ -4,8 +4,7 @@ import os, sys, argparse
 from botocore.exceptions import ClientError
 
 from .ls import register_parser, register_listing_parser, grep, add_time_bound_args
-from .util import Timestamp, paginate, hashabledict
-from .util.printing import format_table, page_output, get_field, get_cell, tabulate
+from .util.printing import page_output, tabulate
 from .util.exceptions import AegeaException
 from .util.aws import ARN, resources, clients, ensure_iam_role, ensure_vpc, expect_error_codes
 

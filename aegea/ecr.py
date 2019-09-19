@@ -6,17 +6,12 @@ Use ``aws ecr create-repository`` and ``aws ecr delete-repository`` to manage EC
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, json
-
-from botocore.exceptions import ClientError
+import json
 
 from .ls import register_parser, register_listing_parser
-from .util import Timestamp, paginate, hashabledict
-from .util.printing import format_table, page_output, get_field, get_cell, tabulate
-from .util.exceptions import AegeaException
-from .util.compat import lru_cache
+from .util import paginate
+from .util.printing import page_output, tabulate
 from .util.aws import clients
-from .util.aws.dns import DNSZone
 
 def ecr(args):
     ecr_parser.print_help()

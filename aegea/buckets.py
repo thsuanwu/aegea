@@ -9,8 +9,8 @@ from botocore.exceptions import ClientError
 
 from . import register_parser, logger
 from .ls import filter_collection, register_filtering_parser
-from .util.aws import ARN, resolve_instance_id, resources, clients, expect_error_codes, get_cloudwatch_metric_stats
-from .util.printing import format_table, page_output, get_field, get_cell, tabulate, GREEN, BLUE, format_number
+from .util.aws import ARN, resources, clients, expect_error_codes, get_cloudwatch_metric_stats
+from .util.printing import page_output, tabulate, format_number
 
 def buckets(args):
     buckets_parser.print_help()

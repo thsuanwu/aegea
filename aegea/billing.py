@@ -13,7 +13,7 @@ import os, sys, json, zipfile, gzip, csv, io, argparse
 from io import BytesIO, TextIOWrapper
 from datetime import datetime, timedelta
 
-import requests, dateutil
+import dateutil
 from botocore.exceptions import ClientError
 
 from . import register_parser, config

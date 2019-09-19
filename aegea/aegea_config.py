@@ -4,11 +4,9 @@ List, read, and write Aegea configuration parameters.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, json
+import json
 
 from .ls import register_parser, register_listing_parser
-from .util import paginate
-from .util.aws import resources, clients
 from .util.printing import page_output, format_table
 
 def configure(args):
