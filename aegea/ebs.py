@@ -6,7 +6,7 @@ To delete EBS volumes or snapshots, use ``aegea rm``.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, getpass, re, subprocess, time, glob
+import os, sys, argparse, getpass, re, subprocess, time, json
 from datetime import datetime
 
 from botocore.exceptions import ClientError
@@ -62,7 +62,11 @@ def create(args):
     res = clients.ec2.create_volume(**create_args)
     clients.ec2.get_waiter("volume_available").wait(VolumeIds=[res["VolumeId"]])
     if args.attach:
-        attach(parser_attach.parse_args([res["VolumeId"]], namespace=args))
+        try:
+            attach(parser_attach.parse_args([res["VolumeId"]], namespace=args))
+        except Exception:
+            print(json.dumps(res, indent=2, default=lambda x: str(x)))
+            raise
     return res
 
 parser_create = register_parser(create, parent=ebs_parser, help="Create an EBS volume")
