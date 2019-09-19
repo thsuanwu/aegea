@@ -7,13 +7,12 @@ import os, sys, unittest, collections, itertools, copy, re, subprocess, importli
 
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
 sys.path.insert(0, pkg_root)  # noqa
-import aegea
+import aegea, aegea.util.aws.dns
 from aegea.util import Timestamp
 from aegea.util.cloudinit import get_user_data
 from aegea.util.aws import (resolve_ami, IAMPolicyBuilder, locate_ami, get_ondemand_price_usd, ARN,
                             get_public_ip_ranges, ensure_s3_bucket, encode_tags, decode_tags, filter_by_tags,
                             clients, resources, get_bdm, get_iam_role_for_instance, make_waiter)
-from aegea.util.aws.dns import DNSZone
 from aegea.util.aws.spot import SpotFleetBuilder
 from aegea.util.exceptions import AegeaException
 from aegea.util.compat import USING_PYTHON2, str
@@ -206,14 +205,21 @@ class TestAegea(unittest.TestCase):
         self.assertEquals(str(ARN("arn:aws:foo:bar:xyz:zzt")), "arn:aws:foo:bar:xyz:zzt")
         self.assertEquals(str(ARN("arn:aws:a:b:c:d", service="x", region="us-west-1", account_id="1", resource="2")),
                           "arn:aws:x:us-west-1:1:2")
-        with self.assertRaises(AegeaException):
-            DNSZone(use_unique_private_zone=False)
         get_user_data(commands=["ls"], packages=["foo"], files=["bar"])
 
         # Test serialization of tweak.Config objects
         from tweak import Config
         d = dict(x={}, y=[1, 2])
         c = Config(save_on_exit=False, _parent=self, _data=d)
+
+        aegea.util.aws.dns.config = c
+        c.dns = {}
+        c.dns.private_zone = "aegea.test"
+        with self.assertRaises(AegeaException):
+            aegea.util.aws.dns.DNSZone(create_default_private_zone=False)
+        with self.assertRaises(AegeaException):
+            aegea.util.aws.dns.DNSZone(zone_name="foobar", create_default_private_zone=False)
+
         self.assertEquals(get_user_data(foo=c, bar=2), get_user_data(bar=2, foo=c))
         # ensure_s3_bucket()
         self.assertEqual(encode_tags(["foo=bar"]), [{'Key': 'foo', 'Value': 'bar'}])
