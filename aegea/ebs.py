@@ -178,7 +178,7 @@ def detach(args):
         volume_id = find_volume_id(mountpoint=args.volume_id)
         args.unmount = True
     if args.unmount:
-        subprocess.check_call(["umount", find_devnode(volume_id)])
+        subprocess.call(["umount", find_devnode(volume_id)])
     attachment = resources.ec2.Volume(volume_id).attachments[0]
     res = clients.ec2.detach_volume(DryRun=args.dry_run,
                                     VolumeId=volume_id,
