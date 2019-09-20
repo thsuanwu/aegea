@@ -34,7 +34,7 @@ class DNSZone(VerboseRepr):
     @staticmethod
     def find(zone_name):
         zones = clients.route53.list_hosted_zones_by_name(DNSName=zone_name)["HostedZones"]
-        if len(zones) != 1 or zones[0]["Name"].rstrip(".") != zone_name.rstrip("."):
+        if zones[0]["Name"].rstrip(".") != zone_name.rstrip("."):
             raise AegeaException('Route53 DNS Zone "{}" not found'.format(zone_name))
         return zones[0]
 
