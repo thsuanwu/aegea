@@ -1,3 +1,14 @@
+Changes for v2.7.0 (2019-09-20)
+===============================
+
+-  Add aegea lambda update_config
+
+-  Tag EBS volumes with managedBy and batch job ID tags
+
+-  Refactor DNS default zone management
+
+-  Set dev tree version back to placeholder value (0.0.0)
+
 Changes for v2.6.11 (2019-09-18)
 ================================
 
