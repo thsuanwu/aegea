@@ -647,4 +647,4 @@ managed_iam_groups:
 log_level: "INFO"
 
 audit:
-  email: "akislyuk@exabio.com"
+  email: null
