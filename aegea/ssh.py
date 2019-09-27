@@ -43,18 +43,19 @@ def get_linux_username():
     return username
 
 def ssh(args):
+    ssh_opts = []
     if "ServerAliveInterval" not in " ".join(args.ssh_args):
-        args.ssh_args.extend(["-o", "ServerAliveInterval={}".format(args.server_alive_interval)])
+        ssh_opts += ["-o", "ServerAliveInterval={}".format(args.server_alive_interval)]
     if "ServerAliveCountMax" not in " ".join(args.ssh_args):
-        args.ssh_args.extend(["-o", "ServerAliveCountMax={}".format(args.server_alive_count_max)])
+        ssh_opts += ["-o", "ServerAliveCountMax={}".format(args.server_alive_count_max)]
     prefix, at, name = args.name.rpartition("@")
-    ssh_args = ["ssh", prefix + at + resolve_instance_public_dns(name)]
+    ssh_args = [prefix + at + resolve_instance_public_dns(name)] + args.ssh_args
     if not (prefix or at):
         try:
-            ssh_args += ["-l", get_linux_username()]
+            ssh_opts += ["-l", get_linux_username()]
         except Exception:
             logger.info("Unable to determine IAM username, using local username")
-    os.execvp("ssh", ssh_args + args.ssh_args)
+    os.execvp("ssh", ["ssh"] + ssh_opts + ssh_args)
 
 ssh_parser = register_parser(ssh, help="Connect to an EC2 instance", description=__doc__)
 ssh_parser.add_argument("name")
