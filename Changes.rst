@@ -1,3 +1,8 @@
+Changes for v2.7.3 (2019-09-30)
+===============================
+
+Support –profile and –region CLI options
+
 Changes for v2.7.2 (2019-09-27)
 ===============================
 
