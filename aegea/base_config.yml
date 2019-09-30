@@ -645,6 +645,7 @@ managed_iam_groups:
 #  aegea.secrets.put:
 
 log_level: "INFO"
+partition: "aws"
 
 audit:
   email: null

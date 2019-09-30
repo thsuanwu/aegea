@@ -57,7 +57,6 @@ def pricing(args):
 parser = register_parser(pricing, help='List AWS prices')
 parser.add_argument("offer", nargs="?", help="""
 AWS product offer to list prices for. Run without this argument to see the list of available products.""")
-parser.add_argument("--region")
 parser.add_argument("--columns", nargs="+", default=["attributes.location", "unit", "pricePerUnit.USD", "description"])
 parser.add_argument("--columns-ec2", nargs="+",
                     default=["attributes.instanceType", "attributes.vcpu", "attributes.memory", "attributes.storage"])

@@ -44,7 +44,7 @@ class AegeaConfig(tweak.Config):
 
 class AegeaHelpFormatter(argparse.RawTextHelpFormatter):
     def _get_help_string(self, action):
-        default = get_config_for_prog(self._prog).get(action.dest)
+        default = _get_config_for_prog(self._prog).get(action.dest)
         if default is not None and not isinstance(default, list):
             return action.help + " (default: {})".format(default)
         return action.help
@@ -113,11 +113,27 @@ def main(args=None):
             del result["ResponseMetadata"]
         print(json.dumps(result, indent=2, default=lambda x: str(x)))
 
-def get_config_for_prog(prog):
+def _get_config_for_prog(prog):
     command = prog.split(" ", 1)[-1].replace("-", "_").replace(" ", "_")
     return config.get(command, {})
 
 def register_parser(function, parent=None, name=None, **add_parser_args):
+    def get_aws_profiles(**kwargs):
+        from botocore.session import Session
+        return list(Session().full_config["profiles"])
+
+    def set_aws_profile(profile_name):
+        os.environ["AWS_DEFAULT_PROFILE"] = profile_name
+
+    def get_region_names(**kwargs):
+        from botocore.loaders import create_loader
+        for partition_data in create_loader().load_data("endpoints")["partitions"]:
+            if partition_data["partition"] == config.partition:
+                return partition_data["regions"].keys()
+
+    def set_aws_region(region_name):
+        os.environ["AWS_DEFAULT_REGION"] = region_name
+
     if config is None:
         initialize()
     if parent is None:
@@ -143,8 +159,12 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
     subparser.add_argument("--log-level", default=config.get("log_level"),
                            help=str([logging.getLevelName(i) for i in range(10, 60, 10)]),
                            choices={logging.getLevelName(i) for i in range(10, 60, 10)})
+    subparser.add_argument("--profile", help="Profile to use from the AWS CLI credential file",
+                           type=set_aws_profile).completer = get_aws_profiles
+    subparser.add_argument("--region", help="Region to use (overrides environment variable)",
+                           type=set_aws_region).completer = get_region_names
     subparser.set_defaults(entry_point=function)
     if parent and sys.version_info < (2, 7, 9):  # See https://bugs.python.org/issue9351
         parent._defaults.pop("entry_point", None)
-    subparser.set_defaults(**get_config_for_prog(subparser.prog))
+    subparser.set_defaults(**_get_config_for_prog(subparser.prog))
     return subparser
