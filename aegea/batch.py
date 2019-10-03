@@ -22,14 +22,19 @@ from .util.aws.spot import SpotFleetBuilder
 from .util.aws.logs import CloudwatchLogReader
 from .util.aws.batch import bash_cmd_preamble, ebs_vol_mgr_shellcode, get_command_and_env
 
+def complete_queue_name(**kwargs):
+    return [q["jobQueueName"] for q in paginate(clients.batch.get_paginator("describe_job_queues"))]
+
+def complete_ce_name(**kwargs):
+    return [c["computeEnvironmentName"] for c in paginate(clients.batch.get_paginator("describe_compute_environments"))]
+
 def batch(args):
     batch_parser.print_help()
 
 batch_parser = register_parser(batch, help="Manage AWS Batch resources", description=__doc__)
 
 def queues(args):
-    table = clients.batch.describe_job_queues()["jobQueues"]
-    page_output(tabulate(table, args))
+    page_output(tabulate(paginate(clients.batch.get_paginator("describe_job_queues")), args))
 
 parser = register_listing_parser(queues, parent=batch_parser, help="List Batch queues")
 
@@ -51,12 +56,13 @@ def delete_queue(args):
     clients.batch.delete_job_queue(jobQueue=args.name)
 
 parser = register_parser(delete_queue, parent=batch_parser, help="Delete a Batch queue")
-parser.add_argument("name")
+parser.add_argument("name").completer = complete_queue_name
+
 def compute_environments(args):
-    table = clients.batch.describe_compute_environments()["computeEnvironments"]
-    page_output(tabulate(table, args))
+    page_output(tabulate(paginate(clients.batch.get_paginator("describe_compute_environments")), args))
 
 parser = register_listing_parser(compute_environments, parent=batch_parser, help="List Batch compute environments")
+
 def create_compute_environment(args):
     batch_iam_role = ensure_iam_role(args.service_role, trust=["batch"], policies=["service-role/AWSBatchServiceRole"])
     vpc = ensure_vpc()
@@ -114,7 +120,7 @@ def update_compute_environment(args):
     return clients.batch.update_compute_environment(**update_compute_environment_args)
 
 uce_parser = register_parser(update_compute_environment, parent=batch_parser, help="Update a Batch compute environment")
-uce_parser.add_argument("name")
+uce_parser.add_argument("name").completer = complete_ce_name
 uce_parser.add_argument("--min-vcpus", type=int)
 uce_parser.add_argument("--desired-vcpus", type=int)
 uce_parser.add_argument("--max-vcpus", type=int)
@@ -126,7 +132,7 @@ def delete_compute_environment(args):
     clients.batch.delete_compute_environment(computeEnvironment=args.name)
 
 parser = register_parser(delete_compute_environment, parent=batch_parser, help="Delete a Batch compute environment")
-parser.add_argument("name")
+parser.add_argument("name").completer = complete_ce_name
 
 def get_ecr_image_uri(tag):
     return "{}.dkr.ecr.{}.amazonaws.com/{}".format(ARN.get_account_id(), ARN.get_region(), tag)
@@ -219,7 +225,7 @@ def submit(args):
 
 submit_parser = register_parser(submit, parent=batch_parser, help="Submit a job to a Batch queue")
 submit_parser.add_argument("--name")
-submit_parser.add_argument("--queue", default=__name__.replace(".", "_"))
+submit_parser.add_argument("--queue", default=__name__.replace(".", "_")).completer = complete_queue_name
 submit_parser.add_argument("--depends-on", nargs="+", metavar="JOB_ID", default=[])
 submit_parser.add_argument("--job-definition-arn")
 
@@ -298,7 +304,7 @@ job_status_colors = dict(SUBMITTED=YELLOW(), PENDING=YELLOW(), RUNNABLE=BOLD() +
                          SUCCEEDED=BOLD() + GREEN(), FAILED=BOLD() + RED())
 job_states = job_status_colors.keys()
 parser = register_listing_parser(ls, parent=batch_parser, help="List Batch jobs")
-parser.add_argument("--queues", nargs="+")
+parser.add_argument("--queues", nargs="+").completer = complete_queue_name
 parser.add_argument("--status", nargs="+", default=job_states, choices=job_states)
 
 def describe(args):
