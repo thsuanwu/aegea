@@ -8,6 +8,7 @@ import os, sys, argparse, base64, collections, io, subprocess, json, time, re, h
 from datetime import datetime
 
 from botocore.exceptions import ClientError
+from botocore.paginate import Paginator
 
 from . import logger
 from .ls import register_parser, register_listing_parser
@@ -162,7 +163,13 @@ def ensure_job_definition(args):
                            retryStrategy={'attempts': args.retry_attempts}, containerProperties=container_props)
     job_hash = hashlib.sha256(json.dumps(container_props, sort_keys=True).encode()).hexdigest()[:8]
     job_defn_name = __name__.replace(".", "_") + "_job_" + job_hash
-    for job_defn in paginate(clients.batch.get_paginator('describe_job_definitions'), jobDefinitionName=job_defn_name):
+    describe_job_definitions_paginator = Paginator(method=clients.batch.describe_job_definitions,
+                                                   pagination_config=dict(result_key="jobDefinitions",
+                                                                          input_token="nextToken",
+                                                                          output_token="nextToken",
+                                                                          limit_key="maxResults"),
+                                                   model=None)
+    for job_defn in paginate(describe_job_definitions_paginator, jobDefinitionName=job_defn_name):
         job_defn_desc = {k: job_defn.pop(k) for k in ("jobDefinitionName", "jobDefinitionArn", "revision")}
         if job_defn == expect_job_defn:
             return job_defn_desc
