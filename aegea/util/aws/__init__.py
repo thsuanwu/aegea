@@ -355,6 +355,11 @@ def get_metadata(path):
     res.raise_for_status()
     return res.content.decode()
 
+def get_ecs_task_metadata(path="/task"):
+    res = requests.get(os.environ["ECS_CONTAINER_METADATA_URI"] + path)
+    res.raise_for_status()
+    return res.content.decode()
+
 def expect_error_codes(exception, *codes):
     if exception.response["Error"]["Code"] not in codes:
         raise
