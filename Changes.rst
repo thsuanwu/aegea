@@ -1,3 +1,10 @@
+Changes for v2.7.4 (2019-10-03)
+===============================
+
+-  aegea batch: manually construct job definition paginator
+
+-  Add helper to get ECS container metadata
+
 Changes for v2.7.3 (2019-09-30)
 ===============================
 
