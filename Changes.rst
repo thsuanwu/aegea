@@ -1,3 +1,8 @@
+Changes for v2.7.5 (2019-10-03)
+===============================
+
+-  aegea batch: avoid setting resourceRequirements unless needed
+
 Changes for v2.7.4 (2019-10-03)
 ===============================
 
