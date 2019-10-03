@@ -27,7 +27,7 @@ bash_cmd_preamble = ["/bin/bash", "-c", 'for i in "$@"; do eval "$i"; done', __n
 ebs_vol_mgr_shellcode = """apt-get update -qq
 apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq psmisc lsof
 
-iid=$(http http://169.254.169.254/latest/dynamic/instance-identity/document)
+iid=$(http GET http://169.254.169.254/latest/dynamic/instance-identity/document)
 aws configure set default.region $(echo "$iid" | jq -r .region)
 az=$(echo "$iid" | jq -r .availabilityZone)
 
