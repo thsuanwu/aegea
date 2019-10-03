@@ -151,11 +151,11 @@ def ensure_job_definition(args):
     if args.ecs_image:
         args.image = get_ecr_image_uri(args.ecs_image)
     container_props = {k: getattr(args, k) for k in ("image", "vcpus", "memory", "privileged")}
-    container_props.update(volumes=[], mountPoints=[], resourceRequirements=[], environment=[], command=[])
+    container_props.update(volumes=[], mountPoints=[], environment=[], command=[])
     set_volumes(args, container_props)
     set_ulimits(args, container_props)
     if args.gpus:
-        container_props["resourceRequirements"].append({"type": "GPU", "value": str(args.gpus)})
+        container_props["resourceRequirements"] = [{"type": "GPU", "value": str(args.gpus)}]
     iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"],
                                policies=["AmazonEC2FullAccess", "AmazonDynamoDBFullAccess", "AmazonS3FullAccess"])
     container_props.update(jobRoleArn=iam_role.arn)
