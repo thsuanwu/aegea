@@ -1,3 +1,8 @@
+Changes for v2.7.6 (2019-10-03)
+===============================
+
+-  aegea batch: tab completers, paginators for queues, CEs
+
 Changes for v2.7.5 (2019-10-03)
 ===============================
 
