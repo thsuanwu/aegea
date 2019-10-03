@@ -1,3 +1,8 @@
+Changes for v2.3.7 (2019-10-02)
+===============================
+
+-  aegea batch: EBS vol mgr shellcode: Set method in http metadata fetch
+
 Changes for v2.3.6 (2019-05-22)
 ===============================
 
