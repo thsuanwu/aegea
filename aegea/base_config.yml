@@ -9,7 +9,7 @@
 build_image:
   commands:
     - "update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8"
-    - "pip3 install awscli-cwlogs==1.4.5 keymaker==1.0.7 boto3==1.7.59 awscli==1.15.60 dynamoq==0.0.5 tractorbeam==0.1.3"
+    - "pip3 install awscli-cwlogs==1.4.5 keymaker==1.0.9 boto3==1.9.243 awscli==1.16.253 dynamoq==0.0.5 tractorbeam==0.1.3"
   packages:
     - language-pack-en
     - iptables-persistent
@@ -77,7 +77,7 @@ build_image:
     - software-properties-common
 
 build_docker_image:
-  base_image: ubuntu:16.04
+  base_image: ubuntu:18.04
   rootfs_skel_dirs:
     - auto
   commands:
@@ -106,7 +106,7 @@ build_ami:
     - "sed -i -e '/^PermitRootLogin/ s/.*/PermitRootLogin no/' /etc/ssh/sshd_config"
     - "update-grub"
     - "grub-install /dev/xvda"
-    - "pip3 install awscli-cwlogs==1.4.5 keymaker==1.0.7 boto3==1.7.59 awscli==1.15.60"
+    - "pip3 install awscli-cwlogs==1.4.5 keymaker==1.0.9 boto3==1.9.243 awscli==1.16.253"
     - "keymaker install"
     - "activate-global-python-argcomplete"
     - "dpkg-reconfigure debconf -f noninteractive -p critical"
@@ -118,12 +118,12 @@ build_ami:
     - "find /etc/cron.* -type f -not -name .placeholder -and -not -name logrotate -and -not -name fstrim -delete"
   cloud_config_data:
     apt_sources:
-      - source: "deb http://cran.rstudio.com/bin/linux/ubuntu xenial/"
+      - source: "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
         filename: rstudio.list
-        keyid: E084DAB9
-#      - source: "deb http://apt.arvados.org/ trusty main"
-#        filename: arvados.list
-#        keyid: 1078ECD7
+        keyid: E298A3A825C0D65DFD57CBB651716619E084DAB9
+      - source: "deb https://packages.gitlab.com/gitlab/gitlab-ee/ubuntu/ bionic main"
+        filename: gitlab.list
+        keyid: 1A4C919DB987D435939638B914219A96E15E78F4
 
 # Name your Route 53 private DNS zone here. By default, aegea will register instances' names in this zone. For example,
 # when running `aegea launch test`, the `test` instance will be registered as `test.aegea`. To disable DNS registration,
