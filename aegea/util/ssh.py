@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, errno
 from paramiko import SSHClient
 from .. import logger
 
@@ -14,5 +14,5 @@ class AegeaSSHClient(SSHClient):
         exit_code = ssh_stdout.channel.recv_exit_status()
         stderr.write(ssh_stderr.read().decode("utf-8"))
         if exit_code != os.EX_OK:
-            raise Exception('Error while running "{}": {}'.format(command, os.errno.errorcode.get(exit_code)))
+            raise Exception('Error while running "{}": {}'.format(command, errno.errorcode.get(exit_code)))
         return ssh_stdout.read().decode("utf-8")
