@@ -1,3 +1,10 @@
+Changes for v2.7.7 (2019-10-04)
+===============================
+
+-  Workaround for Python bug 33666: os.errno was removed in Python 3.7
+
+-  Update AMI builder settings
+
 Changes for v2.7.6 (2019-10-03)
 ===============================
 
