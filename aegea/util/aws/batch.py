@@ -24,11 +24,13 @@ sed -i -e "s|/archive.ubuntu.com|/{region}.ec2.archive.ubuntu.com|g" /etc/apt/so
 apt-get update -qq"""
 
 ebs_vol_mgr_shellcode = apt_mgr_shellcode + """
-apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq python3-{{pip,setuptools,wheel}}
-pip3 install aegea=={aegea_version}
-aegea_ebs_cleanup() {{ echo Detaching EBS volume $aegea_ebs_vol_id; aegea ebs detach --unmount --delete $aegea_ebs_vol_id; }}
+apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq python3-virtualenv > /dev/null
+python3 -m virtualenv -q --python=python3 /opt/aegea-venv
+/opt/aegea-venv/bin/pip install -q argcomplete requests boto3 tweak pyyaml
+/opt/aegea-venv/bin/pip install -q --no-deps aegea=={aegea_version}
+aegea_ebs_cleanup() {{ echo Detaching EBS volume $aegea_ebs_vol_id; /opt/aegea-venv/bin/aegea ebs detach --unmount --delete $aegea_ebs_vol_id; }}
 trap aegea_ebs_cleanup EXIT
-aegea_ebs_vol_id=$(aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --tags managedBy=aegea batchJobId=$AWS_BATCH_JOB_ID --attach --format mkfs.ext4 --mount {mountpoint} | jq -r .VolumeId)
+aegea_ebs_vol_id=$(/opt/aegea-venv/bin/aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --tags managedBy=aegea batchJobId=$AWS_BATCH_JOB_ID --attach --format mkfs.ext4 --mount {mountpoint} | jq -r .VolumeId)
 """  # noqa
 
 efs_vol_shellcode = """mkdir -p {efs_mountpoint}
