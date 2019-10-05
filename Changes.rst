@@ -1,3 +1,8 @@
+Changes for v2.7.8 (2019-10-05)
+===============================
+
+-  aegea batch: fix install issues in ebs shellcode
+
 Changes for v2.7.7 (2019-10-04)
 ===============================
 
