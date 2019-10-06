@@ -1,3 +1,8 @@
+Changes for v2.7.9 (2019-10-05)
+===============================
+
+aegea batch: allow ebs shellcode to deal with incorrect usage
+
 Changes for v2.7.8 (2019-10-05)
 ===============================
 
