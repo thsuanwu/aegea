@@ -29,7 +29,13 @@ def configure(args):
 parser_configure = register_parser(configure, parent=iam_parser, help="Set up aegea-specific IAM groups and policies")
 
 def get_policies_for_principal(cell, row):
-    return ", ".join([p.policy_name for p in row.policies.all()] + [p.policy_name for p in row.attached_policies.all()])
+    try:
+        policies = [p.policy_name for p in row.policies.all()] + [p.policy_name for p in row.attached_policies.all()]
+        return ", ".join(policies)
+    except botocore.exceptions.ClientError as e:
+        if getattr(e, "response", None) and e.response.get("Error", {}).get("Code", {}) == "AccessDenied":
+            return "[Access denied]"
+        raise
 
 def users(args):
     current_user = resources.iam.CurrentUser()

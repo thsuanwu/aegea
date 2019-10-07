@@ -361,7 +361,7 @@ def get_ecs_task_metadata(path="/task"):
     return res.content.decode()
 
 def expect_error_codes(exception, *codes):
-    if exception.response["Error"]["Code"] not in codes:
+    if getattr(exception, "response", None) and exception.response.get("Error", {}).get("Code", {}) not in codes:
         raise
 
 def resolve_ami(ami=None, **tags):

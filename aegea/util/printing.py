@@ -3,6 +3,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os, sys, json, shutil, subprocess, re, errno
 from datetime import datetime, timedelta
+
+import botocore
+
 from .exceptions import GetFieldError, AegeaException
 from .compat import str, get_terminal_size
 
@@ -223,7 +226,12 @@ def get_cell(resource, field, transform=None):
             cell = transform(cell, resource)
         except TypeError:
             cell = transform(cell)
-    return ", ".join(i.name for i in cell.all()) if hasattr(cell, "all") else cell
+    try:
+        return ", ".join(i.name for i in cell.all()) if hasattr(cell, "all") else cell
+    except botocore.exceptions.ClientError as e:
+        if getattr(e, "response", None) and e.response.get("Error", {}).get("Code", {}) == "AccessDenied":
+            return "[Access denied]"
+        raise
 
 def format_tags(cell, row):
     tags = {tag["Key"]: tag["Value"] for tag in cell} if cell else {}
