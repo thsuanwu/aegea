@@ -123,7 +123,8 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
         return list(Session().full_config["profiles"])
 
     def set_aws_profile(profile_name):
-        os.environ["AWS_DEFAULT_PROFILE"] = profile_name
+        os.environ["AWS_PROFILE"] = profile_name
+        del os.environ["AWS_DEFAULT_PROFILE"]
 
     def get_region_names(**kwargs):
         from botocore.loaders import create_loader
