@@ -23,14 +23,23 @@ def add_tags(resource, prefix, key):
     resource["tags"] = clients.rds.list_tags_for_resource(ResourceName=str(arn))["TagList"]
     return resource
 
+def list_rds_clusters():
+    paginator = clients.rds.get_paginator("describe_db_clusters")
+    return [add_tags(i, "cluster", "DBClusterIdentifier") for i in paginate(paginator)]
+
 def list_rds_instances():
     paginator = clients.rds.get_paginator("describe_db_instances")
     return [add_tags(i, "db", "DBInstanceIdentifier") for i in paginate(paginator)]
 
 def ls(args):
+    page_output(tabulate(list_rds_clusters(), args))
+
+parser = register_parser(ls, parent=rds_parser, help="List RDS clusters")
+
+def instances(args):
     page_output(tabulate(list_rds_instances(), args))
 
-parser = register_parser(ls, parent=rds_parser, help="List RDS instances")
+parser = register_parser(instances, parent=rds_parser, help="List RDS instances")
 
 def snapshots(args):
     paginator = clients.rds.get_paginator("describe_db_snapshots")

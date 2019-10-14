@@ -467,6 +467,20 @@ cmks:
 
 rds_ls:
   columns:
+    - DBClusterIdentifier
+    - DBClusterParameterGroup
+    - Status
+    - Engine
+    - EngineMode
+    - EngineVersion
+    - MasterUsername
+    - Endpoint
+    - Port
+    - DeletionProtection
+    - tags
+
+rds_instances:
+  columns:
     - DBName
     - Engine
     - EngineVersion
