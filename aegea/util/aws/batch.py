@@ -28,7 +28,7 @@ apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli
 python3 -m virtualenv -q --python=python3 /opt/aegea-venv
 /opt/aegea-venv/bin/pip install -q argcomplete requests boto3 tweak pyyaml
 /opt/aegea-venv/bin/pip install -q --no-deps aegea=={aegea_version}
-aegea_ebs_cleanup() {{ echo Detaching EBS volume $aegea_ebs_vol_id; /opt/aegea-venv/bin/aegea ebs detach --unmount --force --delete $aegea_ebs_vol_id; }}
+aegea_ebs_cleanup() {{ echo Detaching EBS volume $aegea_ebs_vol_id; cd /; /opt/aegea-venv/bin/aegea ebs detach --unmount --force --delete $aegea_ebs_vol_id; }}
 trap aegea_ebs_cleanup EXIT
 aegea_ebs_vol_id=$(/opt/aegea-venv/bin/aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --tags managedBy=aegea batchJobId=$AWS_BATCH_JOB_ID --attach --format mkfs.ext4 --mount {mountpoint} | jq -r .VolumeId)
 """  # noqa
