@@ -11,15 +11,14 @@ Installation
 ~~~~~~~~~~~~
 ::
 
-   pip install aegea
+   pip3 install aegea
 
 Before you do this, you will also need to install some system library dependencies:
 
 +--------------+---------+-------------------------------------------------------------------------------------------------------+
 | OS           | Python  | Command                                                                                               |
 +==============+=========+=======================================================================================================+
-| OS X         |         | ``sudo easy_install-2.7 pip; sudo pip install --ignore-installed six python-dateutil;``               |
-|              |         | ``sudo pip install aegea`` (if prompted to install XCode Command Line Tools, do it and try again)     |
+| Mac OS       |         | Install `Homebrew <https://brew.sh>`_, then run ``brew install python``.                              |
 +--------------+---------+-------------------------------------------------------------------------------------------------------+
 | Ubuntu       | Python 2| sudo apt-get update;                                                                                  |
 |              |         | sudo apt-get install build-essential python-pip python-dev python-cffi libffi-dev libssl-dev moreutils|
