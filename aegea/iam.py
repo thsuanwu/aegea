@@ -79,7 +79,6 @@ def policies(args):
     page_output(tabulate(resources.iam.policies.all(), args))
 
 parser = register_listing_parser(policies, parent=iam_parser, help="List IAM policies")
-parser.add_argument("--sort-by")
 
 def generate_password(length=16):
     while True:

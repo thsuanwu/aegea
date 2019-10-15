@@ -18,6 +18,7 @@ def column_completer(parser, **kwargs):
 def register_listing_parser(function, **kwargs):
     col_def = dict(default=kwargs.pop("column_defaults")) if "column_defaults" in kwargs else {}
     parser = register_parser(function, **kwargs)
+    parser.add_argument("--sort-by", help='Sort by this column/field (add ":reverse" to invert the order)')
     col_arg = parser.add_argument("-c", "--columns", nargs="+", help="Names of columns to print", **col_def)
     col_arg.completer = column_completer
     return parser
@@ -69,7 +70,6 @@ def ls(args):
     page_output(tabulate(instances, args, cell_transforms=cell_transforms))
 
 parser = register_filtering_parser(ls, help="List EC2 instances")
-parser.add_argument("--sort-by")
 
 def console(args):
     instance_id = resolve_instance_id(args.instance)
@@ -83,7 +83,6 @@ def images(args):
     page_output(filter_and_tabulate(resources.ec2.images.filter(Owners=["self"]), args))
 
 parser = register_filtering_parser(images, help="List EC2 AMIs")
-parser.add_argument("--sort-by")
 
 peer_desc_cache = {}
 def describe_peer(peer):
@@ -248,7 +247,6 @@ def sfrs(args):
 
 parser = register_listing_parser(sfrs, help="List EC2 spot fleet requests")
 parser.add_argument("--trim-col-names", nargs="+", default=["SpotFleetRequestConfig.", "SpotFleetRequest"])
-parser.add_argument("--sort-by")
 
 def key_pairs(args):
     page_output(tabulate(resources.ec2.key_pairs.all(), args))
