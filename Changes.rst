@@ -1,3 +1,14 @@
+Changes for v2.8.0 (2019-10-15)
+===============================
+
+-  aegea batch: ebs cleanup: make resilient to open WD handles
+
+-  aegea rds ls lists clusters; add aegea rds instances
+
+-  Use AWS_PROFILE, unset AWS_DEFAULT_PROFILE
+
+-  aegea iam: do not crash if access is denied to list attached policies
+
 Changes for v2.7.9 (2019-10-05)
 ===============================
 
