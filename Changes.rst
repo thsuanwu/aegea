@@ -1,3 +1,10 @@
+Changes for v2.8.2 (2019-10-16)
+===============================
+
+-  Fix job definition reuse regression introduced in b00296b
+
+-  Centralize sort_by handling
+
 Changes for v2.8.1 (2019-10-15)
 ===============================
 
