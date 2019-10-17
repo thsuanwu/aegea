@@ -1,3 +1,10 @@
+Changes for v2.8.3 (2019-10-17)
+===============================
+
+-  aegea ecs run: set mount_instance_storage to None
+
+-  aegea batch update-compute-environment: support zero values
+
 Changes for v2.8.2 (2019-10-16)
 ===============================
 
