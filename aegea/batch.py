@@ -111,11 +111,11 @@ cce_parser.add_argument("--ecs-container-instance-ami-tags")
 
 def update_compute_environment(args):
     update_compute_environment_args = dict(computeEnvironment=args.name, computeResources={})
-    if args.min_vcpus:
+    if args.min_vcpus is not None:
         update_compute_environment_args["computeResources"].update(minvCpus=args.min_vcpus)
-    if args.desired_vcpus:
+    if args.desired_vcpus is not None:
         update_compute_environment_args["computeResources"].update(desiredvCpus=args.desired_vcpus)
-    if args.max_vcpus:
+    if args.max_vcpus is not None:
         update_compute_environment_args["computeResources"].update(maxvCpus=args.max_vcpus)
     return clients.batch.update_compute_environment(**update_compute_environment_args)
 
