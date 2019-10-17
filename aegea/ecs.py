@@ -56,7 +56,7 @@ parser.add_argument("--desired-status", choices={"RUNNING", "STOPPED"})
 parser.add_argument("--launch-type", choices={"EC2", "FARGATE"})
 
 def run(args):
-    args.storage = args.efs_storage = None
+    args.storage = args.efs_storage = args.mount_instance_storage = None
     command, environment = get_command_and_env(args)
     vpc = ensure_vpc()
     clients.ecs.create_cluster(clusterName=args.cluster)
