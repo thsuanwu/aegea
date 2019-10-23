@@ -102,14 +102,20 @@ def ensure_subnet(vpc, availability_zone=None):
     return subnet
 
 def ensure_ingress_rule(security_group, **kwargs):
-    cidr_ip = kwargs.pop("CidrIp")
+    cidr_ip, source_security_group_id = kwargs.pop("CidrIp"), kwargs.pop("SourceSecurityGroupId")
     for rule in security_group.ip_permissions:
         ip_range_matches = any(cidr_ip == ip_range["CidrIp"] for ip_range in rule["IpRanges"])
+        source_sg_matches = any(source_security_group_id == sg["GroupId"] for sg in rule["UserIdGroupPairs"])
         opts_match = all(rule.get(arg) == kwargs[arg] for arg in kwargs)
-        if ip_range_matches and opts_match:
+        if opts_match and (ip_range_matches or source_sg_matches):
             break
     else:
-        security_group.authorize_ingress(CidrIp=cidr_ip, **kwargs)
+        authorize_ingress_args = dict(IpPermissions=[kwargs])
+        if cidr_ip:
+            authorize_ingress_args["IpPermissions"][0]["IpRanges"] = [dict(CidrIp=cidr_ip)]
+        elif source_security_group_id:
+            authorize_ingress_args["IpPermissions"][0]["UserIdGroupPairs"] = [dict(GroupId=source_security_group_id)]
+        security_group.authorize_ingress(**authorize_ingress_args)
 
 def resolve_security_group(name, vpc=None):
     if vpc is None:
@@ -132,8 +138,11 @@ def ensure_security_group(name, vpc, tcp_ingress=[dict(port=22, cidr="0.0.0.0/0"
             except ClientError:
                 time.sleep(1)
     for rule in tcp_ingress:
+        source_security_group_id = None
+        if "source_security_group_name" in rule:
+            source_security_group_id = resolve_security_group(rule["source_security_group_name"], vpc).id
         ensure_ingress_rule(security_group, IpProtocol="tcp", FromPort=rule["port"], ToPort=rule["port"],
-                            CidrIp=rule["cidr"])
+                            CidrIp=rule.get("cidr"), SourceSecurityGroupId=source_security_group_id)
     return security_group
 
 def ensure_s3_bucket(name=None, policy=None):

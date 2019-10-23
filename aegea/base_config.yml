@@ -419,12 +419,12 @@ efs_ls:
     - SizeInBytes
     - CreationTime
     - LifeCycleState
+    - Tags
   mount_target_columns:
     - MountTargetId
     - SubnetId
     - IpAddress
     - NetworkInterfaceId
-    - tags
 
 alarms:
   columns:
@@ -638,8 +638,12 @@ secrets_ls:
     - Tags
 
 launch:
+  instance_type: t3.micro
+  tags: []
+  storage: []
   commands: []
   packages: []
+  security_groups: []
   cloud_config_data: {}
 
 ssh:

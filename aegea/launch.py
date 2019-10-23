@@ -19,7 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os, sys, time, datetime, base64, json
 
 from . import register_parser, logger, config
-
+from .efs import create as create_efs, parser_create as parser_create_efs, __name__ as efs_security_group_name
 from .util import wait_for_port, validate_hostname, paginate
 from .util.cloudinit import get_user_data
 from .util.aws import (ensure_vpc, ensure_subnet, ensure_security_group, ensure_log_group, ensure_instance_profile,
@@ -79,6 +79,15 @@ def launch(args):
     else:
         security_groups = [ensure_security_group(__name__, vpc)]
 
+    if args.efs_home:
+        for filesystem in clients.efs.describe_file_systems()["FileSystems"]:
+            if {"Key": "mountpoint", "Value": "/home"} in filesystem["Tags"]:
+                break
+        else:
+            create_efs_args = ["aegea_home", "--tags", "mountpoint=/home", "managedBy=aegea"]
+            create_efs(parser_create_efs.parse_args(create_efs_args))
+        security_groups.append(resolve_security_group(efs_security_group_name, vpc))
+
     ssh_host_key = new_ssh_key()
     user_data_args = dict(host_key=ssh_host_key,
                           commands=get_startup_commands(args, ARN.get_iam_username()),
@@ -112,7 +121,8 @@ def launch(args):
                 if "cores" in spot_fleet_args:
                     spot_fleet_args["min_cores_per_instance"] = spot_fleet_args["cores"]
                 if args.instance_type != parser.get_default("instance_type"):
-                    msg = "Using --instance-type with spot fleet may unnecessarily constrain available instances. Consider using --cores and --min-mem-per-core-gb instead" # noqa
+                    msg = ("Using --instance-type with spot fleet may unnecessarily constrain available instances. "
+                           "Consider using --cores and --min-mem-per-core-gb instead")
                     logger.warn(msg)
 
                     class InstanceSpotFleetBuilder(SpotFleetBuilder):
@@ -179,11 +189,12 @@ parser.add_argument("--ssh-key-name")
 parser.add_argument("--no-verify-ssh-key-pem-file", dest="verify_ssh_key_pem_file", action="store_false")
 parser.add_argument("--ami", help="AMI to use for the instance. Default: " + resolve_ami.__doc__)
 parser.add_argument("--ami-tags", nargs="+", metavar="NAME=VALUE", help="Use the most recent AMI with these tags")
-parser.add_argument("--spot", action="store_true")
+parser.add_argument("--spot", action="store_true",
+                    help="Launch a preemptible spot instance, which is cheaper but could be forced to shut down")
 parser.add_argument("--duration-hours", type=float, help="Terminate the spot instance after this number of hours")
 parser.add_argument("--cores", type=int, help="Minimum number of cores to request (spot fleet API)")
 parser.add_argument("--min-mem-per-core-gb", type=float)
-parser.add_argument("--instance-type", "-t", default="t2.micro")
+parser.add_argument("--instance-type", "-t")
 parser.add_argument("--spot-price", type=float,
                     help="Maximum bid price for spot instances. Defaults to 1.2x the ondemand price.")
 parser.add_argument("--no-dns", dest="use_dns", action="store_false", help="""
@@ -192,11 +203,13 @@ parser.add_argument("--client-token", help="Token used to identify your instance
 parser.add_argument("--subnet")
 parser.add_argument("--availability-zone", "--az")
 parser.add_argument("--security-groups", nargs="+", metavar="SECURITY_GROUP")
-parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE", help="Tags to apply to launched instances.")
+parser.add_argument("--tags", nargs="+", metavar="NAME=VALUE", help="Tags to apply to launched instances.")
 parser.add_argument("--wait-for-ssh", action="store_true",
                     help="Wait for launched instance to begin accepting SSH connections. Security groups and NACLs must permit SSH from launching host.")  # noqa
+parser.add_argument("--efs-home", action="store_true",
+                    help="Create and manage an EFS filesystem that the instance will use for user home directories")
 parser.add_argument("--storage", nargs="+", metavar="MOUNTPOINT=SIZE_GB",
-                    type=lambda x: x.rstrip("GBgb").split("=", 1), default=[],
+                    type=lambda x: x.rstrip("GBgb").split("=", 1),
                     help="At launch time, attach EBS volume(s) of this size, format and mount them.")
 parser.add_argument("--iam-role", default=__name__,
                     help="Pass this IAM role to the launched instance through an instance profile. Role credentials will become available in the instance metadata.")  # noqa

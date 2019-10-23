@@ -6,12 +6,12 @@ To delete EFS filesystems, use ``aegea rm``.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, base64
+import os, sys, argparse, base64, socket
 
 from . import register_parser
 from .ls import register_listing_parser
 from .util.printing import page_output, tabulate
-from .util.aws import clients, ensure_vpc, encode_tags, make_waiter, ensure_security_group
+from .util.aws import clients, ensure_vpc, encode_tags, make_waiter, ensure_security_group, resolve_security_group
 
 def efs(args):
     efs_parser.print_help()
@@ -21,7 +21,6 @@ efs_parser = register_parser(efs, help="Manage Elastic Filesystem resources", de
 def ls(args):
     table = []
     for filesystem in clients.efs.describe_file_systems()["FileSystems"]:
-        filesystem["tags"] = clients.efs.describe_tags(FileSystemId=filesystem["FileSystemId"])["Tags"]
         for mount_target in clients.efs.describe_mount_targets(FileSystemId=filesystem["FileSystemId"])["MountTargets"]:
             mount_target.update(filesystem)
             table.append(mount_target)
@@ -33,19 +32,32 @@ parser.add_argument("--mount-target-columns", nargs="+")
 
 def create(args):
     vpc = ensure_vpc()
+    if args.security_groups is None:
+        args.security_groups = [__name__]
+        ensure_security_group(__name__, vpc, tcp_ingress=[dict(port=socket.getservbyname("nfs"),
+                                                               source_security_group_name=__name__)])
     creation_token = base64.b64encode(bytearray(os.urandom(24))).decode()
-    fs = clients.efs.create_file_system(CreationToken=creation_token, PerformanceMode=args.performance_mode)
-    clients.efs.create_tags(FileSystemId=fs["FileSystemId"], Tags=encode_tags(args.tags + ["Name=" + args.name]))
+    args.tags.append("Name=" + args.name)
+    create_file_system_args = dict(CreationToken=creation_token,
+                                   PerformanceMode=args.performance_mode,
+                                   ThroughputMode=args.throughput_mode,
+                                   Tags=encode_tags(args.tags))
+    if args.throughput_mode == "provisioned":
+        create_file_system_args.update(ProvisionedThroughputInMibps=args.provisioned_throughput_in_mibps)
+    fs = clients.efs.create_file_system(**create_file_system_args)
     waiter = make_waiter(clients.efs.describe_file_systems, "FileSystems[].LifeCycleState", "available", "pathAny")
     waiter.wait(FileSystemId=fs["FileSystemId"])
+    security_groups = [resolve_security_group(g, vpc).id for g in args.security_groups]
     for subnet in vpc.subnets.all():
         clients.efs.create_mount_target(FileSystemId=fs["FileSystemId"],
                                         SubnetId=subnet.id,
-                                        SecurityGroups=[ensure_security_group(g, vpc).id for g in args.security_groups])
+                                        SecurityGroups=security_groups)
     return fs
 
-parser = register_parser(create, parent=efs_parser, help="Create an EFS filesystem")
-parser.add_argument("name")
-parser.add_argument("--performance-mode", choices={"generalPurpose", "maxIO"}, default="generalPurpose")
-parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE")
-parser.add_argument("--security-groups", nargs="+", default=[__name__])
+parser_create = register_parser(create, parent=efs_parser, help="Create an EFS filesystem")
+parser_create.add_argument("name")
+parser_create.add_argument("--performance-mode", choices={"generalPurpose", "maxIO"}, default="generalPurpose")
+parser_create.add_argument("--throughput-mode", choices={"bursting", "provisioned"}, default="bursting")
+parser_create.add_argument("--provisioned-throughput-in-mibps", type=float)
+parser_create.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE")
+parser_create.add_argument("--security-groups", nargs="+")

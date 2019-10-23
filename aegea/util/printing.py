@@ -265,7 +265,8 @@ def format_number(n, fractional_digits=2):
 def tabulate(collection, args, cell_transforms=None):
     if cell_transforms is None:
         cell_transforms = {}
-    cell_transforms["tags"] = format_tags
+    tag_col = "Tags" if "Tags" in args.columns else "tags"
+    cell_transforms.setdefault(tag_col, format_tags)
     if getattr(args, "json", None):
         table = [{f: get_cell(i, f, cell_transforms.get(f)) for f in args.columns} for i in collection]
         return json.dumps(table, indent=2, default=lambda x: str(x))
