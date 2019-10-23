@@ -1,3 +1,8 @@
+Changes for v2.9.0 (2019-10-22)
+===============================
+
+-  aegea launch: add –efs-home and update EFS infra code
+
 Changes for v2.8.3 (2019-10-17)
 ===============================
 
