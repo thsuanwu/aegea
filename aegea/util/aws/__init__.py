@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, json, io, gzip, time
+import os, sys, json, io, gzip, time, socket
 import requests
 from warnings import warn
 from datetime import datetime, timedelta
@@ -126,7 +126,7 @@ def resolve_security_group(name, vpc=None):
             return security_group
     raise KeyError(name)
 
-def ensure_security_group(name, vpc, tcp_ingress=[dict(port=22, cidr="0.0.0.0/0")]):
+def ensure_security_group(name, vpc, tcp_ingress=[dict(port=socket.getservbyname("ssh"), cidr="0.0.0.0/0")]):
     try:
         security_group = resolve_security_group(name, vpc)
     except (ClientError, KeyError):
