@@ -118,7 +118,7 @@ class TestAegea(unittest.TestCase):
                   shell=True, expect=unauthorized_ok)
         self.call("aegea launch unittest --duration 0.5 --min-mem 6 --cores 2 --dry-run --no-verify --client-token t",
                   shell=True, expect=unauthorized_ok)
-        self.call("aegea build_ami i --dry-run --no-verify-ssh-key-pem-file",
+        self.call("aegea build-ami i --dry-run --no-verify-ssh-key-pem-file",
                   shell=True, expect=unauthorized_ok)
 
     def test_spot_fleet_builder(self):
