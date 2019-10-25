@@ -142,8 +142,6 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
     parser_name = name or function.__name__
     if parent.prog not in _subparsers:
         _subparsers[parent.prog] = parent.add_subparsers()
-    if "_" in parser_name and not USING_PYTHON2:
-        add_parser_args["aliases"] = [parser_name]
     if "description" not in add_parser_args:
         func_module = sys.modules[function.__module__]
         add_parser_args["description"] = add_parser_args.get("help", function.__doc__ or func_module.__doc__)
