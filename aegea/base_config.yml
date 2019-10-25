@@ -472,6 +472,7 @@ rds_ls:
   columns:
     - DBClusterIdentifier
     - DBClusterParameterGroup
+    - DBClusterArn
     - Status
     - Engine
     - EngineMode
