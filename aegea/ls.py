@@ -98,9 +98,10 @@ def describe_peer(peer):
 def security_groups(args):
     def format_rule(row, perm, peer, egress=False):
         peer_desc, row.peer_description = describe_peer(peer)
-        row.rule = BLUE("●") + ":" + str(perm.get("FromPort" if egress else "ToPort", "*"))
+        port_range = str(perm.get("FromPort", 1)) + "-" + str(perm.get("ToPort", 65535))
+        row.rule = BLUE("●") + ":" + ("*" if egress else port_range)
         row.rule += GREEN("▶") if egress else GREEN("◀")
-        row.rule += peer_desc + ":" + str(perm.get("ToPort" if egress else "FromPort", "*"))
+        row.rule += peer_desc + ":" + (port_range if egress else "*")
         row.proto = "*" if perm["IpProtocol"] == "-1" else perm["IpProtocol"]
     table = []
     for sg in resources.ec2.security_groups.all():
