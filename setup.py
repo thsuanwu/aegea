@@ -1,13 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, glob, subprocess, textwrap
-
-try:
-    import setuptools
-    assert int(setuptools.__version__.split(".", 1)[0]) >= 19
-except (ImportError, AssertionError):
-    msg = 'Error: Aegea failed to install because your version of setuptools is too old ({}; 19 is required). Run "make install_venv" to install aegea in its own virtualenv, or upgrade your pip and setuptools to their latest versions.' # noqa
-    exit(textwrap.fill(msg.format(setuptools.__version__)))
+import os, sys, glob, subprocess, textwrap, setuptools
 
 try:
     # Git version extraction logic designed to be compatible with both semver and PEP 440
