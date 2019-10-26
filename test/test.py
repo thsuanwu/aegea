@@ -3,7 +3,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, unittest, collections, itertools, copy, re, subprocess, importlib, pkgutil, json, datetime, glob, time
+import os, sys, unittest, argparse, collections, copy, re, subprocess, importlib, pkgutil, json, datetime, glob, time
 
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
 sys.path.insert(0, pkg_root)  # noqa
@@ -13,9 +13,10 @@ from aegea.util.cloudinit import get_user_data
 from aegea.util.aws import (resolve_ami, IAMPolicyBuilder, locate_ami, get_ondemand_price_usd, ARN,
                             get_public_ip_ranges, ensure_s3_bucket, encode_tags, decode_tags, filter_by_tags,
                             clients, resources, get_bdm, get_iam_role_for_instance, make_waiter)
+from aegea.util.aws.batch import ensure_job_definition
 from aegea.util.aws.spot import SpotFleetBuilder
-from aegea.util.exceptions import AegeaException
 from aegea.util.compat import USING_PYTHON2, str
+from aegea.util.exceptions import AegeaException
 from aegea.util.git import private_submodules
 
 for importer, modname, is_pkg in pkgutil.iter_modules(aegea.__path__):
@@ -279,6 +280,12 @@ class TestAegea(unittest.TestCase):
                   expect=unauthorized_ok)
         self.call("aegea secrets delete {s} --iam-role aegea.launch".format(s=secret_name), shell=True,
                   expect=unauthorized_ok)
+
+    def test_ensure_job_definition(self):
+        from aegea.batch import submit_parser
+        jd1 = ensure_job_definition(submit_parser.parse_args(["--command", ""]))
+        jd2 = ensure_job_definition(submit_parser.parse_args(["--command", ""]))
+        self.assertEqual(jd1["jobDefinitionArn"], jd2["jobDefinitionArn"])
 
     @unittest.skipUnless("GH_AUTH" in os.environ, "requires GitHub credentials")
     def test_git_utils(self):

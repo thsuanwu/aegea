@@ -1,9 +1,11 @@
-import io, json, base64, hashlib
+import io, json, base64, hashlib, argparse
 
 import yaml
 from botocore.exceptions import ClientError
+from botocore.paginate import Paginator
 
-from . import ARN, resources, clients, expect_error_codes, ensure_s3_bucket
+from . import ARN, resources, clients, expect_error_codes, ensure_s3_bucket, ensure_iam_role
+from .. import paginate
 from ..exceptions import AegeaException
 from ... import __version__
 
@@ -146,3 +148,53 @@ def get_command_and_env(args):
         ]
     args.command = bash_cmd_preamble + shellcode + (args.command or [])
     return args.command, args.environment
+
+def get_ecr_image_uri(tag):
+    return "{}.dkr.ecr.{}.amazonaws.com/{}".format(ARN.get_account_id(), ARN.get_region(), tag)
+
+def ensure_ecr_image(tag):
+    pass
+
+def set_ulimits(args, container_props):
+    if args.ulimits:
+        container_props.setdefault("ulimits", [])
+        for ulimit in args.ulimits:
+            name, value = ulimit.split(":", 1)
+            container_props["ulimits"].append(dict(name=name, hardLimit=int(value), softLimit=int(value)))
+
+def set_volumes(args, container_props):
+    if args.volumes:
+        for i, (host_path, guest_path) in enumerate(args.volumes):
+            container_props["volumes"].append({"host": {"sourcePath": host_path}, "name": "vol%d" % i})
+            container_props["mountPoints"].append({"sourceVolume": "vol%d" % i, "containerPath": guest_path})
+
+def ensure_job_definition(args):
+    if args.ecs_image:
+        args.image = get_ecr_image_uri(args.ecs_image)
+    container_props = {k: getattr(args, k) for k in ("image", "vcpus", "memory", "privileged")}
+    container_props.update(volumes=[], mountPoints=[], environment=[], command=[], resourceRequirements=[])
+    set_volumes(args, container_props)
+    set_ulimits(args, container_props)
+    if args.gpus:
+        container_props["resourceRequirements"] = [{"type": "GPU", "value": str(args.gpus)}]
+    iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"],
+                               policies=["AmazonEC2FullAccess", "AmazonDynamoDBFullAccess", "AmazonS3FullAccess"])
+    container_props.update(jobRoleArn=iam_role.arn)
+    expect_job_defn = dict(status="ACTIVE", type="container", parameters={},
+                           retryStrategy={'attempts': args.retry_attempts}, containerProperties=container_props)
+    job_hash = hashlib.sha256(json.dumps(container_props, sort_keys=True).encode()).hexdigest()[:8]
+    job_defn_name = __name__.replace(".", "_") + "_job_" + job_hash
+    describe_job_definitions_paginator = Paginator(method=clients.batch.describe_job_definitions,
+                                                   pagination_config=dict(result_key="jobDefinitions",
+                                                                          input_token="nextToken",
+                                                                          output_token="nextToken",
+                                                                          limit_key="maxResults"),
+                                                   model=None)
+    for job_defn in paginate(describe_job_definitions_paginator, jobDefinitionName=job_defn_name):
+        job_defn_desc = {k: job_defn.pop(k) for k in ("jobDefinitionName", "jobDefinitionArn", "revision")}
+        if job_defn == expect_job_defn:
+            return job_defn_desc
+    return clients.batch.register_job_definition(jobDefinitionName=job_defn_name,
+                                                 type="container",
+                                                 containerProperties=container_props,
+                                                 retryStrategy=dict(attempts=args.retry_attempts))

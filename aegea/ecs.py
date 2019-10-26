@@ -9,7 +9,7 @@ import argparse, time, json
 from botocore.exceptions import ClientError
 
 from . import logger
-from .batch import add_command_args, add_job_defn_args, set_ulimits, set_volumes, get_ecr_image_uri
+from .batch import add_command_args, add_job_defn_args
 from .ls import register_parser, register_listing_parser
 from .util import Timestamp, paginate
 from .util.compat import USING_PYTHON2
@@ -17,7 +17,7 @@ from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_iam_role, ensure_log_group,
                        expect_error_codes)
 from .util.aws.logs import CloudwatchLogReader
-from .util.aws.batch import get_command_and_env
+from .util.aws.batch import get_command_and_env, set_ulimits, set_volumes, get_ecr_image_uri
 
 def ecs(args):
     ecs_parser.print_help()

@@ -7,8 +7,9 @@ from botocore.exceptions import ClientError
 
 from . import register_parser, logger, config, __version__
 from .util.aws import ARN, clients, resources, expect_error_codes, ensure_iam_role, IAMPolicyBuilder
+from .util.aws.batch import bash_cmd_preamble
 from .util.cloudinit import get_bootstrap_files, encode_cloud_config_payload
-from .batch import submit, submit_parser, bash_cmd_preamble
+from .batch import submit, submit_parser
 
 dockerfile = """
 FROM {base_image}

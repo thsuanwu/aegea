@@ -5,10 +5,8 @@ Manage AWS Batch jobs, queues, and compute environments.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib
-from datetime import datetime
 
 from botocore.exceptions import ClientError
-from botocore.paginate import Paginator
 
 from . import logger
 from .ls import register_parser, register_listing_parser
@@ -16,11 +14,11 @@ from .ecr import ecr_image_name_completer
 from .util import Timestamp, paginate
 from .util.crypto import ensure_ssh_key
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
-from .util.aws import (ARN, resources, clients, ensure_iam_role, ensure_instance_profile, make_waiter, ensure_vpc,
+from .util.aws import (resources, clients, ensure_iam_role, ensure_instance_profile, make_waiter, ensure_vpc,
                        ensure_security_group, ensure_log_group, IAMPolicyBuilder, resolve_ami)
 from .util.aws.spot import SpotFleetBuilder
 from .util.aws.logs import CloudwatchLogReader
-from .util.aws.batch import bash_cmd_preamble, ebs_vol_mgr_shellcode, get_command_and_env
+from .util.aws.batch import ensure_job_definition, get_command_and_env
 
 def complete_queue_name(**kwargs):
     return [q["jobQueueName"] for q in paginate(clients.batch.get_paginator("describe_job_queues"))]
@@ -133,56 +131,6 @@ def delete_compute_environment(args):
 
 parser = register_parser(delete_compute_environment, parent=batch_parser, help="Delete a Batch compute environment")
 parser.add_argument("name").completer = complete_ce_name
-
-def get_ecr_image_uri(tag):
-    return "{}.dkr.ecr.{}.amazonaws.com/{}".format(ARN.get_account_id(), ARN.get_region(), tag)
-
-def ensure_ecr_image(tag):
-    pass
-
-def set_ulimits(args, container_props):
-    if args.ulimits:
-        container_props.setdefault("ulimits", [])
-        for ulimit in args.ulimits:
-            name, value = ulimit.split(":", 1)
-            container_props["ulimits"].append(dict(name=name, hardLimit=int(value), softLimit=int(value)))
-
-def set_volumes(args, container_props):
-    if args.volumes:
-        for i, (host_path, guest_path) in enumerate(args.volumes):
-            container_props["volumes"].append({"host": {"sourcePath": host_path}, "name": "vol%d" % i})
-            container_props["mountPoints"].append({"sourceVolume": "vol%d" % i, "containerPath": guest_path})
-
-def ensure_job_definition(args):
-    if args.ecs_image:
-        args.image = get_ecr_image_uri(args.ecs_image)
-    container_props = {k: getattr(args, k) for k in ("image", "vcpus", "memory", "privileged")}
-    container_props.update(volumes=[], mountPoints=[], environment=[], command=[], resourceRequirements=[])
-    set_volumes(args, container_props)
-    set_ulimits(args, container_props)
-    if args.gpus:
-        container_props["resourceRequirements"] = [{"type": "GPU", "value": str(args.gpus)}]
-    iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"],
-                               policies=["AmazonEC2FullAccess", "AmazonDynamoDBFullAccess", "AmazonS3FullAccess"])
-    container_props.update(jobRoleArn=iam_role.arn)
-    expect_job_defn = dict(status="ACTIVE", type="container", parameters={},
-                           retryStrategy={'attempts': args.retry_attempts}, containerProperties=container_props)
-    job_hash = hashlib.sha256(json.dumps(container_props, sort_keys=True).encode()).hexdigest()[:8]
-    job_defn_name = __name__.replace(".", "_") + "_job_" + job_hash
-    describe_job_definitions_paginator = Paginator(method=clients.batch.describe_job_definitions,
-                                                   pagination_config=dict(result_key="jobDefinitions",
-                                                                          input_token="nextToken",
-                                                                          output_token="nextToken",
-                                                                          limit_key="maxResults"),
-                                                   model=None)
-    for job_defn in paginate(describe_job_definitions_paginator, jobDefinitionName=job_defn_name):
-        job_defn_desc = {k: job_defn.pop(k) for k in ("jobDefinitionName", "jobDefinitionArn", "revision")}
-        if job_defn == expect_job_defn:
-            return job_defn_desc
-    return clients.batch.register_job_definition(jobDefinitionName=job_defn_name,
-                                                 type="container",
-                                                 containerProperties=container_props,
-                                                 retryStrategy=dict(attempts=args.retry_attempts))
 
 def ensure_queue(name):
     cq_args = argparse.Namespace(name=name, priority=5, compute_environments=[name])
