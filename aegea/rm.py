@@ -74,7 +74,10 @@ def rm(args):
                             instance_profile.delete() if args.force else True
                         for policy in role.attached_policies.all():
                             role.detach_policy(PolicyArn=policy.arn) if args.force else True
+                        for policy in role.policies.all():
+                            policy.delete() if args.force else True
                         role.delete() if args.force else True
+                        break
                 else:
                     raise Exception("Role {} not found".format(name))
             else:
