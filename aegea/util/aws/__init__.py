@@ -459,7 +459,7 @@ def get_products(service_code, region=None, filters=None, terms=None, max_cache_
                 continue
             term = list(term_value.values())[0]
             for price_dimension in term["priceDimensions"].values():
-                yield dict(product, **term["termAttributes"], **price_dimension)
+                yield dict(dict(product, **term["termAttributes"]), **price_dimension)
 
 def get_ondemand_price_usd(region, instance_type, **kwargs):
     from ... import config
