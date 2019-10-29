@@ -1,3 +1,8 @@
+Changes for v3.0.2 (2019-10-29)
+===============================
+
+-  Fix dockerd configuration for default AMI
+
 Changes for v3.0.1 (2019-10-29)
 ===============================
 
