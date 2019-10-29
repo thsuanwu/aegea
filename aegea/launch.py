@@ -24,7 +24,7 @@ from .util import wait_for_port, validate_hostname, paginate
 from .util.cloudinit import get_user_data
 from .util.aws import (ensure_vpc, ensure_subnet, ensure_security_group, ensure_log_group, ensure_instance_profile,
                        add_tags, resolve_security_group, get_bdm, resolve_instance_id, expect_error_codes, resolve_ami,
-                       get_ondemand_price_usd, resources, clients, ARN)
+                       get_ondemand_price_usd, resources, clients, ARN, instance_type_completer)
 from .util.aws.dns import DNSZone, get_client_token
 from .util.aws.spot import SpotFleetBuilder
 from .util.crypto import new_ssh_key, add_ssh_host_key_to_known_hosts, ensure_ssh_key, hostkey_line
@@ -194,7 +194,7 @@ parser.add_argument("--spot", action="store_true",
 parser.add_argument("--duration-hours", type=float, help="Terminate the spot instance after this number of hours")
 parser.add_argument("--cores", type=int, help="Minimum number of cores to request (spot fleet API)")
 parser.add_argument("--min-mem-per-core-gb", type=float)
-parser.add_argument("--instance-type", "-t")
+parser.add_argument("--instance-type", "-t").completer = instance_type_completer
 parser.add_argument("--spot-price", type=float,
                     help="Maximum bid price for spot instances. Defaults to 1.2x the ondemand price.")
 parser.add_argument("--no-dns", dest="use_dns", action="store_false", help="""

@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, json, io, gzip, time, socket
+import os, sys, json, io, gzip, time, socket, hashlib
 import requests
 from warnings import warn
 from datetime import datetime, timedelta
@@ -413,46 +413,59 @@ def region_name(region_id):
         region_ids.update({v: k for k, v in region_names.items()})
     return region_names[region_id]
 
-def get_pricing_data(offer, max_cache_age_days=30):
+def get_pricing_data(service_code, filters=None, max_cache_age_days=30):
     from ... import config
-    offer_filename = os.path.join(config.user_config_dir, offer + "_pricing_cache.json.gz")
+
+    if filters is None:
+        filters = [("location", region_name(clients.ec2.meta.region_name))]
+
+    get_products_args = dict(ServiceCode=service_code,
+                             Filters=[dict(Type="TERM_MATCH", Field=k, Value=v) for k, v in filters])
+    cache_key = hashlib.sha256(json.dumps(get_products_args, sort_keys=True).encode()).hexdigest()[:32]
+    service_code_filename = os.path.join(config.user_config_dir, "pricing_cache_{}.json.gz".format(cache_key))
     try:
-        cache_date = datetime.fromtimestamp(os.path.getmtime(offer_filename))
+        cache_date = datetime.fromtimestamp(os.path.getmtime(service_code_filename))
         if cache_date < datetime.now() - timedelta(days=max_cache_age_days):
             raise Exception("Cache is too old, discard")
-        with gzip.open(offer_filename) as gz_fh:
+        with gzip.open(service_code_filename) as gz_fh:
             with io.BufferedReader(gz_fh) as buf_fh:
-                pricing_data = json.loads(buf_fh.read().decode("utf-8"))
+                pricing_data = json.loads(buf_fh.read().decode())
     except Exception:
-        logger.info("Fetching pricing data for %s. This may take time.", offer)
-        url = offers_api + "/aws/{offer}/current/index.json".format(offer=offer)
-        pricing_data = requests.get(url).json()
+        logger.info("Fetching pricing data for %s", service_code)
+        client = boto3.client("pricing", region_name="us-east-1")
+        pricing_data = [json.loads(p) for p in paginate(client.get_paginator("get_products"), **get_products_args)]
         try:
-            with gzip.open(offer_filename, "w") as fh:
-                fh.write(json.dumps(pricing_data).encode("utf-8"))
+            with gzip.open(service_code_filename, "w") as fh:
+                fh.write(json.dumps(pricing_data).encode())
         except Exception as e:
             print(e, file=sys.stderr)
     return pricing_data
 
-def get_ec2_products(region=None, instance_type=None, tenancy="Shared", operating_system="Linux",
-                     pre_installed_sw="NA", capacitystatus="Used"):
-    pricing_data = get_pricing_data("AmazonEC2")
-    required_attributes = dict(tenancy=tenancy, operatingSystem=operating_system, preInstalledSw=pre_installed_sw,
-                               capacitystatus=capacitystatus)
-    if region:
-        required_attributes.update(location=region_name(region))
-    if instance_type:
-        required_attributes.update(instanceType=instance_type)
-    for product in pricing_data["products"].values():
-        if not all(product["attributes"].get(i) == required_attributes[i] for i in required_attributes):
-            continue
-        if product["sku"] in pricing_data["terms"]["OnDemand"]:
-            ondemand_terms = list(pricing_data["terms"]["OnDemand"][product["sku"]].values())[0]
-            product.update(list(ondemand_terms["priceDimensions"].values())[0])
-        yield product
+def get_products(service_code, region=None, filters=None, terms=None, max_cache_age_days=30):
+    from ... import config
+
+    if region is None:
+        region = clients.ec2.meta.region_name
+    if terms is None:
+        terms = ["OnDemand"]
+    if filters is None:
+        filters = [("location", region_name(clients.ec2.meta.region_name))]
+        filters += getattr(config.pricing, "filters_" + service_code, [])
+    pricing_data = get_pricing_data(service_code, filters=filters, max_cache_age_days=max_cache_age_days)
+    for product in pricing_data:
+        product.update(product["product"].pop("attributes"))
+        for term_name, term_value in product.pop("terms").items():
+            if term_name not in terms:
+                continue
+            term = list(term_value.values())[0]
+            for price_dimension in term["priceDimensions"].values():
+                yield dict(product, **term["termAttributes"], **price_dimension)
 
 def get_ondemand_price_usd(region, instance_type, **kwargs):
-    for product in get_ec2_products(region=region, instance_type=instance_type, **kwargs):
+    from ... import config
+
+    filters = [("location", region_name(region)), ("InstanceType", instance_type)] + config.pricing.filters_AmazonEC2
+    for product in get_products("AmazonEC2", region=region, filters=filters, **kwargs):
         if float(product["pricePerUnit"]["USD"]) == 0:
             continue
         return product["pricePerUnit"]["USD"]
@@ -527,3 +540,6 @@ def get_cloudwatch_metric_stats(namespace, name, start_time=None, end_time=None,
     if period is not None:
         get_stats_args.update(Period=period)
     return metric.get_statistics(**get_stats_args)
+
+def instance_type_completer(max_cache_age_days=30, **kwargs):
+    return [p["instanceType"] for p in get_products("AmazonEC2")]

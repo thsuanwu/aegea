@@ -15,7 +15,7 @@ from .util import Timestamp, paginate
 from .util.crypto import ensure_ssh_key
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 from .util.aws import (resources, clients, ensure_iam_role, ensure_instance_profile, make_waiter, ensure_vpc,
-                       ensure_security_group, ensure_log_group, IAMPolicyBuilder, resolve_ami)
+                       ensure_security_group, ensure_log_group, IAMPolicyBuilder, resolve_ami, instance_type_completer)
 from .util.aws.spot import SpotFleetBuilder
 from .util.aws.logs import CloudwatchLogReader
 from .util.aws.batch import ensure_job_definition, get_command_and_env
@@ -100,7 +100,7 @@ cce_parser.add_argument("--compute-type", choices={"EC2", "SPOT"})
 cce_parser.add_argument("--min-vcpus", type=int)
 cce_parser.add_argument("--desired-vcpus", type=int)
 cce_parser.add_argument("--max-vcpus", type=int)
-cce_parser.add_argument("--instance-types", nargs="+")
+cce_parser.add_argument("--instance-types", nargs="+").completer = instance_type_completer
 cce_parser.add_argument("--ssh-key-name")
 cce_parser.add_argument("--instance-role", default=__name__ + ".ecs_container_instance")
 cce_parser.add_argument("--service-role", default=__name__ + ".service")

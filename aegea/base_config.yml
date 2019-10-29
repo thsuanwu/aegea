@@ -173,6 +173,7 @@ ls:
     - iam_instance_profile
     - security_groups
     - state_reason
+    - instance_lifecycle
 
 iam_users:
   resource: iam
@@ -650,6 +651,40 @@ launch:
 ssh:
   server_alive_interval: 15
   server_alive_count_max: 20
+
+pricing:
+  max_cache_age_days: 30
+  columns:
+    - product.productFamily
+    - location
+    - unit
+    - pricePerUnit.USD
+    - description
+  columns_AmazonEC2:
+    - instanceType
+    - vcpu
+    - memory
+    - storage
+    - networkPerformance
+  filters_AmazonEC2:
+    - ["operatingSystem", "Linux"]
+    - ["tenancy", "Shared"]
+    - ["capacitystatus", "used"]
+    - ["preInstalledSw", "NA"]
+  sort_by_AmazonEC2: instanceType
+  columns_AmazonRDS:
+    - databaseEngine
+    - instanceType
+    - vcpu
+    - memory
+    - storage
+    - networkPerformance
+  columns_spot:
+    - AvailabilityZone
+    - InstanceType
+    - ProductDescription
+    - SpotPrice
+    - Timestamp
 
 managed_iam_groups:
   aegea.launch:
