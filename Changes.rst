@@ -1,3 +1,24 @@
+Changes for v3.0.0 (2019-10-28)
+===============================
+
+-  Begin aegea cost
+
+-  Update pricing code to use pricing API
+
+-  Add instance type and service name completers
+
+-  aegea rm: Fix IAM policy deletion logic
+
+-  aegea security-groups: render port ranges correctly
+
+-  aegea rds ls: add ARN
+
+-  Use getservbyname for SSH port
+
+-  Recognize only dash-separated commands
+
+-  Test improvements
+
 Changes for v2.9.0 (2019-10-22)
 ===============================
 
