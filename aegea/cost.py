@@ -19,7 +19,8 @@ def cost(args):
                                    Granularity=args.granularity, Metrics=args.metrics,
                                    GroupBy=[dict(Type="DIMENSION", Key=k) for k in args.group_by])
     rows = collections.defaultdict(dict)
-    args.columns, cell_transforms = [args.group_by[0]], {"TOTAL": format_float}
+    title = "{} ({})".format(args.group_by[0], boto3.session.Session().profile_name)
+    args.columns, cell_transforms = [title], {"TOTAL": format_float}
     for page in clients.ce.get_cost_and_usage(**get_cost_and_usage_args)["ResultsByTime"]:
         args.columns.append(page["TimePeriod"]["Start"])
         cell_transforms[page["TimePeriod"]["Start"]] = format_float
@@ -27,7 +28,7 @@ def cost(args):
             value = group["Metrics"][args.metrics[0]]
             if isinstance(value, dict) and "Amount" in value:
                 value = float(value["Amount"])
-            rows[group["Keys"][0]].setdefault(args.group_by[0], group["Keys"][0])
+            rows[group["Keys"][0]].setdefault(title, group["Keys"][0])
             rows[group["Keys"][0]].setdefault("TOTAL", 0)
             rows[group["Keys"][0]]["TOTAL"] += value
             rows[group["Keys"][0]][page["TimePeriod"]["Start"]] = value
@@ -47,5 +48,5 @@ parser.add_argument("--time-period-end", type=Timestamp, default=Timestamp("-1d"
 parser.add_argument("--granularity", default="DAILY", choices={"HOURLY", "DAILY", "MONTHLY"})
 parser.add_argument("--group-by", nargs="+", default=["SERVICE"],
                     choices={"AZ", "INSTANCE_TYPE", "LEGAL_ENTITY_NAME", "LINKED_ACCOUNT", "OPERATION", "PLATFORM",
-                             "PURCHASE_TYPE", "SERVICE", "TAGS", "TENANCY", "USAGE_TYPE"})
+                             "PURCHASE_TYPE", "SERVICE", "TAGS", "TENANCY", "USAGE_TYPE", "REGION"})
 parser.add_argument("--min-total", type=int, default=1, help="Omit rows that total below this number")
