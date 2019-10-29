@@ -11,6 +11,10 @@ from .util.printing import format_table, page_output, tabulate, format_datetime
 from .util.aws import region_name, offers_api, clients, instance_type_completer, get_products
 from .util.compat import median
 
+def describe_services():
+    client = boto3.client("pricing", region_name="us-east-1")
+    return paginate(client.get_paginator("describe_services"))
+
 def pricing(args):
     if args.spot:
         args.columns = args.columns_spot
@@ -28,13 +32,13 @@ def pricing(args):
                              max_cache_age_days=args.max_cache_age_days)
         page_output(tabulate(table, args))
     else:
-        client = boto3.client("pricing", region_name="us-east-1")
         args.columns = ["ServiceCode", "AttributeNames"]
-        page_output(tabulate(paginate(client.get_paginator("describe_services")), args))
+        page_output(tabulate(describe_services(), args))
 
 parser = register_parser(pricing, help="List AWS prices")
-parser.add_argument("service_code", nargs="?", help="""
+pricing_arg = parser.add_argument("service_code", nargs="?", help="""
 AWS product offer to list prices for. Run without this argument to see the list of available product service codes.""")
+pricing_arg.completer = lambda **kwargs: [service["ServiceCode"] for service in describe_services()]
 parser.add_argument("--columns", nargs="+")
 parser.add_argument("--filters", nargs="+", metavar="NAME=VALUE", type=lambda x: x.split("=", 1), default=[])
 parser.add_argument("--terms", nargs="+", default=["OnDemand"])
