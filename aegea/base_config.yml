@@ -686,6 +686,14 @@ pricing:
     - SpotPrice
     - Timestamp
 
+cost:
+  granularity: DAILY
+  min_total: 1
+
+cost_forecast:
+  granularity: DAILY
+  metric: AMORTIZED_COST
+
 managed_iam_groups:
   aegea.launch:
     - AmazonEC2FullAccess

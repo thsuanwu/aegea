@@ -49,14 +49,14 @@ parser_cost.add_argument("--time-period-start", type=Timestamp, default=Timestam
                          help="Time to start cost history." + Timestamp.__doc__)
 parser_cost.add_argument("--time-period-end", type=Timestamp, default=Timestamp("-1d"),
                          help="Time to end cost history." + Timestamp.__doc__)
-parser_cost.add_argument("--granularity", default="DAILY", choices={"HOURLY", "DAILY", "MONTHLY"})
+parser_cost.add_argument("--granularity", choices={"HOURLY", "DAILY", "MONTHLY"}, help="AWS cost granularity")
 parser_cost.add_argument("--metrics", nargs="+", default=["AmortizedCost"],
                          choices={"AmortizedCost", "BlendedCost", "NetAmortizedCost", "NetUnblendedCost",
                                   "NormalizedUsageAmount", "UnblendedCost", "UsageQuantity"})
 parser_cost.add_argument("--group-by", nargs="+", default=["SERVICE"],
                          choices={"AZ", "INSTANCE_TYPE", "LEGAL_ENTITY_NAME", "LINKED_ACCOUNT", "OPERATION", "PLATFORM",
                                   "PURCHASE_TYPE", "SERVICE", "TAGS", "TENANCY", "USAGE_TYPE", "REGION"})
-parser_cost.add_argument("--min-total", type=int, default=1, help="Omit rows that total below this number")
+parser_cost.add_argument("--min-total", type=int, help="Omit rows that total below this number")
 
 def cost_forecast(args):
     get_cost_forecast_args = dict(get_common_method_args(args), Metric=args.metric, PredictionIntervalLevel=75)
@@ -73,7 +73,8 @@ parser_cost_forecast.add_argument("--time-period-start", type=Timestamp, default
                                   help="Time to start cost forecast." + Timestamp.__doc__)
 parser_cost_forecast.add_argument("--time-period-end", type=Timestamp, default=Timestamp("7d"),
                                   help="Time to end cost forecast." + Timestamp.__doc__)
-parser_cost_forecast.add_argument("--granularity", default="DAILY", choices={"HOURLY", "DAILY", "MONTHLY"})
-parser_cost_forecast.add_argument("--metric", default="AMORTIZED_COST",
+parser_cost_forecast.add_argument("--granularity", choices={"HOURLY", "DAILY", "MONTHLY"},
+                                  help="Up to 3 months of DAILY forecasts or 12 months of MONTHLY forecasts")
+parser_cost_forecast.add_argument("--metric", help="Which metric Cost Explorer uses to create your forecast",
                                   choices={"USAGE_QUANTITY", "UNBLENDED_COST", "NET_UNBLENDED_COST", "AMORTIZED_COST",
                                            "NET_AMORTIZED_COST", "BLENDED_COST", "NORMALIZED_USAGE_AMOUNT"})
