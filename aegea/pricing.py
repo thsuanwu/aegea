@@ -15,6 +15,16 @@ def describe_services():
     client = boto3.client("pricing", region_name="us-east-1")
     return paginate(client.get_paginator("describe_services"))
 
+def get_instance_type_sort_key(args):
+    def instance_type_sort_key(row):
+        instance_type = re.match(r"(.+)\.(\d*)(.+)", row[args.columns.index("instanceType")])
+        family, mx, size = instance_type.groups() if instance_type else (0, 0, 0)
+        if size == "metal":
+            mx = sys.maxsize
+        size_order = ["nano", "micro", "small", "medium", "large", "xlarge"]
+        return family, int(mx) if mx else 1, size_order.index(size) if size in size_order else sys.maxsize
+    return instance_type_sort_key
+
 def pricing(args):
     if args.spot:
         args.columns = args.columns_spot
@@ -28,14 +38,7 @@ def pricing(args):
         if hasattr(args, "sort_by_" + args.service_code):
             args.sort_by = getattr(args, "sort_by_" + args.service_code)
         if args.sort_by == "instanceType":
-            def key(row):
-                instance_type = re.match(r"(.+)\.(\d*)(.+)", row[args.columns.index("instanceType")])
-                family, mx, size = instance_type.groups() if instance_type else 0, 0, 0
-                if size == "metal":
-                    mx = sys.maxsize
-                size_order = ["nano", "micro", "small", "medium", "large", "xlarge"]
-                return family, int(mx) if mx else 1, size_order.index(size) if size in size_order else sys.maxsize
-            args.sort_by = key
+            args.sort_by = get_instance_type_sort_key(args)
         filters = [("location", region_name(args.region))] + args.filters
         table = get_products(args.service_code, region=args.region, filters=filters, terms=args.terms,
                              max_cache_age_days=args.max_cache_age_days)
