@@ -55,6 +55,8 @@ class TestAegea(unittest.TestCase):
         self.call(["aegea", "--help"])
         self.call(["aegea", "--version"])
         self.call(["aegea", "pricing"])
+        self.call(["aegea", "pricing", "AmazonEC2"])
+        self.call(["aegea", "pricing", "AmazonRDS"])
         self.call(["aegea", "ls", "-w9"])
         for ssh_cmd in "ssh", "scp":
             self.call(["aegea", ssh_cmd, "nonexistent_instance:"],
