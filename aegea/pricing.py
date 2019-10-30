@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, json
+import os, sys, json, re
 from datetime import datetime, timedelta
 
 import boto3, requests
@@ -27,6 +27,15 @@ def pricing(args):
         args.filters += getattr(args, "filters_" + args.service_code, [])
         if hasattr(args, "sort_by_" + args.service_code):
             args.sort_by = getattr(args, "sort_by_" + args.service_code)
+        if args.sort_by == "instanceType":
+            def key(row):
+                instance_type = re.match(r"(.+)\.(\d*)(.+)", row[args.columns.index("instanceType")])
+                family, mx, size = instance_type.groups() if instance_type else 0, 0, 0
+                if size == "metal":
+                    mx = sys.maxsize
+                size_order = ["nano", "micro", "small", "medium", "large", "xlarge"]
+                return family, int(mx) if mx else 1, size_order.index(size) if size in size_order else sys.maxsize
+            args.sort_by = key
         filters = [("location", region_name(args.region))] + args.filters
         table = get_products(args.service_code, region=args.region, filters=filters, terms=args.terms,
                              max_cache_age_days=args.max_cache_age_days)
