@@ -46,10 +46,10 @@ def create(args):
         raise SystemExit("Arguments --format and --mount require --attach")
     if not args.size:
         raise SystemExit("Argument --size-gb is required")
-    create_args = dict(Size=args.size)
+    create_args = dict(Size=args.size, Encrypted=True)
     if args.tags:
         create_args.update(TagSpecifications=[dict(ResourceType="volume", Tags=encode_tags(args.tags))])
-    for arg in "dry_run snapshot_id availability_zone volume_type iops encrypted kms_key_id".split():
+    for arg in "dry_run snapshot_id availability_zone volume_type iops kms_key_id".split():
         if getattr(args, arg) is not None:
             create_args["".join(x.capitalize() for x in arg.split("_"))] = getattr(args, arg)
     if "AvailabilityZone" not in create_args:
@@ -71,7 +71,6 @@ parser_create = register_parser(create, parent=ebs_parser, help="Create an EBS v
 parser_create.add_argument("--dry-run", action="store_true")
 parser_create.add_argument("--snapshot-id")
 parser_create.add_argument("--availability-zone")
-parser_create.add_argument("--encrypted", action="store_true")
 parser_create.add_argument("--kms-key-id")
 parser_create.add_argument("--tags", nargs="+", metavar="TAG_NAME=VALUE")
 parser_create.add_argument("--attach", action="store_true",
