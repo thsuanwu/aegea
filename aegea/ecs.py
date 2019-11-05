@@ -51,7 +51,7 @@ def tasks(args):
 
 parser = register_listing_parser(tasks, parent=ecs_parser, help="List ECS tasks")
 parser.add_argument("tasks", nargs="*")
-parser.add_argument("--cluster")
+parser.add_argument("--cluster", default=__name__.replace(".", "_"))
 parser.add_argument("--desired-status", choices={"RUNNING", "STOPPED"})
 parser.add_argument("--launch-type", choices={"EC2", "FARGATE"})
 
@@ -110,7 +110,7 @@ def run(args):
                                networkConfiguration=network_config)
     task_arn = res["tasks"][0]["taskArn"]
     if args.watch:
-        watch(watch_parser.parse_args([args.task_name, task_arn, "--cluster", args.cluster]))
+        watch(watch_parser.parse_args([task_arn, "--task-name", args.task_name]))
     elif args.wait:
         raise NotImplementedError()
     if args.watch or args.wait:
@@ -144,11 +144,11 @@ def format_task_status(status):
     return task_status_colors[status] + status + ENDC()
 
 def watch(args):
-    _, _, task_id = ARN(args.task_arn).resource.split("/")
-    logger.info("Watching task %s (%s)", task_id, args.cluster)
+    _, cluster, task_id = ARN(args.task_arn).resource.split("/")
+    logger.info("Watching task %s (%s)", task_id, cluster)
     last_status, events_received = None, 0
     while last_status != "STOPPED":
-        res = clients.ecs.describe_tasks(cluster=args.cluster, tasks=[args.task_arn])
+        res = clients.ecs.describe_tasks(cluster=cluster, tasks=[args.task_arn])
         if len(res["tasks"]) == 1:
             task_desc = res["tasks"][0]
             if task_desc["lastStatus"] != last_status:
@@ -166,9 +166,8 @@ def watch(args):
         time.sleep(1)
 
 watch_parser = register_parser(watch, parent=ecs_parser, help="Monitor a running ECS Fargate task and stream its logs")
-watch_parser.add_argument("task_name")
 watch_parser.add_argument("task_arn")
-watch_parser.add_argument("--cluster", default=__name__.replace(".", "_"))
+watch_parser.add_argument("--task-name", default=__name__.replace(".", "_"))
 lines_group = watch_parser.add_mutually_exclusive_group()
 lines_group.add_argument("--head", type=int, nargs="?", const=10,
                          help="Retrieve this number of lines from the beginning of the log (default 10)")
