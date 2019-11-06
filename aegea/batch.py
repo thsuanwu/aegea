@@ -77,7 +77,13 @@ def get_ssm_parameter(name):
 def create_compute_environment(args):
     commands = instance_storage_shellcode.strip().format(mountpoint="/mnt", mkfs=get_mkfs_command()).split("\n")
     user_data = get_user_data(commands=commands, mime_multipart_archive=True)
-    ecs_ami_id = get_ssm_parameter("/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id")
+    if args.ecs_container_instance_ami:
+        ecs_ami_id = args.ecs_container_instance_ami
+    elif args.ecs_container_instance_ami_tags:
+        # TODO: build ECS CI AMI on demand
+        ecs_ami_id = resolve_ami(**args.ecs_container_instance_ami_tags)
+    else:
+        ecs_ami_id = get_ssm_parameter("/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id")
     launch_template = ensure_launch_template(ImageId=ecs_ami_id,
                                              UserData=base64.b64encode(user_data).decode())
     batch_iam_role = ensure_iam_role(args.service_role, trust=["batch"], policies=["service-role/AWSBatchServiceRole"])
@@ -97,11 +103,6 @@ def create_compute_environment(args):
                              spotIamFleetRole=SpotFleetBuilder.get_iam_fleet_role().name,
                              ec2KeyPair=ssh_key_name,
                              launchTemplate=dict(launchTemplateName=launch_template))
-    if args.ecs_container_instance_ami:
-        compute_resources["imageId"] = args.ecs_container_instance_ami
-    elif args.ecs_container_instance_ami_tags:
-        # TODO: build ECS CI AMI on demand
-        compute_resources["imageId"] = resolve_ami(**args.ecs_container_instance_ami_tags)
     logger.info("Creating compute environment %s in %s", args.name, vpc)
     compute_environment = clients.batch.create_compute_environment(computeEnvironmentName=args.name,
                                                                    type=args.type,
