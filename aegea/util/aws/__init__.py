@@ -543,3 +543,9 @@ def get_cloudwatch_metric_stats(namespace, name, start_time=None, end_time=None,
 
 def instance_type_completer(max_cache_age_days=30, **kwargs):
     return [p["instanceType"] for p in get_products("AmazonEC2")]
+
+instance_storage_shellcode = """
+aegea_bd=(/dev/disk/by-id/nvme-Amazon_EC2_NVMe_Instance_Storage_AWS?????????????????)
+if [ ! -e /dev/md0 ]; then mdadm --create /dev/md0 --force --auto=yes --level=0 --chunk=256 --raid-devices=${{#aegea_bd[@]}} ${{aegea_bd[@]}}; mkfs.ext4 -L aegea-ephemeral -E lazy_itable_init,lazy_journal_init /dev/md0; fi
+mount -L aegea-ephemeral {mountpoint}
+"""  # noqa

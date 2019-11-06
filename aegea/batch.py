@@ -13,9 +13,11 @@ from .ls import register_parser, register_listing_parser
 from .ecr import ecr_image_name_completer
 from .util import Timestamp, paginate
 from .util.crypto import ensure_ssh_key
+from .util.cloudinit import get_user_data
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 from .util.aws import (resources, clients, ensure_iam_role, ensure_instance_profile, make_waiter, ensure_vpc,
-                       ensure_security_group, ensure_log_group, IAMPolicyBuilder, resolve_ami, instance_type_completer)
+                       ensure_security_group, ensure_log_group, IAMPolicyBuilder, resolve_ami, instance_type_completer,
+                       expect_error_codes, instance_storage_shellcode)
 from .util.aws.spot import SpotFleetBuilder
 from .util.aws.logs import CloudwatchLogReader
 from .util.aws.batch import ensure_job_definition, get_command_and_env
@@ -61,7 +63,18 @@ def compute_environments(args):
 
 parser = register_listing_parser(compute_environments, parent=batch_parser, help="List Batch compute environments")
 
+def ensure_launch_template(prefix=__name__.replace(".", "_"), **kwargs):
+    name = prefix + "_" + hashlib.sha256(json.dumps(kwargs, sort_keys=True).encode()).hexdigest()[:32]
+    try:
+        clients.ec2.create_launch_template(LaunchTemplateName=name, LaunchTemplateData=kwargs)
+    except ClientError as e:
+        expect_error_codes(e, "InvalidLaunchTemplateName.AlreadyExistsException")
+    return name
+
 def create_compute_environment(args):
+    user_data = get_user_data(commands=instance_storage_shellcode.strip().format(mountpoint="/mnt").split("\n"),
+                              mime_multipart_archive=True)
+    launch_template = ensure_launch_template(UserData=base64.b64encode(user_data).decode())
     batch_iam_role = ensure_iam_role(args.service_role, trust=["batch"], policies=["service-role/AWSBatchServiceRole"])
     vpc = ensure_vpc()
     ssh_key_name = ensure_ssh_key(args.ssh_key_name, base_name=__name__)
@@ -77,7 +90,8 @@ def create_compute_environment(args):
                              instanceRole=instance_profile.name,
                              bidPercentage=100,
                              spotIamFleetRole=SpotFleetBuilder.get_iam_fleet_role().name,
-                             ec2KeyPair=ssh_key_name)
+                             ec2KeyPair=ssh_key_name,
+                             launchTemplate=dict(launchTemplateName=launch_template))
     if args.ecs_container_instance_ami:
         compute_resources["imageId"] = args.ecs_container_instance_ami
     elif args.ecs_container_instance_ami_tags:

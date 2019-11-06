@@ -4,7 +4,7 @@ import yaml
 from botocore.exceptions import ClientError
 from botocore.paginate import Paginator
 
-from . import ARN, resources, clients, expect_error_codes, ensure_s3_bucket, ensure_iam_role
+from . import ARN, resources, clients, expect_error_codes, ensure_s3_bucket, ensure_iam_role, instance_storage_shellcode
 from .. import paginate
 from ..exceptions import AegeaException
 from ... import __version__
@@ -42,11 +42,7 @@ NFS_ENDPOINT=$(echo "$AEGEA_EFS_DESC" | jq -r ".[] | select(.SubnetId == env.SUB
 mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 $NFS_ENDPOINT:/ {efs_mountpoint}"""
 
 instance_storage_mgr_shellcode = apt_mgr_shellcode + """
-apt-get install -qqy --no-install-suggests --no-install-recommends mdadm
-aegea_bd=(/dev/disk/by-id/nvme-Amazon_EC2_NVMe_Instance_Storage_*)
-if [ ! -e /dev/md0 ]; then mdadm --create /dev/md0 --force --auto=yes --level=0 --chunk=256 --raid-devices=${{#aegea_bd[@]}} ${{aegea_bd[@]}}; mkfs.ext4 -L aegea-ephemeral -E lazy_itable_init,lazy_journal_init /dev/md0; fi
-mount -L aegea-ephemeral {mountpoint}
-"""  # noqa
+apt-get install -qqy --no-install-suggests --no-install-recommends mdadm""" + instance_storage_shellcode
 
 def ensure_dynamodb_table(name, hash_key_name, read_capacity_units=5, write_capacity_units=5):
     try:

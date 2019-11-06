@@ -174,7 +174,7 @@ ls:
     - security_groups
     - state_reason
     - instance_lifecycle
-    - subnet.availability_zone
+    # - subnet.availability_zone - throws an error if the instance does not have a subnet (is not running)
 
 iam_users:
   resource: iam

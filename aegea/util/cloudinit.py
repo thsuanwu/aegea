@@ -51,7 +51,8 @@ def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
         tar.close()
         return targz.getvalue()
 
-def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, storage=frozenset(), **kwargs):
+def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, storage=frozenset(),
+                  mime_multipart_archive=False, **kwargs):
     cloud_config_data = OrderedDict()
     for i, (mountpoint, size_gb) in enumerate(storage):
         cloud_config_data.setdefault("fs_setup", [])
@@ -70,18 +71,33 @@ def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=
         host_key.write_private_key(buf)
         cloud_config_data["ssh_keys"] = dict(rsa_private=buf.getvalue(),
                                              rsa_public=get_public_key_from_pair(host_key))
-    payload = encode_cloud_config_payload(cloud_config_data)
+    payload = encode_cloud_config_payload(cloud_config_data, mime_multipart_archive=mime_multipart_archive)
     if len(payload) >= 16384:
         logger.warn("Cloud-init payload is too large to be passed in user data, extracting rootfs.skel")
         upload_bootstrap_asset(cloud_config_data, rootfs_skel_dirs)
-        payload = encode_cloud_config_payload(cloud_config_data)
+        payload = encode_cloud_config_payload(cloud_config_data, mime_multipart_archive=mime_multipart_archive)
     return payload
 
-def encode_cloud_config_payload(cloud_config_data, gzip=True):
+mime_multipart_archive_template = """Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+MIME-Version: 1.0
+
+--==BOUNDARY==
+Content-Type: text/cloud-config; charset="us-ascii"
+
+{}
+
+--==BOUNDARY==--
+"""
+
+def encode_cloud_config_payload(cloud_config_data, mime_multipart_archive=False, gzip=True):
     # TODO: default=dict is for handling tweak.Config objects in the hierarchy.
     # TODO: Should subclass dict, not MutableMapping
-    slug = "#cloud-config\n" + json.dumps(cloud_config_data, default=dict)
-    return gzip_compress_bytes(slug.encode()) if gzip else slug
+    cloud_config_json = json.dumps(cloud_config_data, default=dict)
+    if mime_multipart_archive:
+        return mime_multipart_archive_template.format(cloud_config_json).encode()
+    else:
+        slug = "#cloud-config\n" + cloud_config_json
+        return gzip_compress_bytes(slug.encode()) if gzip else slug
 
 def upload_bootstrap_asset(cloud_config_data, rootfs_skel_dirs):
     key_name = "".join(random.choice(string.ascii_letters) for x in range(32))

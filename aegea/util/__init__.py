@@ -98,6 +98,6 @@ def describe_cidr(cidr):
 
 def gzip_compress_bytes(payload):
     buf = io.BytesIO()
-    with gzip.GzipFile(fileobj=buf, mode="w") as gzfh:
+    with gzip.GzipFile(fileobj=buf, mode="w", mtime=0) as gzfh:
         gzfh.write(payload)
     return buf.getvalue()
