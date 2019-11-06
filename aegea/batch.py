@@ -11,7 +11,7 @@ from botocore.exceptions import ClientError
 from . import logger
 from .ls import register_parser, register_listing_parser
 from .ecr import ecr_image_name_completer
-from .util import Timestamp, paginate
+from .util import Timestamp, paginate, get_mkfs_command
 from .util.crypto import ensure_ssh_key
 from .util.cloudinit import get_user_data
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
@@ -71,10 +71,15 @@ def ensure_launch_template(prefix=__name__.replace(".", "_"), **kwargs):
         expect_error_codes(e, "InvalidLaunchTemplateName.AlreadyExistsException")
     return name
 
+def get_ssm_parameter(name):
+    return clients.ssm.get_parameter(Name=name)["Parameter"]["Value"]
+
 def create_compute_environment(args):
-    user_data = get_user_data(commands=instance_storage_shellcode.strip().format(mountpoint="/mnt").split("\n"),
-                              mime_multipart_archive=True)
-    launch_template = ensure_launch_template(UserData=base64.b64encode(user_data).decode())
+    commands = instance_storage_shellcode.strip().format(mountpoint="/mnt", mkfs=get_mkfs_command()).split("\n")
+    user_data = get_user_data(commands=commands, mime_multipart_archive=True)
+    ecs_ami_id = get_ssm_parameter("/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id")
+    launch_template = ensure_launch_template(ImageId=ecs_ami_id,
+                                             UserData=base64.b64encode(user_data).decode())
     batch_iam_role = ensure_iam_role(args.service_role, trust=["batch"], policies=["service-role/AWSBatchServiceRole"])
     vpc = ensure_vpc()
     ssh_key_name = ensure_ssh_key(args.ssh_key_name, base_name=__name__)

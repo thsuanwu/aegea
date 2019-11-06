@@ -5,7 +5,7 @@ from botocore.exceptions import ClientError
 from botocore.paginate import Paginator
 
 from . import ARN, resources, clients, expect_error_codes, ensure_s3_bucket, ensure_iam_role, instance_storage_shellcode
-from .. import paginate
+from .. import paginate, get_mkfs_command
 from ..exceptions import AegeaException
 from ... import __version__
 
@@ -32,7 +32,7 @@ python3 -m virtualenv -q --python=python3 /opt/aegea-venv
 /opt/aegea-venv/bin/pip install -q --no-deps aegea=={aegea_version}
 aegea_ebs_cleanup() {{ echo Detaching EBS volume $aegea_ebs_vol_id; cd /; /opt/aegea-venv/bin/aegea ebs detach --unmount --force --delete $aegea_ebs_vol_id; }}
 trap aegea_ebs_cleanup EXIT
-aegea_ebs_vol_id=$(/opt/aegea-venv/bin/aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --tags managedBy=aegea batchJobId=$AWS_BATCH_JOB_ID --attach --format mkfs.ext4 --mount {mountpoint} | jq -r .VolumeId)
+aegea_ebs_vol_id=$(/opt/aegea-venv/bin/aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --tags managedBy=aegea batchJobId=$AWS_BATCH_JOB_ID --attach --format ext4 --mount {mountpoint} | jq -r .VolumeId)
 """  # noqa
 
 efs_vol_shellcode = """mkdir -p {efs_mountpoint}
@@ -67,7 +67,8 @@ def get_command_and_env(args):
         args.volumes.append(["/dev", "/dev"])
     if args.mount_instance_storage:
         shellcode += instance_storage_mgr_shellcode.strip().format(region=ARN.get_region(),
-                                                                   mountpoint=args.mount_instance_storage).splitlines()
+                                                                   mountpoint=args.mount_instance_storage,
+                                                                   mkfs=get_mkfs_command(fs_type="ext4")).splitlines()
     if args.storage:
         for mountpoint, size_gb in args.storage:
             volume_type = "st1"

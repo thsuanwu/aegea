@@ -12,6 +12,7 @@ from botocore.exceptions import ClientError
 
 from . import register_parser, logger
 from .ls import add_name, filter_collection, filter_and_tabulate, register_filtering_parser
+from .util import get_mkfs_command
 from .util.printing import page_output, get_cell, tabulate
 from .util.aws import ARN, resources, clients, ensure_vpc, ensure_subnet, resolve_instance_id, encode_tags, get_metadata
 from .util.compat import lru_cache
@@ -146,7 +147,8 @@ def attach(args):
                 time.sleep(1)
     if args.format:
         logger.info("Formatting %s (%s)", args.volume_id, find_devnode(args.volume_id))
-        command = args.format + " -L " + get_fs_label(args.volume_id) + " " + find_devnode(args.volume_id)
+        label = get_fs_label(args.volume_id)
+        command = get_mkfs_command(fs_type=args.format, label=label) + find_devnode(args.volume_id)
         subprocess.check_call(command, shell=True, stdout=sys.stderr.buffer)
     if args.mount:
         logger.info("Mounting %s at %s", args.volume_id, args.mount)

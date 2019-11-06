@@ -101,3 +101,9 @@ def gzip_compress_bytes(payload):
     with gzip.GzipFile(fileobj=buf, mode="w", mtime=0) as gzfh:
         gzfh.write(payload)
     return buf.getvalue()
+
+def get_mkfs_command(fs_type="xfs", label="aegveph"):
+    if fs_type == "xfs":
+        return "mkfs.xfs -L {} -f ".format(label)
+    elif fs_type == "ext4":
+        return "mkfs.ext4 -L {} -F -E lazy_itable_init,lazy_journal_init ".format(label)
