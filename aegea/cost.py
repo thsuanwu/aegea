@@ -28,8 +28,11 @@ def cost(args):
     get_cost_and_usage_args["GroupBy"] = [dict(Type="DIMENSION", Key=k) for k in args.group_by]
     get_cost_and_usage_args["GroupBy"] += [dict(Type="TAG", Key=k) for k in args.group_by_tag]
     rows = collections.defaultdict(dict)
-    title = "{} ({})".format(args.group_by[0] if args.group_by else "Tag:" + args.group_by_tag[0],
-                             boto3.session.Session().profile_name)
+    try:
+        account_name = clients.iam.list_account_aliases()["AccountAliases"][0]
+    except Exception:
+        account_name = boto3.session.Session().profile_name
+    title = "{} ({})".format(args.group_by[0] if args.group_by else "Tag:" + args.group_by_tag[0], account_name)
     args.columns, cell_transforms = [title], {"TOTAL": format_float}
     for page in clients.ce.get_cost_and_usage(**get_cost_and_usage_args)["ResultsByTime"]:
         args.columns.append(page["TimePeriod"]["Start"])
