@@ -4,7 +4,7 @@ Manage AWS Elastic Container Service (ECS) resources, including Fargate tasks.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import argparse, time, json
+import argparse, time, json, hashlib
 
 from botocore.exceptions import ClientError
 
@@ -75,26 +75,51 @@ def run(args):
 
     container_defn = dict(name=args.task_name,
                           image=args.image,
+                          cpu=0,
                           memory=args.memory,
-                          command=command,
-                          environment=environment,
+                          command=[],
+                          environment=[],
+                          portMappings=[],
+                          essential=True,
                           logConfiguration=log_config,
-                          mountPoints=[dict(sourceVolume="scratch", containerPath="/mnt")])
+                          mountPoints=[dict(sourceVolume="scratch", containerPath="/mnt")],
+                          volumesFrom=[])
     set_volumes(args, container_defn)
     set_ulimits(args, container_defn)
     exec_role = ensure_iam_role(args.execution_role, trust=["ecs-tasks"],
                                 policies=["service-role/AmazonEC2ContainerServiceforEC2Role",
                                           "service-role/AWSBatchServiceRole"])
     task_role = ensure_iam_role(args.task_role, trust=["ecs-tasks"])
-    clients.ecs.register_task_definition(family=args.task_name,
-                                         containerDefinitions=[container_defn],
-                                         requiresCompatibilities=["FARGATE"],
-                                         executionRoleArn=exec_role.arn,
-                                         taskRoleArn=task_role.arn,
-                                         networkMode="awsvpc",
-                                         cpu=args.fargate_cpu,
-                                         memory=args.fargate_memory,
-                                         volumes=[dict(name="scratch", host={})])
+
+    expect_task_defn = dict(containerDefinitions=[container_defn],
+                            requiresCompatibilities=["FARGATE"],
+                            taskRoleArn=task_role.arn,
+                            executionRoleArn=exec_role.arn,
+                            networkMode="awsvpc",
+                            cpu=args.fargate_cpu,
+                            memory=args.fargate_memory,
+                            volumes=[dict(name="scratch", host={})])
+
+    task_hash = hashlib.sha256(json.dumps(expect_task_defn, sort_keys=True).encode()).hexdigest()[:8]
+    task_defn_name = __name__.replace(".", "_") + "_" + task_hash
+
+    try:
+        task_defn = clients.ecs.describe_task_definition(taskDefinition=task_defn_name)["taskDefinition"]
+        assert task_defn["status"] == "ACTIVE"
+        assert "FARGATE" in task_defn["compatibilities"]
+        desc_keys = ["family", "revision", "taskDefinitionArn", "status", "compatibilities", "placementConstraints",
+                     "requiresAttributes"]
+        task_desc = {key: task_defn.pop(key) for key in desc_keys}
+        if expect_task_defn["cpu"].endswith(" vCPU"):
+            expect_task_defn["cpu"] = str(int(expect_task_defn["cpu"][:-len(" vCPU")]) * 1024)
+        if expect_task_defn["memory"].endswith(" GB"):
+            expect_task_defn["memory"] = str(int(expect_task_defn["memory"][:-len(" GB")]) * 1024)
+        assert task_defn == expect_task_defn
+        logger.debug("Reusing task definition %s", task_desc["taskDefinitionArn"])
+    except (ClientError, AssertionError):
+        logger.debug("Registering new ECS task definition %s", task_defn_name)
+        task_desc = clients.ecs.register_task_definition(family=task_defn_name, **expect_task_defn)["taskDefinition"]
+
     network_config = {
         'awsvpcConfiguration': {
             'subnets': [
@@ -104,10 +129,12 @@ def run(args):
             'assignPublicIp': 'ENABLED'
         }
     }
+    container_overrides = [dict(name=args.task_name, command=command, environment=environment)]
     res = clients.ecs.run_task(cluster=args.cluster,
-                               taskDefinition=args.task_name,
+                               taskDefinition=task_desc["taskDefinitionArn"],
                                launchType="FARGATE",
-                               networkConfiguration=network_config)
+                               networkConfiguration=network_config,
+                               overrides=dict(containerOverrides=container_overrides))
     task_arn = res["tasks"][0]["taskArn"]
     if args.watch:
         watch(watch_parser.parse_args([task_arn, "--task-name", args.task_name]))
