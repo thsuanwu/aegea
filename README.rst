@@ -39,6 +39,13 @@ Run ``aws configure`` to configure `IAM <https://aws.amazon.com/iam/>`_ access c
 **No root access; user-local install**: Use ``make install_venv`` to install aegea in its own virtualenv. The last line of the 
 output shows how to activate the virtualenv.
 
+Aegea SSH
+~~~~~~~~~
+The ``aegea ssh`` command is an SSH configuration wrapper that allows you to securely resolve instance addresses by name
+and pre-fetch their public keys without the Trust-On-First-Use requirement. It also optionally integrates with the
+`Bless <https://github.com/Netflix/bless>`_ package using the
+`blessclient <https://github.com/chanzuckerberg/blessclient>`_ configuration convention.
+
 Aegea Batch
 ~~~~~~~~~~~
 The `AWS Batch <https://aws.amazon.com/batch>`_ API lets you run non-interactive command line workflows in Docker
