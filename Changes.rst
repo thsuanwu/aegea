@@ -1,3 +1,16 @@
+Changes for v3.1.0 (2019-11-15)
+===============================
+
+-  aegea ssh, aegea scp: Add bless support
+
+-  aegea ecs: reuse task definitions
+
+-  aegea cost: add group by tag support
+
+-  aegea batch: format ephemeral storage on host
+
+-  Always encrypt EBS volumes
+
 Changes for v3.0.2 (2019-10-29)
 ===============================
 
