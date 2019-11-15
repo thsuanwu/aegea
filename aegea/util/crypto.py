@@ -22,8 +22,24 @@ def key_fingerprint(key):
 def get_ssh_key_path(name):
     return os.path.expanduser("~/.ssh/{}.pem".format(name))
 
-def ensure_ssh_key(name=None, base_name=__name__, verify_pem_file=True):
+def ensure_local_ssh_key(name):
     from paramiko import RSAKey
+    if os.path.exists(get_ssh_key_path(name)):
+        ssh_key = RSAKey.from_private_key_file(get_ssh_key_path(name))
+    else:
+        logger.info("Creating key pair %s", name)
+        ssh_key = new_ssh_key()
+        makedirs(os.path.dirname(get_ssh_key_path(name)), exist_ok=True)
+        ssh_key.write_private_key_file(get_ssh_key_path(name))
+    return ssh_key
+
+def add_ssh_key_to_agent(name):
+    try:
+        subprocess.check_call(["ssh-add", get_ssh_key_path(name)], timeout=5)
+    except Exception as e:
+        logger.warn("Failed to add %s to SSH keychain: %s. Connections may fail", get_ssh_key_path(name), e)
+
+def ensure_ssh_key(name=None, base_name=__name__, verify_pem_file=True):
     if name is None:
         from getpass import getuser
         from socket import gethostname
@@ -40,20 +56,11 @@ def ensure_ssh_key(name=None, base_name=__name__, verify_pem_file=True):
         ec2_key_pairs = None
 
     if not ec2_key_pairs:
-        if os.path.exists(get_ssh_key_path(name)):
-            ssh_key = RSAKey.from_private_key_file(get_ssh_key_path(name))
-        else:
-            logger.info("Creating key pair %s", name)
-            ssh_key = new_ssh_key()
-            makedirs(os.path.dirname(get_ssh_key_path(name)), exist_ok=True)
-            ssh_key.write_private_key_file(get_ssh_key_path(name))
+        ssh_key = ensure_local_ssh_key(name)
         resources.ec2.import_key_pair(KeyName=name,
                                       PublicKeyMaterial=get_public_key_from_pair(ssh_key))
         logger.info("Imported SSH key %s", get_ssh_key_path(name))
-    try:
-        subprocess.check_call(["ssh-add", get_ssh_key_path(name)], timeout=5)
-    except Exception as e:
-        logger.warn("Failed to add %s to SSH keychain: %s. Connections may fail", get_ssh_key_path(name), e)
+    add_ssh_key_to_agent(name)
     return name
 
 def hostkey_line(hostnames, key):
