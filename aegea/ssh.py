@@ -186,7 +186,7 @@ def scp(args):
     """
     Transfer files to or from EC2 instance.
     """
-    scp_opts = extract_passthrough_opts(args, "scp")
+    scp_opts, host_opts = extract_passthrough_opts(args, "scp"), []
     user_or_hostname_chars = string.ascii_letters + string.digits
     for i, arg in enumerate(args.scp_args):
         if arg[0] in user_or_hostname_chars and ":" in arg:
