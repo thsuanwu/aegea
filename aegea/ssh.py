@@ -29,6 +29,29 @@ from .util.printing import BOLD
 from .util.exceptions import AegeaException
 from .util.compat import lru_cache
 
+opts_by_nargs = {
+    "ssh": {0: "46AaCfGgKkMNnqsTtVvXxYy", 1: "BbcDEeFIiJLlmOopQRSW"},
+    "scp": {0: "346BCpqrv", 1: "cFiloPS"}
+}
+
+def add_bless_and_passthrough_opts(parser, program):
+    parser.add_argument("--bless-config", default=os.environ.get("BLESS_CONFIG"),
+                        help="Path to a Bless configuration file (or pass via the BLESS_CONFIG environment variable)")
+    for opt in opts_by_nargs[program][0]:
+        parser.add_argument("-" + opt, action="store_true", help=argparse.SUPPRESS)
+    for opt in opts_by_nargs[program][1]:
+        parser.add_argument("-" + opt, action="append", help=argparse.SUPPRESS)
+
+def extract_passthrough_opts(args, program):
+    opts = []
+    for opt in opts_by_nargs[program][0]:
+        if getattr(args, opt):
+            opts.append("-" + opt)
+    for opt in opts_by_nargs[program][1]:
+        for value in getattr(args, opt) or []:
+            opts.extend(["-" + opt, value])
+    return opts
+
 @lru_cache(8)
 def get_instance(name):
     return resources.ec2.Instance(resolve_instance_id(name))
@@ -116,7 +139,7 @@ def match_instance_to_bastion(instance, bastions):
                 logger.info("Using %s to connect to %s", bastion_config["pattern"], instance)
                 return bastion_config
 
-def prepare_ssh_opts(username, hostname, bless_config_filename=None, ssh_key_name=__name__, use_kms_auth=True):
+def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_key_name=__name__, use_kms_auth=True):
     if bless_config_filename:
         with open(bless_config_filename) as fh:
             bless_config = yaml.safe_load(fh)
@@ -130,10 +153,10 @@ def prepare_ssh_opts(username, hostname, bless_config_filename=None, ssh_key_nam
         bastion_config = match_instance_to_bastion(instance=instance, bastions=bless_config["ssh_config"]["bastions"])
         if bastion_config:
             jump_host = bastion_config["user"] + "@" + bastion_config["pattern"]
-            return ["-l", username, "-J", jump_host, instance.private_ip_address]
+            return ["-o", "ProxyJump=" + jump_host], username + "@" + instance.private_ip_address
         elif instance.public_dns_name:
             logger.warn("No bastion host found for %s, trying direct connection", instance.private_ip_address)
-            return ["-l", username, instance.public_dns_name]
+            return [], username + "@" + instance.public_dns_name
         else:
             raise AegeaException("No bastion host or public route found for {}".format(instance))
     else:
@@ -141,20 +164,15 @@ def prepare_ssh_opts(username, hostname, bless_config_filename=None, ssh_key_nam
             add_ssh_key_to_agent(get_instance(hostname).key_name)
         if not username:
             username = get_linux_username()
-        return ["-l", username, resolve_instance_public_dns(hostname)]
+        return [], username + "@" + resolve_instance_public_dns(hostname)
 
 def ssh(args):
     ssh_opts = ["-o", "ServerAliveInterval={}".format(args.server_alive_interval)]
     ssh_opts += ["-o", "ServerAliveCountMax={}".format(args.server_alive_count_max)]
-    for ssh_opt in ssh_opts_by_nargs[0]:
-        if getattr(args, ssh_opt):
-            ssh_opts.append("-" + ssh_opt)
-    for ssh_opt in ssh_opts_by_nargs[1]:
-        for value in getattr(args, ssh_opt) or []:
-            ssh_opts.extend(["-" + ssh_opt, value])
+    ssh_opts += extract_passthrough_opts(args, "ssh")
     prefix, at, name = args.name.rpartition("@")
-    ssh_opts += prepare_ssh_opts(username=prefix, hostname=name, bless_config_filename=args.bless_config)
-    os.execvp("ssh", ["ssh"] + ssh_opts + args.ssh_args)
+    host_opts, hostname = prepare_ssh_host_opts(username=prefix, hostname=name, bless_config_filename=args.bless_config)
+    os.execvp("ssh", ["ssh"] + ssh_opts + host_opts + [hostname] + args.ssh_args)
 
 ssh_parser = register_parser(ssh, help="Connect to an EC2 instance", description=__doc__)
 ssh_parser.add_argument("name")
@@ -162,38 +180,24 @@ ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER,
                         help="Arguments to pass to ssh; please see " + BOLD("man ssh") + " for details")
 ssh_parser.add_argument("--server-alive-interval", help=argparse.SUPPRESS)
 ssh_parser.add_argument("--server-alive-count-max", help=argparse.SUPPRESS)
-ssh_parser.add_argument("--bless-config", default=os.environ.get("BLESS_CONFIG"),
-                        help="Path to a Bless configuration file (or pass via the BLESS_CONFIG environment variable)")
-ssh_opts_by_nargs = {0: "46AaCfGgKkMNnqsTtVvXxYy", 1: "BbcDEeFIiJLlmOopQRSW"}
-for ssh_opt in ssh_opts_by_nargs[0]:
-    ssh_parser.add_argument("-" + ssh_opt, action="store_true", help=argparse.SUPPRESS)
-for ssh_opt in ssh_opts_by_nargs[1]:
-    ssh_parser.add_argument("-" + ssh_opt, action="append", help=argparse.SUPPRESS)
+add_bless_and_passthrough_opts(ssh_parser, "ssh")
 
 def scp(args):
     """
     Transfer files to or from EC2 instance.
-
-    Use "--" to separate scp args from aegea args:
-
-        aegea scp -- -r local_dir instance_name:~/remote_dir
     """
-    if args.scp_args[0] == "--":
-        del args.scp_args[0]
+    scp_opts = extract_passthrough_opts(args, "scp")
     user_or_hostname_chars = string.ascii_letters + string.digits
     for i, arg in enumerate(args.scp_args):
         if arg[0] in user_or_hostname_chars and ":" in arg:
             hostname, colon, path = arg.partition(":")
             username, at, hostname = hostname.rpartition("@")
-            hostname = resolve_instance_public_dns(hostname)
-            if not (username or at):
-                try:
-                    username, at = get_linux_username(), "@"
-                except Exception:
-                    logger.info("Unable to determine IAM username, using local username")
-            args.scp_args[i] = username + at + hostname + colon + path
-    os.execvp("scp", ["scp"] + args.scp_args)
+            host_opts, hostname = prepare_ssh_host_opts(username=username, hostname=hostname,
+                                                        bless_config_filename=args.bless_config)
+            args.scp_args[i] = hostname + colon + path
+    os.execvp("scp", ["scp"] + scp_opts + host_opts + args.scp_args)
 
 scp_parser = register_parser(scp, help="Transfer files to or from EC2 instance", description=scp.__doc__)
 scp_parser.add_argument("scp_args", nargs=argparse.REMAINDER,
                         help="Arguments to pass to scp; please see " + BOLD("man scp") + " for details")
+add_bless_and_passthrough_opts(scp_parser, "scp")
