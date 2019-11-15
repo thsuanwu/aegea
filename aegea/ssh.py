@@ -115,7 +115,6 @@ def match_instance_to_bastion(instance, bastions):
             if fnmatch.fnmatch(instance.private_ip_address, ipv4_pattern["pattern"]):
                 logger.info("Using %s to connect to %s", bastion_config["pattern"], instance)
                 return bastion_config
-    raise AegeaException("Unable to determine Bless bastion config for {}".format(instance))
 
 def prepare_ssh_opts(username, hostname, bless_config_filename=None, ssh_key_name=__name__, use_kms_auth=True):
     if bless_config_filename:
@@ -126,11 +125,17 @@ def prepare_ssh_opts(username, hostname, bless_config_filename=None, ssh_key_nam
                               use_kms_auth=use_kms_auth)
         add_ssh_key_to_agent(ssh_key_name)
         instance = get_instance(hostname)
-        bastion_config = match_instance_to_bastion(instance=instance, bastions=bless_config["ssh_config"]["bastions"])
         if not username:
             username = bless_config["client_config"]["remote_users"][0]
-        jump_host = bastion_config["user"] + "@" + bastion_config["pattern"]
-        return ["-l", username, "-J", jump_host, instance.private_ip_address]
+        bastion_config = match_instance_to_bastion(instance=instance, bastions=bless_config["ssh_config"]["bastions"])
+        if bastion_config:
+            jump_host = bastion_config["user"] + "@" + bastion_config["pattern"]
+            return ["-l", username, "-J", jump_host, instance.private_ip_address]
+        elif instance.public_dns_name:
+            logger.warn("No bastion host found for %s, trying direct connection", instance.private_ip_address)
+            return ["-l", username, instance.public_dns_name]
+        else:
+            raise AegeaException("No bastion host or public route found for {}".format(instance))
     else:
         if get_instance(hostname).key_name is not None:
             add_ssh_key_to_agent(get_instance(hostname).key_name)
