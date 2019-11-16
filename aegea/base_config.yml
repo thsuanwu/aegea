@@ -652,6 +652,10 @@ launch:
 ssh:
   server_alive_interval: 15
   server_alive_count_max: 20
+  use_kms_auth: True
+
+scp:
+  use_kms_auth: True
 
 pricing:
   max_cache_age_days: 30

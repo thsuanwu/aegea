@@ -37,6 +37,7 @@ opts_by_nargs = {
 def add_bless_and_passthrough_opts(parser, program):
     parser.add_argument("--bless-config", default=os.environ.get("BLESS_CONFIG"),
                         help="Path to a Bless configuration file (or pass via the BLESS_CONFIG environment variable)")
+    parser.add_argument("--use-kms-auth", help=argparse.SUPPRESS)
     for opt in opts_by_nargs[program][0]:
         parser.add_argument("-" + opt, action="store_true", help=argparse.SUPPRESS)
     for opt in opts_by_nargs[program][1]:
@@ -171,7 +172,9 @@ def ssh(args):
     ssh_opts += ["-o", "ServerAliveCountMax={}".format(args.server_alive_count_max)]
     ssh_opts += extract_passthrough_opts(args, "ssh")
     prefix, at, name = args.name.rpartition("@")
-    host_opts, hostname = prepare_ssh_host_opts(username=prefix, hostname=name, bless_config_filename=args.bless_config)
+    host_opts, hostname = prepare_ssh_host_opts(username=prefix, hostname=name,
+                                                bless_config_filename=args.bless_config,
+                                                use_kms_auth=args.use_kms_auth)
     os.execvp("ssh", ["ssh"] + ssh_opts + host_opts + [hostname] + args.ssh_args)
 
 ssh_parser = register_parser(ssh, help="Connect to an EC2 instance", description=__doc__)
@@ -193,7 +196,8 @@ def scp(args):
             hostname, colon, path = arg.partition(":")
             username, at, hostname = hostname.rpartition("@")
             host_opts, hostname = prepare_ssh_host_opts(username=username, hostname=hostname,
-                                                        bless_config_filename=args.bless_config)
+                                                        bless_config_filename=args.bless_config,
+                                                        use_kms_auth=args.use_kms_auth)
             args.scp_args[i] = hostname + colon + path
     os.execvp("scp", ["scp"] + scp_opts + host_opts + args.scp_args)
 
