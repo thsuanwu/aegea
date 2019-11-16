@@ -41,7 +41,7 @@ class SpotFleetBuilder(VerboseRepr):
     @classmethod
     def get_iam_fleet_role(cls):
         return ensure_iam_role("SpotFleet",
-                               policies=["service-role/AmazonEC2SpotFleetRole"],
+                               policies=["service-role/AmazonEC2SpotFleetTaggingRole"],
                                trust=["spotfleet"])
 
     def instance_types(self, max_overprovision=3):
