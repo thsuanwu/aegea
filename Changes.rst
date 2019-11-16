@@ -1,3 +1,10 @@
+Changes for v3.1.1 (2019-11-15)
+===============================
+
+-  SpotFleetBuilder: Use AmazonEC2SpotFleetTaggingRole
+
+-  aegea scp: Do not crash if no colon is found
+
 Changes for v3.1.0 (2019-11-15)
 ===============================
 
