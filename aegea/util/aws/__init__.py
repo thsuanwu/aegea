@@ -547,5 +547,5 @@ def instance_type_completer(max_cache_age_days=30, **kwargs):
 instance_storage_shellcode = """
 aegea_bd=(/dev/disk/by-id/nvme-Amazon_EC2_NVMe_Instance_Storage_AWS?????????????????)
 if [ ! -e /dev/md0 ]; then mdadm --create /dev/md0 --force --auto=yes --level=0 --chunk=256 --raid-devices=${{#aegea_bd[@]}} ${{aegea_bd[@]}}; {mkfs} /dev/md0; fi
-mount -L aegea-ephemeral {mountpoint}
+mount -L aegveph {mountpoint}
 """  # noqa
