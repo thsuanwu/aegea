@@ -1,3 +1,10 @@
+Changes for v3.1.2 (2019-11-18)
+===============================
+
+-  Fix bugs in default ephemeral device handling logic
+
+-  aegea ssh: Support configurable use_kms_auth
+
 Changes for v3.1.1 (2019-11-15)
 ===============================
 
