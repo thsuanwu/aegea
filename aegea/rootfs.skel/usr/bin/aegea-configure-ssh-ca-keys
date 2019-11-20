@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [[ $# != 1 ]] || [[ $1 != "--yes" ]]; then
+    echo "$(basename $0): Download SSH CA keys from AWS Secrets Manager and install them."
+    echo "Usage: $(basename $0) --yes"
+    exit 1
+fi
+
+export AWS_DEFAULT_AZ=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+export AWS_DEFAULT_REGION=${AWS_DEFAULT_AZ::-1}
+
+aws secretsmanager get-secret-value --secret-id bless/ssh_ca_keys | jq -r .SecretString | jq -r .ssh_ca_certs[] > /etc/ssh/sshd_ca.pem
+
+sed -i -e '/^TrustedUserCAKeys / d' /etc/ssh/sshd_config
+echo 'TrustedUserCAKeys /etc/ssh/sshd_ca.pem' >> /etc/ssh/sshd_config
+
+service sshd reload
