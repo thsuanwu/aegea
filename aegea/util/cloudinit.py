@@ -52,7 +52,7 @@ def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
         return targz.getvalue()
 
 def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, storage=frozenset(),
-                  mime_multipart_archive=False, **kwargs):
+                  mime_multipart_archive=False, ssh_ca_keys=None, provision_users=None, **kwargs):
     cloud_config_data = OrderedDict()
     for i, (mountpoint, size_gb) in enumerate(storage):
         cloud_config_data.setdefault("fs_setup", [])
@@ -64,6 +64,16 @@ def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=
     cloud_config_data["packages"] = packages or []
     cloud_config_data["runcmd"] = commands or []
     cloud_config_data["write_files"] = get_bootstrap_files(rootfs_skel_dirs or [])
+    if ssh_ca_keys:
+        cloud_config_data["write_files"] += [dict(path="/etc/ssh/sshd_ca.pem", permissions='0644', content=ssh_ca_keys)]
+        cloud_config_data["runcmd"].append("grep -q TrustedUserCAKeys /etc/ssh/sshd_config || "
+                                           "(echo 'TrustedUserCAKeys /etc/ssh/sshd_ca.pem' >> /etc/ssh/sshd_config;"
+                                           " service sshd reload)")
+    if provision_users:
+        # TODO: UIDs should be deterministic
+        # uid_bytes = hashlib.sha256(username.encode()).digest()[-2:]
+        # uid = 2000 + (int.from_bytes(uid_bytes, byteorder=sys.byteorder) // 2)
+        cloud_config_data["users"] = [dict(name=u, gecos="", sudo="ALL=(ALL) NOPASSWD:ALL") for u in provision_users]
     for key in sorted(kwargs):
         cloud_config_data[key] = kwargs[key]
     if host_key is not None:

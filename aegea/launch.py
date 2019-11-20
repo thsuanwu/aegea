@@ -18,6 +18,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os, sys, time, datetime, base64, json
 
+import yaml
+
 from . import register_parser, logger, config
 from .efs import create as create_efs, parser_create as parser_create_efs, __name__ as efs_security_group_name
 from .util import wait_for_port, validate_hostname, paginate
@@ -43,6 +45,18 @@ def get_startup_commands(args, username):
         "echo tsc > /sys/devices/system/clocksource/clocksource0/current_clocksource",
         "ssh -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no {}@localhost -N || true".format(username)
     ] + args.commands
+
+def get_ssh_ca_keys(bless_config):
+    for lambda_regional_config in bless_config["lambda_config"]["regions"]:
+        if lambda_regional_config["aws_region"] == clients.ec2.meta.region_name:
+            break
+    ca_keys_secret_arn = ARN(service="secretsmanager",
+                             region=lambda_regional_config["aws_region"],
+                             account_id=ARN(bless_config["lambda_config"]["role_arn"]).account_id,
+                             resource="secret:" + bless_config["lambda_config"]["function_name"])
+    ca_keys_secret = clients.secretsmanager.get_secret_value(SecretId=str(ca_keys_secret_arn))
+    ca_keys = json.loads(ca_keys_secret["SecretString"])["ssh_ca_keys"]
+    return "\n".join(ca_keys)
 
 def launch(args):
     if args.spot_price or args.duration_hours or args.cores or args.min_mem_per_core_gb:
@@ -93,6 +107,12 @@ def launch(args):
                           commands=get_startup_commands(args, ARN.get_iam_username()),
                           packages=args.packages,
                           storage=args.storage)
+    if args.bless_config:
+        with open(args.bless_config) as fh:
+            bless_config = yaml.safe_load(fh)
+        user_data_args["ssh_ca_keys"] = get_ssh_ca_keys(bless_config)
+        user_data_args["provision_users"] = bless_config["client_config"]["remote_users"]
+
     user_data_args.update(dict(args.cloud_config_data))
     launch_spec = dict(ImageId=args.ami,
                        KeyName=ssh_key_name,
@@ -187,6 +207,8 @@ parser.add_argument("--commands", nargs="+", metavar="COMMAND", help="Commands t
 parser.add_argument("--packages", nargs="+", metavar="PACKAGE", help="APT packages to install on host upon startup")
 parser.add_argument("--ssh-key-name")
 parser.add_argument("--no-verify-ssh-key-pem-file", dest="verify_ssh_key_pem_file", action="store_false")
+parser.add_argument("--bless-config", default=os.environ.get("BLESS_CONFIG"),
+                    help="Path to a Bless configuration file (or pass via the BLESS_CONFIG environment variable)")
 parser.add_argument("--ami", help="AMI to use for the instance. Default: " + resolve_ami.__doc__)
 parser.add_argument("--ami-tags", nargs="+", metavar="NAME=VALUE", help="Use the most recent AMI with these tags")
 parser.add_argument("--spot", action="store_true",
