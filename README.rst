@@ -34,20 +34,25 @@ Before you do this, you will also need to install some system library dependenci
 Run ``aws configure`` to configure `IAM <https://aws.amazon.com/iam/>`_ access credentials that will be used by the
 ``aws`` and ``aegea`` commands. You can create a new IAM key at https://console.aws.amazon.com/iam/home#/users.
 
-**Local install**: run ``make install`` in this directory.
-
-**No root access; user-local install**: Use ``make install_venv`` to install aegea in its own virtualenv. The last line of the 
-output shows how to activate the virtualenv.
+Aegea commands
+~~~~~~~~~~~~~~
+Below are some highlights from Aegea's suite of commands. Run ``aegea --help`` to see the full list of commands.
 
 Aegea SSH
-~~~~~~~~~
+---------
 The ``aegea ssh`` command (and its variant ``aegea scp``) is an SSH configuration wrapper that allows you to securely
 resolve instance addresses by name and pre-fetch their public keys without the Trust-On-First-Use requirement. It also
 optionally integrates with the `Bless <https://github.com/Netflix/bless>`_ package using the
 `blessclient <https://github.com/chanzuckerberg/blessclient>`_ configuration convention.
 
+Aegea Launch
+------------
+The ``aegea launch`` command launches EC2 instances. It has integrated support for Bless as well as DNS, runtime
+cloud-init configuration, automatic location of Aegea-built AMIs or up-to-date Ubuntu or Amazon Linux AMIs, automatic
+storage configuration, and other options.
+
 Aegea Batch
-~~~~~~~~~~~
+-----------
 The `AWS Batch <https://aws.amazon.com/batch>`_ API lets you run non-interactive command line workflows in Docker
 containers, managing AWS ECS, Spot Fleet, and EC2 in your account on your behalf. Use the ``aegea batch`` family of commands
 to interact with AWS Batch. The key command is ``aegea batch submit`` to submit jobs.
@@ -74,7 +79,7 @@ AWS Batch launches and manages `ECS <https://aws.amazon.com/ecs/>`_ host instanc
 host instances by running ``aegea ls``.
 
 Aegea ECS Run
-~~~~~~~~~~~~~
+-------------
 The `ECS Fargate <https://aws.amazon.com/fargate/>`_ API is an interface to the AWS container-based virtualization platform,
 Firecracker. ECS Fargate allows you to run workloads in fully managed containers: no instances run in your account; you are billed by
 the second of container use, and containers usually start up within 20 seconds. Use the ``aegea ecs run`` command to interact with
