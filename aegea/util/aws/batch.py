@@ -180,7 +180,7 @@ def ensure_job_definition(args):
     expect_job_defn = dict(status="ACTIVE", type="container", parameters={},
                            retryStrategy={'attempts': args.retry_attempts}, containerProperties=container_props)
     job_hash = hashlib.sha256(json.dumps(container_props, sort_keys=True).encode()).hexdigest()[:8]
-    job_defn_name = __name__.replace(".", "_") + "_job_" + job_hash
+    job_defn_name = __name__.replace(".", "_") + "_jd_" + job_hash
     describe_job_definitions_paginator = Paginator(method=clients.batch.describe_job_definitions,
                                                    pagination_config=dict(result_key="jobDefinitions",
                                                                           input_token="nextToken",
