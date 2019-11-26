@@ -132,3 +132,23 @@ def print_log_events(args):
             if len(page["events"]) == 0 or "nextForwardToken" not in page:
                 break
             get_log_events_args.update(nextToken=page["nextForwardToken"], limit=10000)
+
+def print_log_event_with_context(log_record_pointer, before=10, after=10):
+    res = clients.logs.get_log_record(logRecordPointer=log_record_pointer)
+    log_record = res["logRecord"]
+    account_id, log_group_name = log_record["@log"].split(":")
+    before_ctx = clients.logs.get_log_events(logGroupName=log_group_name,
+                                             logStreamName=log_record["@logStream"],
+                                             endTime=int(log_record["@timestamp"]),
+                                             limit=before,
+                                             startFromHead=False)
+    for event in before_ctx["events"]:
+        print_log_event(event)
+    after_ctx = clients.logs.get_log_events(logGroupName=log_group_name,
+                                            logStreamName=log_record["@logStream"],
+                                            startTime=int(log_record["@timestamp"]),
+                                            limit=after,
+                                            startFromHead=True)
+    for event in after_ctx["events"]:
+        print_log_event(event)
+    print("---")

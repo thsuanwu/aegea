@@ -32,7 +32,12 @@ from .util.compat import timestamp
 from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate
 from .util.aws import clients
-from .util.aws.logs import export_and_print_log_events, print_log_event, print_log_events
+from .util.aws.logs import export_and_print_log_events, print_log_event, print_log_events, print_log_event_with_context
+
+def log_group_completer(prefix, **kwargs):
+    describe_log_groups_args = dict(logGroupNamePrefix=prefix) if prefix else dict()
+    for group in paginate(clients.logs.get_paginator("describe_log_groups"), **describe_log_groups_args):
+        yield group["logGroupName"]
 
 def logs(args):
     if args.log_group and (args.log_stream or args.start_time or args.end_time):
@@ -62,7 +67,7 @@ logs_parser = register_parser(logs)
 logs_parser.add_argument("--max-streams-per-group", "-n", type=int, default=8)
 logs_parser.add_argument("--sort-by", default="lastIngestionTime:reverse")
 logs_parser.add_argument("--no-export", action="store_false", dest="export")
-logs_parser.add_argument("log_group", nargs="?", help="CloudWatch log group")
+logs_parser.add_argument("log_group", nargs="?", help="CloudWatch log group").completer = log_group_completer
 logs_parser.add_argument("log_stream", nargs="?", help="CloudWatch log stream")
 add_time_bound_args(logs_parser, snap=2)
 
@@ -91,35 +96,15 @@ def filter(args):
 filter_parser = register_parser(filter, help="Filter and print events in a CloudWatch Logs stream or group of streams")
 filter_parser.add_argument("pattern", help="""CloudWatch filter pattern to use. Case-sensitive. See
 http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/FilterAndPatternSyntax.html""")
-filter_parser.add_argument("log_group", help="CloudWatch log group")
+filter_parser.add_argument("log_group", help="CloudWatch log group").completer = log_group_completer
 filter_parser.add_argument("log_stream", nargs="?", help="CloudWatch log stream")
 filter_parser.add_argument("--follow", "-f", help="Repeat search continuously instead of running once",
                            action="store_true")
 add_time_bound_args(filter_parser)
 
-def print_log_event_with_context(log_record_pointer, before=10, after=10):
-    res = clients.logs.get_log_record(logRecordPointer=log_record_pointer)
-    log_record = res["logRecord"]
-    account_id, log_group_name = log_record["@log"].split(":")
-    before_ctx = clients.logs.get_log_events(logGroupName=log_group_name,
-                                             logStreamName=log_record["@logStream"],
-                                             endTime=int(log_record["@timestamp"]),
-                                             limit=before,
-                                             startFromHead=False)
-    for event in before_ctx["events"]:
-        print_log_event(event)
-    after_ctx = clients.logs.get_log_events(logGroupName=log_group_name,
-                                            logStreamName=log_record["@logStream"],
-                                            startTime=int(log_record["@timestamp"]),
-                                            limit=after,
-                                            startFromHead=True)
-    for event in after_ctx["events"]:
-        print_log_event(event)
-    print("---")
-
 def grep(args):
     if args.context:
-        args.before = args.after = args.context
+        args.before_context = args.after_context = args.context
     if not args.end_time:
         args.end_time = Timestamp("-0s")
     query = clients.logs.start_query(logGroupName=args.log_group,
@@ -127,6 +112,7 @@ def grep(args):
                                      endTime=int(timestamp(args.end_time) * 1000),
                                      queryString=args.query)
     seen_results = {}
+    print_with_context = partial(print_log_event_with_context, before=args.before_context, after=args.after_context)
     try:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             while True:
@@ -137,14 +123,13 @@ def grep(args):
                     event_hash = hashlib.sha256(json.dumps(event, sort_keys=True).encode()).hexdigest()[:32]
                     if event_hash in seen_results:
                         continue
-                    if "@ptr" in event and (args.before or args.after):
+                    if "@ptr" in event and (args.before_context or args.after_context):
                         log_record_pointers.append(event["@ptr"])
                     else:
                         print_log_event(event)
                     seen_results[event_hash] = event
                 if log_record_pointers:
-                    processor = partial(print_log_event_with_context, before=args.before, after=args.after)
-                    executor.map(processor, log_record_pointers)
+                    executor.map(print_with_context, log_record_pointers)
                 if res["status"] == "Complete":
                     break
                 elif res["status"] in {"Failed", "Cancelled"}:
@@ -161,8 +146,8 @@ def grep(args):
 grep_parser = register_parser(grep, help="Run a CloudWatch Logs Insights query (similar to filter, but faster)")
 grep_parser.add_argument("query", help="""CloudWatch Logs Insights query to use. See
 https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/AnalyzingLogData.html""")
-grep_parser.add_argument("log_group", help="CloudWatch log group")
-grep_parser.add_argument("--before", type=int, default=0)
-grep_parser.add_argument("--after", type=int, default=0)
-grep_parser.add_argument("--context", type=int, default=0)
+grep_parser.add_argument("log_group", help="CloudWatch log group").completer = log_group_completer
+grep_parser.add_argument("--before-context", "-B", type=int, default=0)
+grep_parser.add_argument("--after-context", "-A", type=int, default=0)
+grep_parser.add_argument("--context", "-C", type=int, default=0)
 add_time_bound_args(grep_parser)
