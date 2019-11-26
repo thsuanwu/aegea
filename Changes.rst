@@ -1,3 +1,14 @@
+Changes for v3.2.0 (2019-11-26)
+===============================
+
+-  Log performance improvements (#50)
+
+-  Use CloudWatch log export for aegea logs
+
+-  Use CloudWatch Logs Insights for aegea grep
+
+-  Add log group name completer
+
 Changes for v3.1.3 (2019-11-20)
 ===============================
 
