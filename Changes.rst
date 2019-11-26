@@ -1,3 +1,8 @@
+Changes for v3.2.1 (2019-11-26)
+===============================
+
+-  aegea ecs: do not require ecs:CreateCluster if cluster is present
+
 Changes for v3.2.0 (2019-11-26)
 ===============================
 
