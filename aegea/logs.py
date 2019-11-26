@@ -22,7 +22,7 @@ Run the same search, but retrieve 10 lines of context for each match:
     aegea grep STRING LOG_GROUP --start-time=-1w -C 10
 """
 
-import os, sys, time, concurrent.futures
+import os, sys, json, hashlib, time, concurrent.futures
 from datetime import datetime, timedelta
 from functools import partial
 
@@ -134,13 +134,14 @@ def grep(args):
                 log_record_pointers = []
                 for record in res["results"]:
                     event = {r["field"]: r["value"] for r in record}
-                    if event["@ptr"] in seen_results:
+                    event_hash = hashlib.sha256(json.dumps(event, sort_keys=True).encode()).hexdigest()[:32]
+                    if event_hash in seen_results:
                         continue
-                    if args.before or args.after:
+                    if "@ptr" in event and (args.before or args.after):
                         log_record_pointers.append(event["@ptr"])
                     else:
                         print_log_event(event)
-                    seen_results[event["@ptr"]] = event
+                    seen_results[event_hash] = event
                 if log_record_pointers:
                     processor = partial(print_log_event_with_context, before=args.before, after=args.after)
                     executor.map(processor, log_record_pointers)

@@ -96,8 +96,11 @@ def export_and_print_log_events(args):
 
 def print_log_event(event):
     if "@timestamp" in event:
-        event["timestamp"], event["message"] = event["@timestamp"], event["@message"]
-    print(str(Timestamp(event["timestamp"])), event["message"])
+        print(str(Timestamp(event["@timestamp"])), event["@message"])
+    elif "timestamp" in event:
+        print(str(Timestamp(event["timestamp"])), event["message"])
+    else:
+        print(json.dumps(event, indent=4))
 
 def print_log_events(args):
     streams = []
