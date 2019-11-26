@@ -1,5 +1,5 @@
 """
-List CloudWatch Logs groups and streams.
+List CloudWatch Logs groups and streams, or print log events.
 
 List log groups, streams and their attributes:
 
@@ -157,7 +157,7 @@ def grep(args):
     logger.debug("Query %s: %s", query["queryId"], res["statistics"])
     return SystemExit(os.EX_OK if seen_results else os.EX_DATAERR)
 
-grep_parser = register_parser(grep, help="Run a CloudWatch Logs Insights query")
+grep_parser = register_parser(grep, help="Run a CloudWatch Logs Insights query (similar to filter, but faster)")
 grep_parser.add_argument("query", help="""CloudWatch Logs Insights query to use. See
 https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/AnalyzingLogData.html""")
 grep_parser.add_argument("log_group", help="CloudWatch log group")
