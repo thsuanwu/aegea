@@ -15,7 +15,7 @@ from .util import Timestamp, paginate
 from .util.compat import USING_PYTHON2
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_iam_role, ensure_log_group,
-                       expect_error_codes)
+                       ensure_ecs_cluster, expect_error_codes)
 from .util.aws.logs import CloudwatchLogReader
 from .util.aws.batch import get_command_and_env, set_ulimits, set_volumes, get_ecr_image_uri
 
@@ -59,7 +59,7 @@ def run(args):
     args.storage = args.efs_storage = args.mount_instance_storage = None
     command, environment = get_command_and_env(args)
     vpc = ensure_vpc()
-    clients.ecs.create_cluster(clusterName=args.cluster)
+    ensure_ecs_cluster(args.cluster)
     log_config = {
         "logDriver": "awslogs",
         "options": {

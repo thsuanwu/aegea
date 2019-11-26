@@ -553,6 +553,15 @@ def ensure_log_group(name):
             pass
         return resolve_log_group(name)
 
+def ensure_ecs_cluster(name):
+    res = clients.ecs.describe_clusters(clusters=[name])
+    if res.get("failures"):
+        if res["failures"][0]["reason"] == "MISSING":
+            return clients.ecs.create_cluster(clusterName=name)["cluster"]
+        else:
+            raise AegeaException(res)
+    return res["clusters"][0]
+
 def get_cloudwatch_metric_stats(namespace, name, start_time=None, end_time=None, period=None, statistic="Average",
                                 resource=None, **kwargs):
     start_time = datetime.utcnow() - period * 60 if start_time is None else start_time
