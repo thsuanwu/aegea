@@ -1,3 +1,10 @@
+Changes for v3.2.2 (2019-12-09)
+===============================
+
+-  Make nvme discovery more defensive
+
+-  aegea rm: support removing EC2 launch templates by id
+
 Changes for v3.2.1 (2019-11-26)
 ===============================
 
