@@ -578,7 +578,7 @@ def instance_type_completer(max_cache_age_days=30, **kwargs):
     return [p["instanceType"] for p in get_products("AmazonEC2")]
 
 instance_storage_shellcode = """
-aegea_bd=( $(shopt -s nullglob; readlink -f /dev/disk/by-id/nvme-Amazon_EC2_NVMe_Instance_Storage_AWS{?????????????????,?????????????????-ns-?} | sort | uniq) )
+aegea_bd=( $(shopt -s nullglob; readlink -f /dev/disk/by-id/nvme-Amazon_EC2_NVMe_Instance_Storage_AWS{{?????????????????,?????????????????-ns-?}} | sort | uniq) )
 if [ ! -e /dev/md0 ]; then mdadm --create /dev/md0 --force --auto=yes --level=0 --chunk=256 --raid-devices=${{#aegea_bd[@]}} ${{aegea_bd[@]}}; {mkfs} /dev/md0; fi
 mount -L aegveph {mountpoint}
 """  # noqa
