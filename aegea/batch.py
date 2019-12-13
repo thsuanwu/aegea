@@ -85,6 +85,7 @@ def create_compute_environment(args):
     else:
         ecs_ami_id = get_ssm_parameter("/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id")
     launch_template = ensure_launch_template(ImageId=ecs_ami_id,
+                                             # TODO: add configurable BDM for Docker image cache space
                                              UserData=base64.b64encode(user_data).decode())
     batch_iam_role = ensure_iam_role(args.service_role, trust=["batch"], policies=["service-role/AWSBatchServiceRole"])
     vpc = ensure_vpc()
@@ -212,6 +213,7 @@ def add_command_args(parser):
                         help="With --cwl, use this file as the CWL job input (default: stdin)")
     parser.add_argument("--environment", nargs="+", metavar="NAME=VALUE",
                         type=lambda x: dict(zip(["name", "value"], x.split("=", 1))), default=[])
+    parser.add_argument("--staging-s3_bucket", help=argparse.SUPPRESS)
 
 def add_job_defn_args(parser):
     parser.add_argument("--ulimits", nargs="*",

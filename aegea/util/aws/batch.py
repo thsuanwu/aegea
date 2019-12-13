@@ -98,7 +98,7 @@ def get_command_and_env(args):
         shellcode += commands
 
     if args.execute:
-        bucket = ensure_s3_bucket("aegea-batch-jobs-{}".format(ARN.get_account_id()))
+        bucket = ensure_s3_bucket(args.staging_s3_bucket or "aegea-batch-jobs-" + ARN.get_account_id())
 
         key_name = hashlib.sha256(args.execute.read()).hexdigest()
         args.execute.seek(0)

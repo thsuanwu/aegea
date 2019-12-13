@@ -171,7 +171,10 @@ def ensure_s3_bucket(name=None, policy=None, lifecycle=None):
     if name is None:
         name = "aegea-assets-{}".format(ARN.get_account_id())
     bucket = resources.s3.Bucket(name)
-    if not bucket.creation_date:
+    try:
+        clients.s3.head_bucket(Bucket=bucket.name)
+    except ClientError as e:
+        logger.debug(e)
         if ARN.get_region() == "us-east-1":
             bucket.create()
         else:
