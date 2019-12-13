@@ -117,7 +117,7 @@ def get_command_and_env(args):
                       "$BATCH_SCRIPT"]
     elif args.cwl:
         ensure_dynamodb_table("aegea-batch-jobs", hash_key_name="job_id")
-        bucket = ensure_s3_bucket("aegea-batch-jobs-{}".format(ARN.get_account_id()))
+        bucket = ensure_s3_bucket(args.staging_s3_bucket or "aegea-batch-jobs-" + ARN.get_account_id())
         args.environment.append(dict(name="AEGEA_BATCH_S3_BASE_URL", value="s3://" + bucket.name))
 
         from cwltool.main import main as cwltool_main
