@@ -213,7 +213,7 @@ def add_command_args(parser):
                         help="With --cwl, use this file as the CWL job input (default: stdin)")
     parser.add_argument("--environment", nargs="+", metavar="NAME=VALUE",
                         type=lambda x: dict(zip(["name", "value"], x.split("=", 1))), default=[])
-    parser.add_argument("--staging-s3_bucket", help=argparse.SUPPRESS)
+    parser.add_argument("--staging-s3-bucket", help=argparse.SUPPRESS)
 
 def add_job_defn_args(parser):
     parser.add_argument("--ulimits", nargs="*",
