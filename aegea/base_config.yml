@@ -576,6 +576,9 @@ batch_create_compute_environment:
 #  ecs_container_instance_ami_tags:
 #    AegeaMission: "ecs-container-instance"
 
+batch_terminate:
+  reason: "Terminated by aegea"
+
 batch_compute_environments:
   columns:
     - computeEnvironmentName

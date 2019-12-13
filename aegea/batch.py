@@ -4,7 +4,7 @@ Manage AWS Batch jobs, queues, and compute environments.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib
+import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib, concurrent.futures
 
 from botocore.exceptions import ClientError
 
@@ -255,10 +255,16 @@ submit_parser.add_argument("--retry-attempts", type=int, default=1,
 submit_parser.add_argument("--dry-run", action="store_true", help="Gather arguments and stop short of submitting job")
 
 def terminate(args):
-    return clients.batch.terminate_job(jobId=args.job_id, reason="Terminated by {}".format(__name__))
+    def terminate_one(job_id):
+        return clients.batch.terminate_job(jobId=job_id, reason=args.reason)
 
-parser = register_parser(terminate, parent=batch_parser, help="Terminate a Batch job")
-parser.add_argument("job_id")
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        result = list(executor.map(terminate_one, args.job_id))
+        logger.info("Sent termination requests for %d jobs", len(result))
+
+parser = register_parser(terminate, parent=batch_parser, help="Terminate Batch jobs")
+parser.add_argument("job_id", nargs="+")
+parser.add_argument("--reason", help="A message to attach to the job that explains the reason for canceling it")
 
 def ls(args, page_size=100):
     table, job_ids = [], []
