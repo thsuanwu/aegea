@@ -1,3 +1,8 @@
+Changes for v3.2.6 (2019-12-13)
+===============================
+
+-  aegea batch terminate: allow multiple job IDs, custom reason
+
 Changes for v3.2.5 (2019-12-12)
 ===============================
 
