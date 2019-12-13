@@ -1,3 +1,8 @@
+Changes for v3.2.4 (2019-12-12)
+===============================
+
+-  Batch: configurable staging bucket; use HEAD Bucket
+
 Changes for v3.2.3 (2019-12-09)
 ===============================
 
