@@ -1,3 +1,9 @@
+Changes for v3.2.7 (2019-12-13)
+===============================
+
+-  batch submit –execute: Follow s3 redirects for staging bucket url
+   (#51)
+
 Changes for v3.2.6 (2019-12-13)
 ===============================
 
