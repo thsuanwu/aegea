@@ -118,6 +118,8 @@ build_ami:
     - 'apt-get install --yes virtualenv docker.io emacs$(if [[ "$(cat /etc/issue)" < "Ubuntu 18.04" ]]; then echo 24; fi)-nox || true'
     - "apt-get remove --yes popularity-contest postfix apport"
     - "if dpkg-query --show snapd; then apt-get remove --yes snapd; fi"
+    - "/etc/update-motd.d/00-header > /etc/motd"
+    - "sed -i '/pam_motd.so/ d' /etc/pam.d/sshd"
     - "apt-get autoremove --yes"
     - "apt-get clean --yes"
     - "find /etc/cron.* -type f -not -name .placeholder -and -not -name logrotate -and -not -name fstrim -delete"
