@@ -78,11 +78,13 @@ apt-get install -qqy docker.io python-pip
 pip install -q awscli
 cd $(mktemp -d)
 aws configure set default.region $AWS_DEFAULT_REGION
-$(aws ecr get-login)
+$(aws ecr get-login --no-include-email)
 DOCKERFILE_B64GZ="%s"
 echo "$DOCKERFILE_B64GZ" | base64 --decode | gunzip > Dockerfile
 TAG="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${REPO}:${TAG}"
-docker build -t "$TAG" .
+CACHE_FROM=""
+docker pull "$TAG" && CACHE_FROM="--cache-from $TAG"
+docker build $CACHE_FROM -t "$TAG" .
 docker push "$TAG"
 """
 def build_docker_image(args):
@@ -115,8 +117,7 @@ parser = register_parser(build_docker_image, help="Build an Elastic Container Re
 parser.add_argument("name")
 parser.add_argument("--read-access", nargs="*",
                     help="AWS account IDs or IAM principal ARNs to grant read access. Use '*' to grant to all.")
-# Using 14.04 here to prevent "client version exceeds server version" error because ECS host docker is too old
-parser.add_argument("--builder-image", default="ubuntu:14.04", help=argparse.SUPPRESS)
+parser.add_argument("--builder-image", default="ubuntu:18.04", help=argparse.SUPPRESS)
 parser.add_argument("--builder-iam-policies", nargs="+",
                     default=["AmazonEC2FullAccess", "AmazonS3FullAccess", "AmazonEC2ContainerRegistryPowerUser"])
 parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE", help="Tag resulting image with these tags")
