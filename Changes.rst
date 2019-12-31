@@ -1,3 +1,8 @@
+Changes for v3.3.0 (2019-12-31)
+===============================
+
+-  build-docker-image: use Docker cache
+
 Changes for v3.2.7 (2019-12-13)
 ===============================
 
