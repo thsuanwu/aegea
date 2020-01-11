@@ -4,7 +4,9 @@ Manage AWS Elastic Container Service (ECS) resources, including Fargate tasks.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import argparse, time, json, hashlib
+import argparse, time, json, hashlib, concurrent.futures
+from itertools import product
+from functools import partial
 
 from botocore.exceptions import ClientError
 
@@ -19,6 +21,9 @@ from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_i
 from .util.aws.logs import CloudwatchLogReader
 from .util.aws.batch import get_command_and_env, set_ulimits, set_volumes, get_ecr_image_uri
 
+def complete_cluster_name(**kwargs):
+    return [ARN(c).resource.partition("/")[2] for c in paginate(clients.ecs.get_paginator("list_clusters"))]
+
 def ecs(args):
     ecs_parser.print_help()
 
@@ -31,29 +36,37 @@ def clusters(args):
     page_output(tabulate(cluster_desc, args))
 
 parser = register_listing_parser(clusters, parent=ecs_parser, help="List ECS clusters")
-parser.add_argument("clusters", nargs="*")
+parser.add_argument("clusters", nargs="*").completer = complete_cluster_name
 
 def tasks(args):
-    list_tasks_args = {}
-    if args.cluster:
-        list_tasks_args["cluster"] = args.cluster
-    if args.launch_type:
-        list_tasks_args["launchType"] = args.launch_type
-    if args.desired_status:
-        list_tasks_args["desiredStatus"] = args.desired_status
-    if not args.tasks:
-        list_tasks = clients.ecs.get_paginator("list_tasks")
-        args.tasks = list(paginate(list_tasks, **list_tasks_args))
-        if not args.desired_status:
-            args.tasks += list(paginate(list_tasks, desiredStatus="STOPPED", **list_tasks_args))
-    task_desc = clients.ecs.describe_tasks(cluster=args.cluster, tasks=args.tasks)["tasks"] if args.tasks else []
-    page_output(tabulate(task_desc, args))
+    list_clusters = clients.ecs.get_paginator("list_clusters")
+    list_tasks = clients.ecs.get_paginator("list_tasks")
+
+    def list_tasks_worker(worker_args):
+        cluster, status = worker_args
+        return cluster, status, list(paginate(list_tasks, cluster=cluster, desiredStatus=status))
+
+    def describe_tasks_worker(t, cluster=None):
+        return clients.ecs.describe_tasks(cluster=cluster, tasks=t)["tasks"] if t else []
+
+    task_descs = []
+    if args.clusters is None:
+        args.clusters = [__name__.replace(".", "_")] if args.tasks else list(paginate(list_clusters))
+    if args.tasks:
+        task_descs = describe_tasks_worker(args.tasks, cluster=args.clusters[0])
+    else:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for cluster, status, tasks in executor.map(list_tasks_worker, product(args.clusters, args.desired_status)):
+                worker = partial(describe_tasks_worker, cluster=cluster)
+                descs = executor.map(worker, (tasks[pos:pos + 100] for pos in range(0, len(tasks), 100)))
+                task_descs += sum(descs, [])
+    page_output(tabulate(task_descs, args))
 
 parser = register_listing_parser(tasks, parent=ecs_parser, help="List ECS tasks")
 parser.add_argument("tasks", nargs="*")
-parser.add_argument("--cluster", default=__name__.replace(".", "_"))
-parser.add_argument("--desired-status", choices={"RUNNING", "STOPPED"})
-parser.add_argument("--launch-type", choices={"EC2", "FARGATE"})
+parser.add_argument("--clusters", nargs="*").completer = complete_cluster_name
+parser.add_argument("--desired-status", nargs=1, choices={"RUNNING", "STOPPED"}, default=["RUNNING", "STOPPED"])
+parser.add_argument("--launch-type", nargs=1, choices={"EC2", "FARGATE"}, default=["EC2", "FARGATE"])
 
 def run(args):
     args.storage = args.efs_storage = args.mount_instance_storage = None

@@ -349,6 +349,7 @@ ecs_clusters:
 ecs_tasks:
   columns:
     - taskArn
+    - clusterArn
     - taskDefinitionArn
     - containerInstanceArn
     - lastStatus
