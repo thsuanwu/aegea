@@ -1,3 +1,10 @@
+Changes for v3.3.3 (2020-01-14)
+===============================
+
+-  Parallelize aegea batch ls
+
+-  aegea ecs tasks: List all tasks
+
 Changes for v3.3.2 (2019-12-31)
 ===============================
 
