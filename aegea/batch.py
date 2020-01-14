@@ -4,7 +4,7 @@ Manage AWS Batch jobs, queues, and compute environments.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib, concurrent.futures
+import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib, concurrent.futures, itertools
 
 from botocore.exceptions import ClientError
 
@@ -267,12 +267,19 @@ parser.add_argument("job_id", nargs="+")
 parser.add_argument("--reason", help="A message to attach to the job that explains the reason for canceling it")
 
 def ls(args, page_size=100):
-    table, job_ids = [], []
-    for q in args.queues or [q["jobQueueName"] for q in clients.batch.describe_job_queues()["jobQueues"]]:
-        for s in args.status:
-            job_ids.extend(j["jobId"] for j in clients.batch.list_jobs(jobQueue=q, jobStatus=s)["jobSummaryList"])
-    for i in range(0, len(job_ids), page_size):
-        table.extend(clients.batch.describe_jobs(jobs=job_ids[i:i + page_size])["jobs"])
+    queues = args.queues or [q["jobQueueName"] for q in clients.batch.describe_job_queues()["jobQueues"]]
+
+    def list_jobs_worker(list_jobs_worker_args):
+        queue, status = list_jobs_worker_args
+        return [j["jobId"] for j in clients.batch.list_jobs(jobQueue=queue, jobStatus=status)["jobSummaryList"]]
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        job_ids = sum(executor.map(list_jobs_worker, itertools.product(queues, args.status)), [])
+
+        def describe_jobs_worker(start_index):
+            return clients.batch.describe_jobs(jobs=job_ids[start_index:start_index + page_size])["jobs"]
+
+        table = sum(executor.map(describe_jobs_worker, range(0, len(job_ids), page_size)), [])
     page_output(tabulate(table, args, cell_transforms={"createdAt": Timestamp}))
 
 job_status_colors = dict(SUBMITTED=YELLOW(), PENDING=YELLOW(), RUNNABLE=BOLD() + YELLOW(),
