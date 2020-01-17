@@ -32,7 +32,8 @@ from .util.compat import timestamp
 from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate
 from .util.aws import clients
-from .util.aws.logs import export_and_print_log_events, print_log_event, print_log_events, print_log_event_with_context
+from .util.aws.logs import (export_log_files, export_and_print_log_events, print_log_events, print_log_event,
+                            print_log_event_with_context)
 
 def log_group_completer(prefix, **kwargs):
     describe_log_groups_args = dict(logGroupNamePrefix=prefix) if prefix else dict()
@@ -41,7 +42,9 @@ def log_group_completer(prefix, **kwargs):
 
 def logs(args):
     if args.log_group and (args.log_stream or args.start_time or args.end_time):
-        if args.export:
+        if args.export and args.print_s3_urls:
+            return ["s3://{}/{}".format(f.bucket_name, f.key) for f in export_log_files(args)]
+        elif args.export:
             return export_and_print_log_events(args)
         else:
             return print_log_events(args)
@@ -67,6 +70,7 @@ logs_parser = register_parser(logs)
 logs_parser.add_argument("--max-streams-per-group", "-n", type=int, default=8)
 logs_parser.add_argument("--sort-by", default="lastIngestionTime:reverse")
 logs_parser.add_argument("--no-export", action="store_false", dest="export")
+logs_parser.add_argument("--print-s3-urls", action="store_true", help="With S3 log export, print S3 URLs, not contents")
 logs_parser.add_argument("log_group", nargs="?", help="CloudWatch log group").completer = log_group_completer
 logs_parser.add_argument("log_stream", nargs="?", help="CloudWatch log stream")
 add_time_bound_args(logs_parser, snap=2)
