@@ -160,7 +160,7 @@ parser_attach.add_argument("instance", type=resolve_instance_id, nargs="?")
 parser_attach.add_argument("--device", choices=["xvd" + chr(i + 1) for i in range(ord("a"), ord("z"))],
                            help="Device node to attach volume to. Default: auto-select the first available node")
 for parser in parser_create, parser_attach:
-    parser.add_argument("--format", nargs="?", const="mkfs.xfs",
+    parser.add_argument("--format", nargs="?", const="xfs",
                         help="Use this command and arguments to format volume after attaching (only valid on EC2)")
     parser.add_argument("--mount", nargs="?", const="/mnt", help="Mount volume on given mountpoint (only valid on EC2)")
 

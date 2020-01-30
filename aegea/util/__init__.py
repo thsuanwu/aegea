@@ -126,3 +126,5 @@ def get_mkfs_command(fs_type="xfs", label="aegveph"):
         return "mkfs.xfs -L {} -f ".format(label)
     elif fs_type == "ext4":
         return "mkfs.ext4 -L {} -F -E lazy_itable_init,lazy_journal_init ".format(label)
+    else:
+        raise Exception("unknown fs_type: {}".format(fs_type))
