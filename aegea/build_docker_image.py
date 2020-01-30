@@ -79,11 +79,11 @@ pip install -q awscli
 cd $(mktemp -d)
 aws configure set default.region $AWS_DEFAULT_REGION
 $(aws ecr get-login --no-include-email)
-DOCKERFILE_B64GZ="%s"
+DOCKERFILE_B64GZ="{dockerfile}"
 echo "$DOCKERFILE_B64GZ" | base64 --decode | gunzip > Dockerfile
-TAG="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${REPO}:${TAG}"
+TAG="${{AWS_ACCOUNT_ID}}.dkr.ecr.${{AWS_DEFAULT_REGION}}.amazonaws.com/${{REPO}}:${{TAG}}"
 CACHE_FROM=""
-docker pull "$TAG" && CACHE_FROM="--cache-from $TAG"
+if {use_cache}; then docker pull "$TAG" && CACHE_FROM="--cache-from $TAG"; done
 docker build $CACHE_FROM -t "$TAG" .
 docker push "$TAG"
 """
@@ -94,7 +94,8 @@ def build_docker_image(args):
                   'description="Built by {} for {}"'.format(__name__, ARN.get_iam_username())]
     ensure_ecr_repo(args.name, read_access=args.read_access)
     with tempfile.NamedTemporaryFile(mode="wt") as exec_fh:
-        exec_fh.write(build_docker_image_shellcode % (encode_dockerfile(args), ))
+        exec_fh.write(build_docker_image_shellcode.format(dockerfile=encode_dockerfile(args),
+                                                          use_cache=json.dumps(args.use_cache)))
         exec_fh.flush()
         submit_args = submit_parser.parse_args(["--execute", exec_fh.name])
         submit_args.volumes = [["/var/run/docker.sock", "/var/run/docker.sock"]]
@@ -123,4 +124,6 @@ parser.add_argument("--builder-iam-policies", nargs="+",
 parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE", help="Tag resulting image with these tags")
 parser.add_argument("--cloud-config-data", type=json.loads)
 parser.add_argument("--dockerfile")
+parser.add_argument("--no-cache", dest="use_cache", action="store_false",
+                    help="Build image from scratch without re-using layers from build steps of prior versions")
 parser.add_argument("--dry-run", action="store_true", help="Gather arguments and stop short of building the image")
