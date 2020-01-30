@@ -1,3 +1,10 @@
+Changes for v3.3.5 (2020-01-30)
+===============================
+
+-  ebs attach: Fix mkfs defaults
+
+-  build-docker-image: add –no-cache option
+
 Changes for v3.3.4 (2020-01-17)
 ===============================
 
