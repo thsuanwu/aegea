@@ -83,7 +83,7 @@ DOCKERFILE_B64GZ="{dockerfile}"
 echo "$DOCKERFILE_B64GZ" | base64 --decode | gunzip > Dockerfile
 TAG="${{AWS_ACCOUNT_ID}}.dkr.ecr.${{AWS_DEFAULT_REGION}}.amazonaws.com/${{REPO}}:${{TAG}}"
 CACHE_FROM=""
-if {use_cache}; then docker pull "$TAG" && CACHE_FROM="--cache-from $TAG"; done
+if {use_cache}; then docker pull "$TAG" && CACHE_FROM="--cache-from $TAG"; fi
 docker build $CACHE_FROM -t "$TAG" .
 docker push "$TAG"
 """
