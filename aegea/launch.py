@@ -237,8 +237,10 @@ parser.add_argument("--iam-role", default=__name__,
                     help="Pass this IAM role to the launched instance through an instance profile. Role credentials will become available in the instance metadata.")  # noqa
 parser.add_argument("--iam-policies", nargs="+", metavar="IAM_POLICY_NAME",
                     default=["IAMReadOnlyAccess",
-                             "AmazonElasticFileSystemFullAccess",
-                             "service-role/AmazonAPIGatewayPushToCloudWatchLogs"],
+                             "AmazonEC2ContainerRegistryReadOnly",
+                             "AmazonElasticFileSystemClientFullAccess",
+                             "AWSOpsWorksCloudWatchLogs",
+                             "AmazonSSMManagedInstanceCore"],
                     help="Ensure the default or specified IAM role has the listed IAM managed policies attached")
 parser.add_argument("--cloud-config-data", type=json.loads)
 parser.add_argument("--dry-run", "--dryrun", action="store_true")

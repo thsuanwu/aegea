@@ -9,7 +9,7 @@
 build_image:
   commands:
     - "update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8"
-    - "pip3 install awscli-cwlogs==1.4.5 keymaker==1.0.9 boto3==1.9.243 awscli==1.16.253 dynamoq==0.0.5 tractorbeam==0.1.3"
+    - "pip3 install awscli-cwlogs==1.4.6 keymaker==1.1.0 boto3==1.11.13 awscli==1.17.13 dynamoq==0.0.5 tractorbeam==0.1.3"
   packages:
     - language-pack-en
     - iptables-persistent
@@ -38,14 +38,6 @@ build_image:
     - pydf
     - jq
     - httpie
-    - python-dev
-    - python-cffi
-    - python-pip
-    - python-setuptools
-    - python-wheel
-    - python-virtualenv
-    - python-requests
-    - python-yaml
     - python3-dev
     - python3-cffi
     - python3-pip
@@ -101,6 +93,9 @@ build_ami:
     - keychain
     - colordiff
     - nmap
+    - emacs-nox
+    - docker.io
+    - snapd
   commands:
     - "ln -sf /lib/systemd/system/awslogs.service /etc/systemd/system/multi-user.target.wants"
     - "ln -sf /lib/systemd/system/docker-event-relay.service /etc/systemd/system/multi-user.target.wants"
@@ -111,13 +106,12 @@ build_ami:
     - "sed -i -e '/^PermitRootLogin/ s/.*/PermitRootLogin no/' /etc/ssh/sshd_config"
     - "update-grub"
     - "grub-install /dev/xvda"
-    - "pip3 install awscli-cwlogs==1.4.5 keymaker==1.0.9 boto3==1.9.243 awscli==1.16.253"
+    - "pip3 install awscli-cwlogs==1.4.6 keymaker==1.1.0 boto3==1.11.13 awscli==1.17.13"
     - "keymaker install"
     - "activate-global-python-argcomplete"
     - "dpkg-reconfigure debconf -f noninteractive -p critical"
-    - 'apt-get install --yes virtualenv docker.io emacs$(if [[ "$(cat /etc/issue)" < "Ubuntu 18.04" ]]; then echo 24; fi)-nox || true'
-    - "apt-get remove --yes popularity-contest postfix apport"
-    - "if dpkg-query --show snapd; then apt-get remove --yes snapd; fi"
+    - "systemctl mask apport.service"
+    - "apt-get remove --yes popularity-contest postfix"
     - "chmod -x /etc/update-motd.d/10-help-text /etc/update-motd.d/50-motd-news"
     - "apt-get autoremove --yes"
     - "apt-get clean --yes"
