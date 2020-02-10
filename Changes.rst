@@ -1,3 +1,8 @@
+Changes for v3.3.7 (2020-02-10)
+===============================
+
+-  Update policies in preparation for SSM support
+
 Changes for v3.3.6 (2020-01-30)
 ===============================
 
