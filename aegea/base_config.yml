@@ -95,7 +95,6 @@ build_ami:
     - nmap
     - emacs-nox
     - docker.io
-    - snapd
   commands:
     - "ln -sf /lib/systemd/system/awslogs.service /etc/systemd/system/multi-user.target.wants"
     - "ln -sf /lib/systemd/system/docker-event-relay.service /etc/systemd/system/multi-user.target.wants"
@@ -649,6 +648,12 @@ launch:
   packages: []
   security_groups: []
   cloud_config_data: {}
+  iam_policies:
+    - IAMReadOnlyAccess
+    - AmazonEC2ContainerRegistryReadOnly
+    - AmazonElasticFileSystemClientFullAccess
+    - AWSOpsWorksCloudWatchLogs
+    - AmazonSSMManagedInstanceCore
 
 ssh:
   server_alive_interval: 15
