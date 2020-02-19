@@ -1,3 +1,8 @@
+Changes for v3.3.8 (2020-02-18)
+===============================
+
+-  build-docker-image: Parameterize Docker image tag
+
 Changes for v3.3.7 (2020-02-10)
 ===============================
 
