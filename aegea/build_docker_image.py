@@ -104,7 +104,7 @@ def build_docker_image(args):
         submit_args.dry_run = args.dry_run
         submit_args.image = args.builder_image
         submit_args.environment = [
-            dict(name="TAG", value="latest"),
+            dict(name="TAG", value=args.tag),
             dict(name="REPO", value=args.name),
             dict(name="AWS_DEFAULT_REGION", value=ARN.get_region()),
             dict(name="AWS_ACCOUNT_ID", value=ARN.get_account_id())
@@ -116,6 +116,7 @@ def build_docker_image(args):
 
 parser = register_parser(build_docker_image, help="Build an Elastic Container Registry Docker image")
 parser.add_argument("name")
+parser.add_argument("--tag", help="Docker image tag", default="latest")
 parser.add_argument("--read-access", nargs="*",
                     help="AWS account IDs or IAM principal ARNs to grant read access. Use '*' to grant to all.")
 parser.add_argument("--builder-image", default="ubuntu:18.04", help=argparse.SUPPRESS)
