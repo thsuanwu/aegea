@@ -38,8 +38,8 @@ parser.add_argument("state_machine").completer = complete_state_machine_name
 
 def describe(args):
     exec_desc = clients.stepfunctions.describe_execution(executionArn=args.execution_arn)
-    exec_desc["input"] = json.loads(exec_desc["input"])
-    exec_desc["output"] = json.loads(exec_desc["output"])
+    exec_desc["input"] = json.loads(exec_desc.get("input", {}))
+    exec_desc["output"] = json.loads(exec_desc.get("output", {}))
     return exec_desc
 
 parser = register_parser(describe, parent=sfn_parser, help="Describe an execution of a state machine")
