@@ -604,6 +604,21 @@ batch_ls:
     - container.memory
     - dependsOn
 
+sfn_state_machines:
+  columns:
+    - name
+    - stateMachineArn
+    - type
+    - creationDate
+
+sfn_executions:
+  columns:
+    - name
+    - executionArn
+    - status
+    - startDate
+    - stopDate
+
 lambda_ls:
   columns:
     - FunctionName
