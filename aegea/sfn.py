@@ -4,7 +4,7 @@ Manage AWS Step Functions state machines and executions.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib, concurrent.futures, itertools
+import os, sys, argparse, json
 
 from botocore.exceptions import ClientError
 
@@ -35,3 +35,12 @@ def executions(args):
 
 parser = register_listing_parser(executions, parent=sfn_parser, help="List the executions of a state machine")
 parser.add_argument("state_machine").completer = complete_state_machine_name
+
+def describe(args):
+    exec_desc = clients.stepfunctions.describe_execution(executionArn=args.execution_arn)
+    exec_desc["input"] = json.loads(exec_desc["input"])
+    exec_desc["output"] = json.loads(exec_desc["output"])
+    return exec_desc
+
+parser = register_parser(describe, parent=sfn_parser, help="Describe an execution of a state machine")
+parser.add_argument("execution_arn")
