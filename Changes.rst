@@ -1,3 +1,8 @@
+Changes for v3.4.0 (2020-03-03)
+===============================
+
+-  Initial release of the aegea sfn family of functions
+
 Changes for v3.3.12 (2020-03-02)
 ================================
 
