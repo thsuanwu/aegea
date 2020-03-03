@@ -14,6 +14,7 @@ from .ecr import ecr_image_name_completer
 from .util import Timestamp, paginate, get_mkfs_command
 from .util.crypto import ensure_ssh_key
 from .util.cloudinit import get_user_data
+from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 from .util.aws import (resources, clients, ensure_iam_role, ensure_instance_profile, make_waiter, ensure_vpc,
                        ensure_security_group, ensure_log_group, IAMPolicyBuilder, resolve_ami, instance_type_completer,
@@ -162,19 +163,31 @@ def ensure_queue(name):
         return create_queue(cq_args)
 
 def submit(args):
+    if args.job_definition_arn is None:
+        if not any([args.command, args.execute, args.cwl]):
+            raise AegeaException("One of the arguments --command --execute --cwl is required")
+    elif args.name is None:
+        raise AegeaException("The argument --name is required")
     ensure_log_group("docker")
     ensure_log_group("syslog")
-    command, environment = get_command_and_env(args)
     if args.job_definition_arn is None:
+        command, environment = get_command_and_env(args)
+        container_overrides = dict(command=command, environment=environment)
         jd_res = ensure_job_definition(args)
         args.job_definition_arn = jd_res["jobDefinitionArn"]
         args.name = args.name or "{}_{}".format(jd_res["jobDefinitionName"], jd_res["revision"])
+    else:
+        container_overrides = {}
+        if args.command:
+            container_overrides["command"] = args.command
+        if args.environment:
+            container_overrides["environment"] = args.environment
     submit_args = dict(jobName=args.name,
                        jobQueue=args.queue,
                        dependsOn=[dict(jobId=dep) for dep in args.depends_on],
                        jobDefinition=args.job_definition_arn,
                        parameters={k: v for k, v in args.parameters},
-                       containerOverrides=dict(command=command, environment=environment))
+                       containerOverrides=container_overrides)
     if args.dry_run:
         return {"Dry run succeeded": True}
     try:
@@ -203,7 +216,7 @@ def add_command_args(parser):
     group.add_argument("--watch", action="store_true", help="Monitor submitted job, stream log until job completes")
     group.add_argument("--wait", action="store_true",
                        help="Block on job. Exit with code 0 if job succeeded, 1 if failed")
-    group = parser.add_mutually_exclusive_group(required=True)
+    group = parser.add_mutually_exclusive_group()
     group.add_argument("--command", nargs="+", help="Run these commands as the job (using " + BOLD("bash -c") + ")")
     group.add_argument("--execute", type=argparse.FileType("rb"), metavar="EXECUTABLE",
                        help="Read this executable file and run it as the job")
