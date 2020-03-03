@@ -611,14 +611,6 @@ sfn_state_machines:
     - type
     - creationDate
 
-sfn_executions:
-  columns:
-    - name
-    - executionArn
-    - status
-    - startDate
-    - stopDate
-
 sfn_ls:
   columns:
     - name

@@ -28,16 +28,12 @@ def state_machines(args):
 
 parser = register_listing_parser(state_machines, parent=sfn_parser, help="List state machines")
 
-def executions(args):
-    sm_arn = ARN(service="states", resource="stateMachine:" + args.state_machine)
-    list_executions_paginator = clients.stepfunctions.get_paginator("list_executions")
-    page_output(tabulate(paginate(list_executions_paginator, stateMachineArn=str(sm_arn)), args))
-
-parser = register_listing_parser(executions, parent=sfn_parser, help="List the executions of a state machine")
-parser.add_argument("state_machine").completer = complete_state_machine_name
-
 def ls(args):
-    state_machines = paginate(clients.stepfunctions.get_paginator("list_state_machines"))
+    if args.state_machine:
+        sm_arn = ARN(service="states", resource="stateMachine:" + args.state_machine)
+        state_machines = [dict(stateMachineArn=str(sm_arn))]
+    else:
+        state_machines = paginate(clients.stepfunctions.get_paginator("list_state_machines"))
 
     def list_executions(state_machine):
         list_executions_paginator = clients.stepfunctions.get_paginator("list_executions")
@@ -48,7 +44,8 @@ def ls(args):
 
     page_output(tabulate(executions, args))
 
-parser = register_listing_parser(ls, parent=sfn_parser, help="List executions for all state machines in this account")
+parser = register_listing_parser(ls, parent=sfn_parser, help="List executions for state machines in this account")
+parser.add_argument("--state-machine").completer = complete_state_machine_name
 
 def describe(args):
     exec_desc = clients.stepfunctions.describe_execution(executionArn=args.execution_arn)
