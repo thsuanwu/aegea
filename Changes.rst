@@ -1,3 +1,8 @@
+Changes for v3.4.1 (2020-03-03)
+===============================
+
+-  batch submit: don’t require command override if job definition is set
+
 Changes for v3.4.0 (2020-03-03)
 ===============================
 
