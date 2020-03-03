@@ -619,6 +619,14 @@ sfn_executions:
     - startDate
     - stopDate
 
+sfn_ls:
+  columns:
+    - name
+    - executionArn
+    - status
+    - startDate
+    - stopDate
+
 lambda_ls:
   columns:
     - FunctionName

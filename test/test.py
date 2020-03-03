@@ -89,7 +89,7 @@ class TestAegea(unittest.TestCase):
             elif subcommand == "rm":
                 args += [resolve_ami()]
             elif subcommand in ("secrets", "rds", "elb", "flow-logs", "deploy", "zones", "ebs", "buckets", "efs",
-                                "ecr", "lambda", "configure"):
+                                "ecr", "lambda", "configure", "sfn"):
                 args += ["ls"]
             elif subcommand == "pricing":
                 args += ["AmazonS3", "--json"]
