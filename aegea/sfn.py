@@ -78,8 +78,9 @@ def watch(args):
                 for key in event.keys():
                     if key.endswith("EventDetails") and event[key]:
                         details = event[key]
-                logger.info("%s %s %s %s %s", event["timestamp"], event["type"],
-                            details.get("resourceType", ""), details.get("resource", ""), details.get("name", ""))
+                logger.info("%s %s %s %s %s %s", event["timestamp"], event["type"],
+                            details.get("resourceType", ""), details.get("resource", ""), details.get("name", ""),
+                            json.loads(details.get("parameters", "{}")).get("FunctionName", ""))
                 if "taskSubmittedEventDetails" in event:
                     if event.get("taskSubmittedEventDetails", {}).get("resourceType") == "batch":
                         job_id = json.loads(event["taskSubmittedEventDetails"]["output"])["JobId"]
