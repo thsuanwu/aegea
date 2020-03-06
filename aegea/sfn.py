@@ -4,11 +4,11 @@ Manage AWS Step Functions state machines and executions.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, json, concurrent.futures
+import os, sys, argparse, json, time, concurrent.futures
 
 from botocore.exceptions import ClientError
 
-from . import logger
+from . import batch, logger
 from .ls import register_parser, register_listing_parser
 from .ecr import ecr_image_name_completer
 from .util import Timestamp, paginate, get_mkfs_command
@@ -54,4 +54,50 @@ def describe(args):
     return exec_desc
 
 parser = register_parser(describe, parent=sfn_parser, help="Describe an execution of a state machine")
+parser.add_argument("execution_arn")
+
+sfn_status_colors = dict(RUNNING=GREEN(), SUCCEEDED=BOLD() + GREEN(),
+                         FAILED=BOLD() + RED(), TIMED_OUT=BOLD() + RED(), ABORTED=BOLD() + RED())
+
+def watch(args):
+    seen_events = set()
+    previous_status = None
+    while True:
+        exec_desc = clients.stepfunctions.describe_execution(executionArn=str(args.execution_arn))
+        if exec_desc["status"] == previous_status:
+            sys.stderr.write(".")
+            sys.stderr.flush()
+        else:
+            logger.info("%s %s", exec_desc["executionArn"],
+                        sfn_status_colors[exec_desc["status"]] + exec_desc["status"] + ENDC())
+            previous_status = exec_desc["status"]
+        history = clients.stepfunctions.get_execution_history(executionArn=str(args.execution_arn))
+        for event in sorted(history["events"], key=lambda x: x["id"]):
+            if event["id"] not in seen_events:
+                details = {}
+                for key in event.keys():
+                    if key.endswith("EventDetails") and event[key]:
+                        details = event[key]
+                logger.info("%s %s %s %s %s", event["timestamp"], event["type"],
+                            details.get("resourceType", ""), details.get("resource", ""), details.get("name", ""))
+                if "taskSubmittedEventDetails" in event:
+                    if event.get("taskSubmittedEventDetails", {}).get("resourceType") == "batch":
+                        job_id = json.loads(event["taskSubmittedEventDetails"]["output"])["JobId"]
+                        logger.info("Batch job ID %s", job_id)
+                        batch.watch(batch.watch_parser.parse_args([job_id]))
+                seen_events.add(event["id"])
+        if exec_desc["status"] in {"SUCCEEDED", "FAILED", "TIMED_OUT", "ABORTED"}:
+            break
+        time.sleep(1)
+
+    if exec_desc["status"] == "SUCCEEDED":
+        print(json.dumps(json.loads(exec_desc["output"]), indent=4, default=str))
+    else:
+        history = clients.stepfunctions.get_execution_history(executionArn=str(args.execution_arn))
+        last_event = sorted(history["events"], key=lambda x: x["id"])[-1]
+        logger.error("%s %s", args.execution_arn, sfn_status_colors[exec_desc["status"]] + exec_desc["status"] + ENDC())
+        return SystemExit(json.dumps(last_event, indent=4, default=str))
+
+
+parser = register_parser(watch, parent=sfn_parser, help="Monitor a running execution and stream its execution history")
 parser.add_argument("execution_arn")
