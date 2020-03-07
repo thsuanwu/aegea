@@ -111,7 +111,7 @@ def main(args=None):
     elif result is not None:
         if isinstance(result, dict) and "ResponseMetadata" in result:
             del result["ResponseMetadata"]
-        print(json.dumps(result, indent=2, default=lambda x: str(x)))
+        print(json.dumps(result, indent=2, default=str))
 
 def _get_config_for_prog(prog):
     command = prog.split(" ", 1)[-1].replace("-", "_").replace(" ", "_")
