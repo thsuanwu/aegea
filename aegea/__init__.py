@@ -15,17 +15,6 @@ from io import open
 from .util.compat import USING_PYTHON2
 from .version import __version__
 
-if sys.version_info < (2, 7, 9):  # See https://urllib3.readthedocs.io/en/latest/advanced-usage.html#sni-warning
-    try:
-        import botocore.vendored.requests.packages.urllib3.contrib.pyopenssl as p
-        p.inject_into_urllib3()
-        import requests.packages.urllib3.contrib.pyopenssl as p
-        p.inject_into_urllib3()
-    except ImportError:
-        msg = ('Your Python version is too old to support TLS SNI. '
-               'Run "pip install pyopenssl ndg-httpsclient" to avoid connection issues.')
-        warnings.warn(msg)
-
 logger = logging.getLogger(__name__)
 
 config, parser = None, None
