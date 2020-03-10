@@ -26,7 +26,7 @@ sfn_parser = register_parser(sfn, help="Manage AWS Step Functions", description=
 def state_machines(args):
     page_output(tabulate(paginate(clients.stepfunctions.get_paginator("list_state_machines")), args))
 
-parser = register_listing_parser(state_machines, parent=sfn_parser, help="List state machines")
+state_machines_parser = register_listing_parser(state_machines, parent=sfn_parser, help="List state machines")
 
 def ls(args):
     if args.state_machine:
@@ -44,8 +44,8 @@ def ls(args):
 
     page_output(tabulate(executions, args))
 
-parser = register_listing_parser(ls, parent=sfn_parser, help="List executions for state machines in this account")
-parser.add_argument("--state-machine").completer = complete_state_machine_name
+ls_parser = register_listing_parser(ls, parent=sfn_parser, help="List executions for state machines in this account")
+ls_parser.add_argument("--state-machine").completer = complete_state_machine_name
 
 def describe(args):
     exec_desc = clients.stepfunctions.describe_execution(executionArn=args.execution_arn)
@@ -53,8 +53,8 @@ def describe(args):
     exec_desc["output"] = json.loads(exec_desc.get("output", "null"))
     return exec_desc
 
-parser = register_parser(describe, parent=sfn_parser, help="Describe an execution of a state machine")
-parser.add_argument("execution_arn")
+describe_parser = register_parser(describe, parent=sfn_parser, help="Describe an execution of a state machine")
+describe_parser.add_argument("execution_arn")
 
 sfn_status_colors = dict(RUNNING=GREEN(), SUCCEEDED=BOLD() + GREEN(),
                          FAILED=BOLD() + RED(), TIMED_OUT=BOLD() + RED(), ABORTED=BOLD() + RED())
@@ -100,5 +100,6 @@ def watch(args):
         return SystemExit(json.dumps(last_event, indent=4, default=str))
 
 
-parser = register_parser(watch, parent=sfn_parser, help="Monitor a running execution and stream its execution history")
-parser.add_argument("execution_arn")
+watch_parser = register_parser(watch, parent=sfn_parser,
+                               help="Monitor a state machine execution and stream its execution history")
+watch_parser.add_argument("execution_arn")
