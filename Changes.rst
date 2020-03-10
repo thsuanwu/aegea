@@ -1,3 +1,8 @@
+Changes for v3.4.3 (2020-03-10)
+===============================
+
+-  sfn watch: Print Lambda name if available
+
 Changes for v3.4.2 (2020-03-05)
 ===============================
 
