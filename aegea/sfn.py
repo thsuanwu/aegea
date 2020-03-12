@@ -48,13 +48,17 @@ ls_parser = register_listing_parser(ls, parent=sfn_parser, help="List executions
 ls_parser.add_argument("--state-machine").completer = complete_state_machine_name
 
 def describe(args):
-    exec_desc = clients.stepfunctions.describe_execution(executionArn=args.execution_arn)
-    exec_desc["input"] = json.loads(exec_desc.get("input", "null"))
-    exec_desc["output"] = json.loads(exec_desc.get("output", "null"))
-    return exec_desc
+    if ARN(args.resource_arn).resource.startswith("execution"):
+        desc = clients.stepfunctions.describe_execution(executionArn=args.resource_arn)
+        desc["input"] = json.loads(desc.get("input", "null"))
+        desc["output"] = json.loads(desc.get("output", "null"))
+    else:
+        desc = clients.stepfunctions.describe_state_machine(stateMachineArn=args.resource_arn)
+        desc["definition"] = json.loads(desc.get("definition", "null"))
+    return desc
 
-describe_parser = register_parser(describe, parent=sfn_parser, help="Describe an execution of a state machine")
-describe_parser.add_argument("execution_arn")
+describe_parser = register_parser(describe, parent=sfn_parser, help="Describe a state machine or execution")
+describe_parser.add_argument("resource_arn")
 
 sfn_status_colors = dict(RUNNING=GREEN(), SUCCEEDED=BOLD() + GREEN(),
                          FAILED=BOLD() + RED(), TIMED_OUT=BOLD() + RED(), ABORTED=BOLD() + RED())
