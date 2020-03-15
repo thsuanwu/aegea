@@ -1,0 +1,33 @@
+[
+  {
+    "name": "worker",
+    "image": "ubuntu",
+    "cpu": 1,
+    "memory": 1024,
+    "essential": true,
+    "environment": [],
+    "mountPoints": [
+      {"sourceVolume": "scratch", "containerPath": "/mnt"}
+    ],
+    "portMappings": [],
+    "volumesFrom": [],
+    "command": [
+      "/bin/bash",
+      "-c",
+      "for i in \"$@\"; do eval \"$i\"; done; cd /",
+      "worker",
+      "echo WORKER READY",
+      "trap handler TERM",
+      "handler() { echo received sigterm; for i in {1..400}; do echo finishing tasks ${i}/400; sleep 1; done }",
+      "for j in {1..900}; do echo $j; sleep 10; done"
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-region": "us-west-2",
+        "awslogs-group": "akislyuk-test",
+        "awslogs-stream-prefix": "akislyuk-test"
+      }
+    }
+  }
+]
