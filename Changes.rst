@@ -1,3 +1,8 @@
+Changes for v3.5.1 (2020-03-20)
+===============================
+
+-  Resolve SSH port lazily and without mutable kwarg
+
 Changes for v3.5.0 (2020-03-20)
 ===============================
 
