@@ -1,3 +1,12 @@
+Changes for v3.5.0 (2020-03-20)
+===============================
+
+-  batch: add job description helper lambda
+
+-  Print the command that would be run with aegea batch –dry-run (#53)
+
+-  sfn describe: allow state machines to be described
+
 Changes for v3.4.3 (2020-03-10)
 ===============================
 
