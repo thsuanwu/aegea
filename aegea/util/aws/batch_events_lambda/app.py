@@ -21,5 +21,5 @@ def process_batch_event(event):
         for redact_field in "command", "environment", "volumes", "mountPoints":
             event.detail["container"][redact_field] = None
     account_id = event.detail["jobDefinition"].split(":")[4]
-    bucket = s3.Bucket(f"aegea-batch-jobs-{account_id}")
-    bucket.put_object(Key=f"job_descriptions/{job_id}", Body=json.dumps(event.detail).encode())
+    bucket = s3.Bucket("aegea-batch-jobs-{}".format(account_id))
+    bucket.put_object(Key="job_descriptions/{}".format(job_id), Body=json.dumps(event.detail).encode())
