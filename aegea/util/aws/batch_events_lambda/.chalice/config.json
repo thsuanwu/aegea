@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "app_name": "aegea",
+  "autogen_policy": false,
+  "lambda_memory_size": 128,
+  "lambda_timeout": 600,
+  "tags": {
+    "managedBy": "chalice",
+    "project": "aegea"
+  },
+  "stages": {
+    "dev": {},
+    "integration": {},
+    "staging": {},
+    "prod": {}
+  }
+}

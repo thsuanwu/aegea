@@ -18,10 +18,10 @@ from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 from .util.aws import (resources, clients, ensure_iam_role, ensure_instance_profile, make_waiter, ensure_vpc,
                        ensure_security_group, ensure_log_group, IAMPolicyBuilder, resolve_ami, instance_type_completer,
-                       expect_error_codes, instance_storage_shellcode)
+                       expect_error_codes, instance_storage_shellcode, ARN)
 from .util.aws.spot import SpotFleetBuilder
 from .util.aws.logs import CloudwatchLogReader
-from .util.aws.batch import ensure_job_definition, get_command_and_env
+from .util.aws.batch import ensure_job_definition, get_command_and_env, ensure_lambda_helper
 
 def complete_queue_name(**kwargs):
     return [q["jobQueueName"] for q in paginate(clients.batch.get_paginator("describe_job_queues"))]
@@ -163,6 +163,12 @@ def ensure_queue(name):
         return create_queue(cq_args)
 
 def submit(args):
+    try:
+        ensure_lambda_helper()
+    except Exception as e:
+        logger.error("Failed to install Lambda helper:")
+        logger.error("%s: %s", type(e).__name__, e)
+        logger.error("Aegea will be unable to look up logs for old Batch jobs.")
     if args.job_definition_arn is None:
         if not any([args.command, args.execute, args.cwl]):
             raise AegeaException("One of the arguments --command --execute --cwl is required")
@@ -317,22 +323,12 @@ def get_logs(args):
     for event in CloudwatchLogReader(args.log_stream_name, head=args.head, tail=args.tail):
         print(str(Timestamp(event["timestamp"])), event["message"])
 
-def save_job_desc(job_desc):
-    try:
-        cprops = dict(image="busybox", vcpus=1, memory=4,
-                      environment=[dict(name="job_desc", value=json.dumps(job_desc))])
-        jd_name = "{}_job_desc_{}".format(__name__.replace(".", "_"), job_desc["jobId"])
-        clients.batch.register_job_definition(jobDefinitionName=jd_name, type="container", containerProperties=cprops)
-    except Exception as e:
-        logger.debug("Error while saving job description: %s", e)
-
 def get_job_desc(job_id):
     try:
         return clients.batch.describe_jobs(jobs=[job_id])["jobs"][0]
     except IndexError:
-        jd_name = "{}_job_desc_{}".format(__name__.replace(".", "_"), job_id)
-        jd = clients.batch.describe_job_definitions(jobDefinitionName=jd_name)["jobDefinitions"][0]
-        return json.loads(jd["containerProperties"]["environment"][0]["value"])
+        bucket = resources.s3.Bucket("aegea-batch-jobs-{}".format(ARN.get_account_id()))
+        return json.loads(bucket.Object("job_descriptions/{}".format(job_id)).get()["Body"].read())
 
 def watch(args):
     job_desc = get_job_desc(args.job_id)
@@ -346,7 +342,6 @@ def watch(args):
             last_status = job_desc["status"]
             if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"}:
                 logger.info("Job %s log stream: %s", args.job_id, job_desc.get("container", {}).get("logStreamName"))
-                save_job_desc(job_desc)
         if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"} and "logStreamName" in job_desc["container"]:
             args.log_stream_name = job_desc["container"]["logStreamName"]
             get_logs(args)

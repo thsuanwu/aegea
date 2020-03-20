@@ -1,11 +1,11 @@
-import io, json, base64, hashlib, argparse
+import os, sys, io, json, base64, hashlib, argparse
 
 import yaml
 from botocore.exceptions import ClientError
 from botocore.paginate import Paginator
 
 from . import ARN, resources, clients, expect_error_codes, ensure_s3_bucket, ensure_iam_role, instance_storage_shellcode
-from .. import paginate, get_mkfs_command
+from .. import paginate, get_mkfs_command, logger
 from ..exceptions import AegeaException
 from ... import __version__
 
@@ -195,3 +195,24 @@ def ensure_job_definition(args):
                                                  type="container",
                                                  containerProperties=container_props,
                                                  retryStrategy=dict(attempts=args.retry_attempts))
+
+
+def ensure_lambda_helper():
+    awslambda = getattr(clients, "lambda")
+    try:
+        helper_desc = awslambda.get_function(FunctionName="aegea-dev-process_batch_event")
+        logger.info("Using Batch helper Lambda %s", helper_desc["Configuration"]["FunctionArn"])
+    except awslambda.exceptions.ResourceNotFoundException:
+        logger.info("Batch helper Lambda not found, installing")
+        import chalice.cli
+        orig_argv = sys.argv
+        orig_wd = os.getcwd()
+        try:
+            os.chdir(os.path.join(os.path.dirname(__file__), "batch_events_lambda"))
+            sys.argv = ["chalice", "deploy", "--no-autogen-policy"]
+            chalice.cli.main()
+        except SystemExit:
+            pass
+        finally:
+            os.chdir(orig_wd)
+            sys.argv = orig_argv

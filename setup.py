@@ -30,16 +30,14 @@ setuptools.setup(
         "babel >= 2.4.0, < 3",
         "ipwhois >= 1.1.0, < 2",
         "uritemplate >= 3.0.0, < 4",
-        "awscli >= 1.16.150, < 2"
+        "awscli >= 1.16.150, < 2",
+        "chalice >= 1.13.0, < 2"
     ],
     extras_require={
         ':python_version == "2.7"': [
             "enum34 >= 1.1.6, < 2",
             "ipaddress >= 1.0.19, < 2",
             "subprocess32 >= 3.2.7, < 4"
-        ],
-        'awslambda': [
-            "chalice >= 1.1.1, < 2"
         ]
     },
     tests_require=[
