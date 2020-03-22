@@ -96,7 +96,7 @@ def watch(args):
         time.sleep(1)
 
     if exec_desc["status"] == "SUCCEEDED":
-        return exec_desc["output"]
+        return json.loads(exec_desc["output"])
     else:
         history = clients.stepfunctions.get_execution_history(executionArn=str(args.execution_arn))
         last_event = sorted(history["events"], key=lambda x: x["id"])[-1]
