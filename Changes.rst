@@ -1,3 +1,8 @@
+Changes for v3.5.2 (2020-03-22)
+===============================
+
+-  sfn watch: Return deserialized output for pretty-printing
+
 Changes for v3.5.1 (2020-03-20)
 ===============================
 
