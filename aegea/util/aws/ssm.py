@@ -1,8 +1,6 @@
 import os, sys, io, stat, shutil, platform, subprocess, tempfile, zipfile
 
-import boto3
-from botocore import UNSIGNED
-from botocore.client import Config as BotocoreClientConfig
+import requests
 
 from ... import logger, config
 
@@ -10,18 +8,20 @@ sm_plugin_bucket = "session-manager-downloads"
 
 def download_session_manager_plugin_macos(target_path):
     sm_archive = io.BytesIO()
-    s3 = boto3.client("s3", config=BotocoreClientConfig(signature_version=UNSIGNED))
-    s3.download_fileobj(sm_plugin_bucket, "plugin/latest/mac/sessionmanager-bundle.zip", sm_archive)
+    sm_plugin_key = "plugin/latest/mac/sessionmanager-bundle.zip"
+    res = requests.get("https://s3.amazonaws.com/{}/{}".format(sm_plugin_bucket, sm_plugin_key), stream=True)
+    shutil.copyfileobj(res.raw, sm_archive)
     with zipfile.ZipFile(sm_archive) as zf, open(target_path, "wb") as fh:
         fh.write(zf.read("sessionmanager-bundle/bin/session-manager-plugin"))
 
 def download_session_manager_plugin_linux(target_path, pkg_format="deb"):
     assert pkg_format in {"deb", "rpm"}
-    s3 = boto3.client("s3", config=BotocoreClientConfig(signature_version=UNSIGNED))
     sm_plugin_key = "plugin/latest/linux_64bit/session-manager-plugin." + pkg_format
+    res = requests.get("https://s3.amazonaws.com/{}/{}".format(sm_plugin_bucket, sm_plugin_key), stream=True)
     with tempfile.TemporaryDirectory() as td:
         sm_archive_path = os.path.join(td, os.path.basename(sm_plugin_key))
-        s3.download_file(sm_plugin_bucket, sm_plugin_key, sm_archive_path)
+        with open(sm_archive_path, "wb") as fh:
+            shutil.copyfileobj(res.raw, fh)
         if pkg_format == "deb":
             subprocess.check_call(["dpkg", "-x", sm_archive_path, td])
         elif pkg_format == "rpm":
