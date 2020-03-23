@@ -310,8 +310,15 @@ parser = register_listing_parser(ls, parent=batch_parser, help="List Batch jobs"
 parser.add_argument("--queues", nargs="+").completer = complete_queue_name
 parser.add_argument("--status", nargs="+", default=job_states, choices=job_states)
 
+def get_job_desc(job_id):
+    try:
+        return clients.batch.describe_jobs(jobs=[job_id])["jobs"][0]
+    except IndexError:
+        bucket = resources.s3.Bucket("aegea-batch-jobs-{}".format(ARN.get_account_id()))
+        return json.loads(bucket.Object("job_descriptions/{}".format(job_id)).get()["Body"].read())
+
 def describe(args):
-    return clients.batch.describe_jobs(jobs=[args.job_id])["jobs"][0]
+    return get_job_desc(args.job_id)
 
 parser = register_parser(describe, parent=batch_parser, help="Describe a Batch job")
 parser.add_argument("job_id")
@@ -322,13 +329,6 @@ def format_job_status(status):
 def get_logs(args):
     for event in CloudwatchLogReader(args.log_stream_name, head=args.head, tail=args.tail):
         print(str(Timestamp(event["timestamp"])), event["message"])
-
-def get_job_desc(job_id):
-    try:
-        return clients.batch.describe_jobs(jobs=[job_id])["jobs"][0]
-    except IndexError:
-        bucket = resources.s3.Bucket("aegea-batch-jobs-{}".format(ARN.get_account_id()))
-        return json.loads(bucket.Object("job_descriptions/{}".format(job_id)).get()["Body"].read())
 
 def watch(args):
     job_desc = get_job_desc(args.job_id)
