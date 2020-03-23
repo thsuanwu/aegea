@@ -1,3 +1,8 @@
+Changes for v3.6.0 (2020-03-22)
+===============================
+
+-  ssh: use SSM Session Manager by default
+
 Changes for v3.5.2 (2020-03-22)
 ===============================
 
