@@ -40,9 +40,12 @@ Below are some highlights from Aegea's suite of commands. Run ``aegea --help`` t
 
 Aegea SSH
 ---------
-The ``aegea ssh`` command (and its variant ``aegea scp``) is an SSH configuration wrapper that allows you to securely
-resolve instance addresses by name and pre-fetch their public keys without the Trust-On-First-Use requirement. It also
-optionally integrates with the `Bless <https://github.com/Netflix/bless>`_ package using the
+The ``aegea ssh`` command (and its variant ``aegea scp``) is an SSH configuration wrapper that integrates with the
+`AWS Systems Manager <https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html>`_ to provide
+SSH connectivity to your instances without opening any inbound ports (if your instance OS is not configured with SSM,
+use ``aegea ssh --no-ssm`` to open a direct connection). ``aegea ssh`` securely resolves instance addresses by name and
+pre-fetches their public keys without the Trust-On-First-Use requirement. It also optionally integrates with the
+`Bless <https://github.com/Netflix/bless>`_ package using the
 `blessclient <https://github.com/chanzuckerberg/blessclient>`_ configuration convention.
 
 Aegea Launch
