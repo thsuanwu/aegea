@@ -126,9 +126,7 @@ def resolve_security_group(name, vpc=None):
             return security_group
     raise KeyError(name)
 
-def ensure_security_group(name, vpc, tcp_ingress=None):
-    if tcp_ingress is None:
-        tcp_ingress = [dict(port=socket.getservbyname("ssh"), cidr="0.0.0.0/0")]
+def ensure_security_group(name, vpc, tcp_ingress=frozenset()):
     try:
         security_group = resolve_security_group(name, vpc)
     except (ClientError, KeyError):

@@ -28,6 +28,7 @@ from .util.crypto import (add_ssh_host_key_to_known_hosts, ensure_local_ssh_key,
 from .util.printing import BOLD
 from .util.exceptions import AegeaException
 from .util.compat import lru_cache
+from .util.aws.ssm import ensure_session_manager_plugin
 
 opts_by_nargs = {
     "ssh": {0: "46AaCfGgKkMNnqsTtVvXxYy", 1: "BbcDEeFIiJLlmOopQRSW"},
@@ -57,18 +58,20 @@ def extract_passthrough_opts(args, program):
 def get_instance(name):
     return resources.ec2.Instance(resolve_instance_id(name))
 
-def resolve_instance_public_dns(name):
+def save_instance_public_key(name):
     instance = get_instance(name)
-    if not getattr(instance, "public_dns_name", None):
-        msg = "Unable to resolve public DNS name for {} (state: {})"
-        raise AegeaException(msg.format(instance, getattr(instance, "state", {}).get("Name")))
-
     tags = {tag["Key"]: tag["Value"] for tag in instance.tags or []}
     ssh_host_key = tags.get("SSHHostPublicKeyPart1", "") + tags.get("SSHHostPublicKeyPart2", "")
     if ssh_host_key:
         # FIXME: this results in duplicates.
         # Use paramiko to detect if the key is already listed and not insert it then (or only insert if different)
         add_ssh_host_key_to_known_hosts(instance.public_dns_name + " " + ssh_host_key + "\n")
+
+def resolve_instance_public_dns(name):
+    instance = get_instance(name)
+    if not getattr(instance, "public_dns_name", None):
+        msg = "Unable to resolve public DNS name for {} (state: {})"
+        raise AegeaException(msg.format(instance, getattr(instance, "state", {}).get("Name")))
     return instance.public_dns_name
 
 def get_linux_username():
@@ -140,7 +143,8 @@ def match_instance_to_bastion(instance, bastions):
                 logger.info("Using %s to connect to %s", bastion_config["pattern"], instance)
                 return bastion_config
 
-def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_key_name=__name__, use_kms_auth=True):
+def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_key_name=__name__, use_kms_auth=True,
+                          use_ssm=True):
     if bless_config_filename:
         with open(bless_config_filename) as fh:
             bless_config = yaml.safe_load(fh)
@@ -165,16 +169,26 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
             add_ssh_key_to_agent(get_instance(hostname).key_name)
         if not username:
             username = get_linux_username()
-        return [], username + "@" + resolve_instance_public_dns(hostname)
+        save_instance_public_key(hostname)
+        return [], username + "@" + (get_instance(hostname).id if use_ssm else resolve_instance_public_dns(hostname))
+
+def init_ssm(instance_id):
+    ssm_plugin_path = ensure_session_manager_plugin()
+    os.environ["PATH"] = os.environ["PATH"] + ":" + os.path.dirname(ssm_plugin_path)
+    return ["-o", "ProxyCommand=aws ssm start-session --document-name AWS-StartSSHSession --target " + instance_id]
 
 def ssh(args):
     ssh_opts = ["-o", "ServerAliveInterval={}".format(args.server_alive_interval)]
     ssh_opts += ["-o", "ServerAliveCountMax={}".format(args.server_alive_count_max)]
     ssh_opts += extract_passthrough_opts(args, "ssh")
     prefix, at, name = args.name.rpartition("@")
+
+    if args.use_ssm:
+        ssh_opts += init_ssm(get_instance(name).id)
+
     host_opts, hostname = prepare_ssh_host_opts(username=prefix, hostname=name,
                                                 bless_config_filename=args.bless_config,
-                                                use_kms_auth=args.use_kms_auth)
+                                                use_kms_auth=args.use_kms_auth, use_ssm=args.use_ssm)
     os.execvp("ssh", ["ssh"] + ssh_opts + host_opts + [hostname] + args.ssh_args)
 
 ssh_parser = register_parser(ssh, help="Connect to an EC2 instance", description=__doc__)
@@ -183,6 +197,7 @@ ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER,
                         help="Arguments to pass to ssh; please see " + BOLD("man ssh") + " for details")
 ssh_parser.add_argument("--server-alive-interval", help=argparse.SUPPRESS)
 ssh_parser.add_argument("--server-alive-count-max", help=argparse.SUPPRESS)
+ssh_parser.add_argument("--no-ssm", action="store_false", dest="use_ssm")
 add_bless_and_passthrough_opts(ssh_parser, "ssh")
 
 def scp(args):
@@ -191,17 +206,22 @@ def scp(args):
     """
     scp_opts, host_opts = extract_passthrough_opts(args, "scp"), []
     user_or_hostname_chars = string.ascii_letters + string.digits
+    ssm_init_complete = False
     for i, arg in enumerate(args.scp_args):
         if arg[0] in user_or_hostname_chars and ":" in arg:
             hostname, colon, path = arg.partition(":")
             username, at, hostname = hostname.rpartition("@")
+            if args.use_ssm and not ssm_init_complete:
+                scp_opts += init_ssm(get_instance(hostname).id)
+                ssm_init_complete = True
             host_opts, hostname = prepare_ssh_host_opts(username=username, hostname=hostname,
                                                         bless_config_filename=args.bless_config,
-                                                        use_kms_auth=args.use_kms_auth)
+                                                        use_kms_auth=args.use_kms_auth, use_ssm=args.use_ssm)
             args.scp_args[i] = hostname + colon + path
     os.execvp("scp", ["scp"] + scp_opts + host_opts + args.scp_args)
 
 scp_parser = register_parser(scp, help="Transfer files to or from EC2 instance", description=scp.__doc__)
 scp_parser.add_argument("scp_args", nargs=argparse.REMAINDER,
                         help="Arguments to pass to scp; please see " + BOLD("man scp") + " for details")
+scp_parser.add_argument("--no-ssm", action="store_false", dest="use_ssm")
 add_bless_and_passthrough_opts(scp_parser, "scp")
