@@ -16,7 +16,10 @@ def download_session_manager_plugin_macos(target_path):
 
 def download_session_manager_plugin_linux(target_path, pkg_format="deb"):
     assert pkg_format in {"deb", "rpm"}
-    sm_plugin_key = "plugin/latest/linux_64bit/session-manager-plugin." + pkg_format
+    if pkg_format == "deb":
+        sm_plugin_key = "plugin/latest/ubuntu_64bit/session-manager-plugin.deb"
+    else:
+        sm_plugin_key = "plugin/latest/linux_64bit/session-manager-plugin.rpm"
     with tempfile.TemporaryDirectory() as td:
         sm_archive_path = os.path.join(td, os.path.basename(sm_plugin_key))
         clients.s3.download_file(sm_plugin_bucket, sm_plugin_key, sm_archive_path)
