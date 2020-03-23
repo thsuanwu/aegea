@@ -1,3 +1,9 @@
+Changes for v3.6.1 (2020-03-23)
+===============================
+
+Use unauthenticated S3 session to download public S3 URL Update readme
+to mention SSH SSM integration
+
 Changes for v3.6.0 (2020-03-22)
 ===============================
 
