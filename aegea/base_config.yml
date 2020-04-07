@@ -725,6 +725,7 @@ managed_iam_groups:
     - AmazonEC2FullAccess
     - CloudWatchLogsReadOnlyAccess
     - IAMReadOnlyAccess
+    - AmazonSSMManagedInstanceCore
     - {"action": ["iam:PassRole", "route53:*"], "resource": "*"}
   aegea.batch.submit:
     - CloudWatchLogsReadOnlyAccess
