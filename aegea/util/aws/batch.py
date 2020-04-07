@@ -168,8 +168,8 @@ def set_volumes(args, container_props):
 def ensure_job_definition(args):
     if args.ecs_image:
         args.image = get_ecr_image_uri(args.ecs_image)
-    container_props = {k: getattr(args, k) for k in ("image", "vcpus", "memory", "privileged")}
-    container_props.update(volumes=[], mountPoints=[], environment=[], command=[], resourceRequirements=[])
+    container_props = {k: getattr(args, k) for k in ("image", "vcpus", "privileged")}
+    container_props.update(memory=4, volumes=[], mountPoints=[], environment=[], command=[], resourceRequirements=[])
     set_volumes(args, container_props)
     set_ulimits(args, container_props)
     if args.gpus:

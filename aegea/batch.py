@@ -188,6 +188,11 @@ def submit(args):
             container_overrides["command"] = args.command
         if args.environment:
             container_overrides["environment"] = args.environment
+    if args.memory is None:
+        logger.warn("Specify a memory quota for your job with --memory-mb NNNN.")
+        logger.warn("The memory quota is required and a hard limit. Setting it to %d MB.", int(args.default_memory_mb))
+        args.memory = int(args.default_memory_mb)
+    container_overrides["memory"] = args.memory
     submit_args = dict(jobName=args.name,
                        jobQueue=args.queue,
                        dependsOn=[dict(jobId=dep) for dep in args.depends_on],
@@ -247,7 +252,7 @@ def add_job_defn_args(parser):
     ecs_img_arg.completer = ecr_image_name_completer
     parser.add_argument("--volumes", nargs="+", metavar="HOST_PATH=GUEST_PATH", type=lambda x: x.split("=", 1),
                         default=[])
-    parser.add_argument("--memory-mb", dest="memory", type=int, default=1024)
+    parser.add_argument("--memory-mb", dest="memory", type=int)
 
 add_command_args(submit_parser)
 
