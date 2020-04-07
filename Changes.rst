@@ -1,3 +1,16 @@
+Changes for v3.6.4 (2020-04-07)
+===============================
+
+-  batch: ask to terminate job on Ctrl-C
+
+-  Manage Batch memory quota
+
+-  Update boto3 and awscli dependencies to match Ubuntu LTS
+
+-  Add AmazonSSMManagedInstanceCore to aegea.launch role
+
+-  batch describe: use common helper to pull in description cache
+
 Changes for v3.6.3 (2020-03-23)
 ===============================
 
