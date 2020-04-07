@@ -19,7 +19,7 @@ setuptools.setup(
     description="Amazon Web Services Operator Interface",
     long_description=open("README.rst").read(),
     install_requires=[
-        "boto3 >= 1.9.140, < 2",
+        "boto3 >= 1.9.253, < 2",
         "argcomplete >= 1.9.5, < 2",
         "paramiko >= 2.4.2, < 3",
         "requests >= 2.18.4, < 3",
@@ -30,7 +30,7 @@ setuptools.setup(
         "babel >= 2.4.0, < 3",
         "ipwhois >= 1.1.0, < 2",
         "uritemplate >= 3.0.0, < 4",
-        "awscli >= 1.16.150, < 2",
+        "awscli >= 1.17.14, < 2",
         "chalice >= 1.13.0, < 2"
     ],
     extras_require={
