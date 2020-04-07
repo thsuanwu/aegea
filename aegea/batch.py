@@ -210,7 +210,14 @@ def submit(args):
         ensure_queue(args.queue)
         job = clients.batch.submit_job(**submit_args)
     if args.watch:
-        watch(watch_parser.parse_args([job["jobId"]]))
+        try:
+            watch(watch_parser.parse_args([job["jobId"]]))
+        except KeyboardInterrupt:
+            logger.critical("Interrupt received for Batch job %s.", job["jobId"])
+            logger.critical("Press Enter to terminate job. Press Ctrl-C to quit.")
+            input()
+            clients.batch.terminate_job(jobId=job["jobId"], reason="Terminated by aegea.batch from user interrupt")
+            return SystemExit("Sent termination request for Batch job {}".format(job["jobId"]))
         if args.cwl:
             job.update(resources.dynamodb.Table("aegea-batch-jobs").get_item(Key={"job_id": job["jobId"]})["Item"])
     elif args.wait:
