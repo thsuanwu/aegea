@@ -376,6 +376,8 @@ for parser in get_logs_parser, watch_parser:
                              help="Retrieve this number of lines from the end of the log (default 10)")
 
 def ssh(args):
+    if not args.ssh_args:
+        args.ssh_args = ["/bin/bash", "-l"]
     job_desc = clients.batch.describe_jobs(jobs=[args.job_id])["jobs"][0]
     job_queue_desc = clients.batch.describe_job_queues(jobQueues=[job_desc["jobQueue"]])["jobQueues"][0]
     ce = job_queue_desc["computeEnvironmentOrder"][0]["computeEnvironment"]
@@ -393,4 +395,4 @@ def ssh(args):
 
 ssh_parser = register_parser(ssh, parent=batch_parser, help="Log in to a running Batch job via SSH")
 ssh_parser.add_argument("job_id")
-ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER, default=["/bin/bash", "-l"])
+ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER)
