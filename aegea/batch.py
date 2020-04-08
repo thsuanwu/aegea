@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 from . import logger
 from .ls import register_parser, register_listing_parser
 from .ecr import ecr_image_name_completer
+from .ssh import ssh as aegea_ssh, ssh_parser as aegea_ssh_parser
 from .util import Timestamp, paginate, get_mkfs_command
 from .util.crypto import ensure_ssh_key
 from .util.cloudinit import get_user_data
@@ -383,16 +384,13 @@ def ssh(args):
     ecs_ci_desc = clients.ecs.describe_container_instances(cluster=ce_desc["ecsClusterArn"],
                                                            containerInstances=[ecs_ci_arn])["containerInstances"][0]
     ecs_ci_ec2_id = ecs_ci_desc["ec2InstanceId"]
-    for reservation in paginate(clients.ec2.get_paginator("describe_instances"), InstanceIds=[ecs_ci_ec2_id]):
-        ecs_ci_address = reservation["Instances"][0]["PublicDnsName"]
-    logger.info("Job {} is on ECS container instance {} ({})".format(args.job_id, ecs_ci_ec2_id, ecs_ci_address))
-    ssh_args = ["ssh", "-l", "ec2-user", ecs_ci_address,
-                "docker", "ps", "--filter", "name=" + args.job_id, "--format", "{{.ID}}"]
-    logger.info("Running: {}".format(" ".join(ssh_args)))
-    container_id = subprocess.check_output(ssh_args).decode().strip()
-    subprocess.call(["ssh", "-t", "-l", "ec2-user", ecs_ci_address,
-                     "docker", "exec", "--interactive", "--tty", container_id] + (args.ssh_args or ["/bin/bash", "-l"]))
+    ecs_task_arn = job_desc["container"]["taskArn"]
+    ecs_task_desc = clients.ecs.describe_tasks(cluster=ce_desc["ecsClusterArn"], tasks=[ecs_task_arn])["tasks"][0]
+    container_id = ecs_task_desc["containers"][0]["runtimeId"]
+    logger.info("Job {} is on EC2 instance {}, container {}".format(args.job_id, ecs_ci_ec2_id, container_id))
+    aegea_ssh(aegea_ssh_parser.parse_args(["-t", "-l", "ec2-user", ecs_ci_ec2_id,
+                                           "docker", "exec", "--interactive", "--tty", container_id] + args.ssh_args))
 
 ssh_parser = register_parser(ssh, parent=batch_parser, help="Log in to a running Batch job via SSH")
 ssh_parser.add_argument("job_id")
-ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER)
+ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER, default=["/bin/bash", "-l"])
