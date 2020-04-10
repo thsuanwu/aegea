@@ -1,3 +1,10 @@
+Changes for v3.6.7 (2020-04-10)
+===============================
+
+-  batch: add SSM policy and name tags for CE instances
+
+-  Add info logging for batch ssh
+
 Changes for v3.6.6 (2020-04-08)
 ===============================
 
