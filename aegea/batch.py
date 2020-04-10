@@ -82,7 +82,6 @@ def create_compute_environment(args):
     if args.ecs_container_instance_ami:
         ecs_ami_id = args.ecs_container_instance_ami
     elif args.ecs_container_instance_ami_tags:
-        # TODO: build ECS CI AMI on demand
         ecs_ami_id = resolve_ami(**args.ecs_container_instance_ami_tags)
     else:
         ecs_ami_id = get_ssm_parameter("/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id")
@@ -95,6 +94,7 @@ def create_compute_environment(args):
     instance_profile = ensure_instance_profile(args.instance_role,
                                                policies={"service-role/AmazonAPIGatewayPushToCloudWatchLogs",
                                                          "service-role/AmazonEC2ContainerServiceforEC2Role",
+                                                         "AmazonSSMManagedInstanceCore",
                                                          IAMPolicyBuilder(action="sts:AssumeRole", resource="*")})
     compute_resources = dict(type=args.compute_type,
                              minvCpus=args.min_vcpus, desiredvCpus=args.desired_vcpus, maxvCpus=args.max_vcpus,
@@ -105,6 +105,7 @@ def create_compute_environment(args):
                              bidPercentage=100,
                              spotIamFleetRole=SpotFleetBuilder.get_iam_fleet_role().name,
                              ec2KeyPair=ssh_key_name,
+                             tags=dict(Name=__name__),
                              launchTemplate=dict(launchTemplateName=launch_template))
     logger.info("Creating compute environment %s in %s", args.name, vpc)
     compute_environment = clients.batch.create_compute_environment(computeEnvironmentName=args.name,
