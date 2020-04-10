@@ -379,17 +379,23 @@ def ssh(args):
     if not args.ssh_args:
         args.ssh_args = ["/bin/bash", "-l"]
     job_desc = clients.batch.describe_jobs(jobs=[args.job_id])["jobs"][0]
+    logger.info("Job %s %s", args.job_id, format_job_status(job_desc["status"]))
     job_queue_desc = clients.batch.describe_job_queues(jobQueues=[job_desc["jobQueue"]])["jobQueues"][0]
     ce = job_queue_desc["computeEnvironmentOrder"][0]["computeEnvironment"]
     ce_desc = clients.batch.describe_compute_environments(computeEnvironments=[ce])["computeEnvironments"][0]
+    if "containerInstanceArn" not in job_desc["container"]:
+        raise AegeaException("Job {} has not been dispatched to a container instance".format(args.job_id))
     ecs_ci_arn = job_desc["container"]["containerInstanceArn"]
     ecs_ci_desc = clients.ecs.describe_container_instances(cluster=ce_desc["ecsClusterArn"],
                                                            containerInstances=[ecs_ci_arn])["containerInstances"][0]
     ecs_ci_ec2_id = ecs_ci_desc["ec2InstanceId"]
+    logger.info("Job {} is on EC2 instance {}".format(args.job_id, ecs_ci_ec2_id))
     ecs_task_arn = job_desc["container"]["taskArn"]
-    ecs_task_desc = clients.ecs.describe_tasks(cluster=ce_desc["ecsClusterArn"], tasks=[ecs_task_arn])["tasks"][0]
-    container_id = ecs_task_desc["containers"][0]["runtimeId"]
-    logger.info("Job {} is on EC2 instance {}, container {}".format(args.job_id, ecs_ci_ec2_id, container_id))
+    res = clients.ecs.describe_tasks(cluster=ce_desc["ecsClusterArn"], tasks=[ecs_task_arn])
+    if len(res["tasks"]) == 0:
+        raise AegeaException("No ECS task found for job {}".format(args.job_id))
+    container_id = res["tasks"][0]["containers"][0]["runtimeId"]
+    logger.info("Job {} is in container {}".format(args.job_id, container_id))
     aegea_ssh(aegea_ssh_parser.parse_args(["-t", "-l", "ec2-user", ecs_ci_ec2_id,
                                            "docker", "exec", "--interactive", "--tty", container_id] + args.ssh_args))
 
