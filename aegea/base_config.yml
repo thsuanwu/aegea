@@ -622,6 +622,15 @@ sfn_ls:
     - startDate
     - stopDate
 
+sfn_history:
+  columns:
+    - type
+    - name
+    - id
+    - timestamp
+    - elapsed
+    - details
+
 lambda_ls:
   columns:
     - FunctionName

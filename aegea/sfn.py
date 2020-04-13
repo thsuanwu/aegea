@@ -107,3 +107,28 @@ def watch(args):
 watch_parser = register_parser(watch, parent=sfn_parser,
                                help="Monitor a state machine execution and stream its execution history")
 watch_parser.add_argument("execution_arn")
+
+def history(args):
+    history = clients.stepfunctions.get_execution_history(executionArn=str(args.execution_arn))
+    events = []
+    execution_started = None
+    for event in sorted(history["events"], key=lambda x: x["id"]):
+        if execution_started is None:
+            execution_started = event["timestamp"]
+        event["elapsed"] = str(event["timestamp"] - execution_started)
+        for key in list(event):
+            if key.endswith("EventDetails") and event[key]:
+                event["details"] = event[key]
+        event["name"] = event["details"].get("name", ":".join([event["details"].get(k, "")
+                                                               for k in ["resourceType", "resource"]]))
+        if event["name"] == ":":
+            event["name"] = ARN(args.execution_arn).resource.split(":", 1)[-1]
+        elif "FunctionName" in event["details"].get("parameters", ""):
+            event["name"] += "({})".format(json.loads(event["details"]["parameters"]).get("FunctionName"))
+        elif "JobId" in event["details"].get("output", ""):
+            event["name"] += "({})".format(json.loads(event["details"]["output"]).get("JobId"))
+        events.append(event)
+    page_output(tabulate(events, args))
+
+history_parser = register_listing_parser(history, parent=sfn_parser, help="List event history for a given execution")
+history_parser.add_argument("execution_arn")
