@@ -108,14 +108,22 @@ watch_parser = register_parser(watch, parent=sfn_parser,
                                help="Monitor a state machine execution and stream its execution history")
 watch_parser.add_argument("execution_arn")
 
+event_colors = dict(ExecutionStarted=GREEN(), ExecutionSucceeded=BOLD() + GREEN(), ExecutionFailed=BOLD() + RED(),
+                    ExecutionAborted=BOLD() + RED(), TaskSucceeded=GREEN(), TaskFailed=RED())
+
 def history(args):
     history = clients.stepfunctions.get_execution_history(executionArn=str(args.execution_arn))
     events = []
     execution_started = None
     for event in sorted(history["events"], key=lambda x: x["id"]):
+        event.setdefault("details", {})
+        if event["type"].startswith("Task") and event["type"] not in {"TaskStateEntered", "TaskStateExited"}:
+            event["type"] = "  " + event["type"]
+        if event["type"].strip() in event_colors:
+            event["type"] = event_colors[event["type"].strip()] + event["type"] + ENDC()
         if execution_started is None:
             execution_started = event["timestamp"]
-        event["elapsed"] = str(event["timestamp"] - execution_started)
+        event["elapsed"] = str(event["timestamp"] - execution_started).replace("000", "")
         for key in list(event):
             if key.endswith("EventDetails") and event[key]:
                 event["details"] = event[key]
