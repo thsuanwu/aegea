@@ -140,3 +140,9 @@ def history(args):
 
 history_parser = register_listing_parser(history, parent=sfn_parser, help="List event history for a given execution")
 history_parser.add_argument("execution_arn")
+
+def stop(args):
+    return clients.stepfunctions.stop_execution(executionArn=args.execution_arn)
+
+stop_parser = register_listing_parser(stop, parent=sfn_parser, help="Stop an execution")
+stop_parser.add_argument("execution_arn")
