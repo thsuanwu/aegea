@@ -74,8 +74,8 @@ def ensure_ecr_repo(name, read_access=None):
 build_docker_image_shellcode = """#!/bin/bash
 set -euo pipefail
 apt-get update -qq
-apt-get install -qqy docker.io python-pip
-pip install -q awscli
+apt-get -qq install -y --no-install-depends --no-install-recommends docker.io python3-{pip,wheel,setuptools}
+pip3 install -q awscli
 cd $(mktemp -d)
 aws configure set default.region $AWS_DEFAULT_REGION
 $(aws ecr get-login --no-include-email)
