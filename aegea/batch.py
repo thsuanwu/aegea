@@ -356,9 +356,10 @@ def watch(args):
             last_status = job_desc["status"]
             if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"}:
                 logger.info("Job %s log stream: %s", args.job_id, job_desc.get("container", {}).get("logStreamName"))
-        if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"} and "logStreamName" in job_desc["container"]:
-            args.log_stream_name = job_desc["container"]["logStreamName"]
-            get_logs(args)
+        if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"}:
+            if "logStreamName" in job_desc.get("container", {}):
+                args.log_stream_name = job_desc["container"]["logStreamName"]
+                get_logs(args)
         if "statusReason" in job_desc:
             logger.info("Job %s: %s", args.job_id, job_desc["statusReason"])
         if job_desc.get("container", {}).get("exitCode"):
