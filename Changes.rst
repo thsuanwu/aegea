@@ -1,3 +1,16 @@
+Changes for v3.6.9 (2020-04-23)
+===============================
+
+-  Add support for client endpoint config
+
+-  Speed up APT install for docker builder instance
+
+-  Add new regions to VPC base config
+
+-  Add aegea sfn stop
+
+-  Cosmetic improvements to sfn history
+
 Changes for v3.6.8 (2020-04-13)
 ===============================
 
