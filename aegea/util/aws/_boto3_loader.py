@@ -1,5 +1,6 @@
 class Loader:
     cache = dict(resource={}, client={})
+    client_kwargs = dict(default={})
 
     def __init__(self, factory):
         self.factory = factory
@@ -15,5 +16,6 @@ class Loader:
             else:
                 import boto3
                 factory = getattr(boto3, self.factory)
-                self.cache[self.factory][attr] = factory(attr)
+                self.cache[self.factory][attr] = factory(attr,
+                                                         **self.client_kwargs.get(attr, self.client_kwargs["default"]))
         return self.cache[self.factory][attr]

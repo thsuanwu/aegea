@@ -124,6 +124,14 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
     def set_aws_region(region_name):
         os.environ["AWS_DEFAULT_REGION"] = region_name
 
+    def set_endpoint_url(endpoint_url):
+        from .util.aws._boto3_loader import Loader
+        Loader.client_kwargs["default"].update(endpoint_url=endpoint_url)
+
+    def set_client_kwargs(client_kwargs):
+        from .util.aws._boto3_loader import Loader
+        Loader.client_kwargs.update(json.loads(client_kwargs))
+
     if config is None:
         initialize()
     if parent is None:
@@ -151,6 +159,8 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
                            type=set_aws_profile).completer = get_aws_profiles
     subparser.add_argument("--region", help="Region to use (overrides environment variable)",
                            type=set_aws_region).completer = get_region_names
+    subparser.add_argument("--endpoint-url", metavar="URL", help="Service endpoint URL to use", type=set_endpoint_url)
+    subparser.add_argument("--client-kwargs", help=argparse.SUPPRESS, type=set_client_kwargs)
     subparser.set_defaults(entry_point=function)
     if parent and sys.version_info < (2, 7, 9):  # See https://bugs.python.org/issue9351
         parent._defaults.pop("entry_point", None)
