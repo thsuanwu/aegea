@@ -74,7 +74,7 @@ def ensure_ecr_repo(name, read_access=None):
 build_docker_image_shellcode = """#!/bin/bash
 set -euo pipefail
 apt-get update -qq
-apt-get -qq install -y --no-install-depends --no-install-recommends docker.io python3-{pip,wheel,setuptools}
+apt-get -qq install -y --no-install-depends --no-install-recommends docker.io python3-pip python3-wheel python3-setuptools
 pip3 install -q awscli
 cd $(mktemp -d)
 aws configure set default.region $AWS_DEFAULT_REGION
@@ -86,7 +86,7 @@ CACHE_FROM=""
 if {use_cache}; then docker pull "$TAG" && CACHE_FROM="--cache-from $TAG"; fi
 docker build $CACHE_FROM -t "$TAG" .
 docker push "$TAG"
-"""
+"""  # noqa
 def build_docker_image(args):
     for key, value in config.build_image.items():
         getattr(args, key).extend(value)
