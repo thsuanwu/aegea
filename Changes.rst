@@ -1,3 +1,10 @@
+Changes for v3.6.12 (2020-04-30)
+================================
+
+-  Fixup for build-docker-image
+
+-  Use setuptools_scm
+
 Changes for v3.6.11 (2020-04-25)
 ================================
 
