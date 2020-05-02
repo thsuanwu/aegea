@@ -1,10 +1,10 @@
-import os, sys, time, hashlib, json, gzip, re, concurrent.futures
+import os, sys, time, hashlib, json, gzip, re
 from datetime import datetime
 
 import requests
 
 from ... import logger
-from .. import Timestamp, paginate
+from .. import Timestamp, paginate, ThreadPoolExecutor
 from ..compat import timestamp
 from . import ARN, IAMPolicyBuilder, S3BucketLifecycleBuilder, ensure_s3_bucket, clients
 
@@ -89,7 +89,7 @@ def get_lines_for_log_file(log_file):
     return log_lines
 
 def export_and_print_log_events(args):
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor() as executor:
         for lines in executor.map(get_lines_for_log_file, export_log_files(args)):
             for line in lines:
                 sys.stdout.write(line)

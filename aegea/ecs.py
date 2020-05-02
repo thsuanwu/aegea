@@ -4,7 +4,7 @@ Manage AWS Elastic Container Service (ECS) resources, including Fargate tasks.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import argparse, time, json, hashlib, concurrent.futures
+import argparse, time, json, hashlib
 from itertools import product
 from functools import partial
 
@@ -13,7 +13,7 @@ from botocore.exceptions import ClientError
 from . import logger
 from .batch import add_command_args, add_job_defn_args
 from .ls import register_parser, register_listing_parser
-from .util import Timestamp, paginate
+from .util import Timestamp, paginate, ThreadPoolExecutor
 from .util.compat import USING_PYTHON2
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_iam_role, ensure_log_group,
@@ -55,7 +55,7 @@ def tasks(args):
     if args.tasks:
         task_descs = describe_tasks_worker(args.tasks, cluster=args.clusters[0])
     else:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor() as executor:
             for cluster, status, tasks in executor.map(list_tasks_worker, product(args.clusters, args.desired_status)):
                 worker = partial(describe_tasks_worker, cluster=cluster)
                 descs = executor.map(worker, (tasks[pos:pos + 100] for pos in range(0, len(tasks), 100)))

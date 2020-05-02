@@ -1,12 +1,13 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, concurrent.futures
+import os, sys
 from datetime import datetime
 
 import boto3
 import botocore.exceptions
 
 from . import register_parser
+from .util import ThreadPoolExecutor
 from .util.printing import format_table, page_output
 
 def get_stats_for_region(region):
@@ -24,7 +25,7 @@ def get_stats_for_region(region):
 def top(args):
     table = []
     columns = ["Region", "Instances", "AMIs", "VPCs", "Network interfaces", "EBS volumes"]
-    executor = concurrent.futures.ThreadPoolExecutor()
+    executor = ThreadPoolExecutor()
     table = list(executor.map(get_stats_for_region, boto3.Session().get_available_regions("ec2")))
     page_output(format_table(table, column_names=columns, max_col_width=args.max_col_width))
 

@@ -4,14 +4,14 @@ Manage AWS Step Functions state machines and executions.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, json, time, concurrent.futures
+import os, sys, argparse, json, time
 
 from botocore.exceptions import ClientError
 
 from . import batch, logger
 from .ls import register_parser, register_listing_parser
 from .ecr import ecr_image_name_completer
-from .util import Timestamp, paginate, get_mkfs_command
+from .util import Timestamp, paginate, get_mkfs_command, ThreadPoolExecutor
 from .util.aws import clients, ARN
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 
@@ -39,7 +39,7 @@ def ls(args):
         list_executions_paginator = clients.stepfunctions.get_paginator("list_executions")
         return list(paginate(list_executions_paginator, stateMachineArn=state_machine["stateMachineArn"]))
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor() as executor:
         executions = sum(executor.map(list_executions, state_machines), [])
 
     page_output(tabulate(executions, args))

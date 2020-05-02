@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, re, socket, time, io, gzip, logging
+import os, sys, re, socket, time, io, gzip, logging, concurrent.futures
 from functools import partial
 from datetime import datetime
 from dateutil.parser import parse as dateutil_parse
@@ -128,3 +128,8 @@ def get_mkfs_command(fs_type="xfs", label="aegveph"):
         return "mkfs.ext4 -L {} -F -E lazy_itable_init,lazy_journal_init ".format(label)
     else:
         raise Exception("unknown fs_type: {}".format(fs_type))
+
+class ThreadPoolExecutor(concurrent.futures.ThreadPoolExecutor):
+    def __init__(self, **kwargs):
+        max_workers = kwargs.pop("max_workers", min(8, (os.cpu_count() or 1) + 4))
+        return concurrent.futures.ThreadPoolExecutor.__init__(self, max_workers=max_workers, **kwargs)

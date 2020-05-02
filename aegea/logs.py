@@ -22,12 +22,12 @@ Run the same search, but retrieve 10 lines of context for each match:
     aegea grep STRING LOG_GROUP --start-time=-1w -C 10
 """
 
-import os, sys, json, hashlib, time, concurrent.futures
+import os, sys, json, hashlib, time
 from datetime import datetime, timedelta
 from functools import partial
 
 from . import register_parser, logger
-from .util import Timestamp, paginate, add_time_bound_args
+from .util import Timestamp, paginate, add_time_bound_args, ThreadPoolExecutor
 from .util.compat import timestamp
 from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate
@@ -118,7 +118,7 @@ def grep(args):
     seen_results = {}
     print_with_context = partial(print_log_event_with_context, before=args.before_context, after=args.after_context)
     try:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor() as executor:
             while True:
                 res = clients.logs.get_query_results(queryId=query["queryId"])
                 log_record_pointers = []

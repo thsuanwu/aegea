@@ -4,7 +4,7 @@ Manage AWS Batch jobs, queues, and compute environments.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib, concurrent.futures, itertools
+import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib, itertools
 
 from botocore.exceptions import ClientError
 
@@ -12,7 +12,7 @@ from . import logger
 from .ls import register_parser, register_listing_parser
 from .ecr import ecr_image_name_completer
 from .ssh import ssh as aegea_ssh, ssh_parser as aegea_ssh_parser
-from .util import Timestamp, paginate, get_mkfs_command
+from .util import Timestamp, paginate, get_mkfs_command, ThreadPoolExecutor
 from .util.crypto import ensure_ssh_key
 from .util.cloudinit import get_user_data
 from .util.exceptions import AegeaException
@@ -292,9 +292,12 @@ def terminate(args):
     def terminate_one(job_id):
         return clients.batch.terminate_job(jobId=job_id, reason=args.reason)
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        result = list(executor.map(terminate_one, args.job_id))
-        logger.info("Sent termination requests for %d jobs", len(result))
+    result = [terminate_one(args.job_id[0])]
+
+    if len(args.job_id) > 1:
+        with ThreadPoolExecutor() as executor:
+            result += list(executor.map(terminate_one, args.job_id[1:]))
+    logger.info("Sent termination requests for %d jobs", len(result))
 
 parser = register_parser(terminate, parent=batch_parser, help="Terminate Batch jobs")
 parser.add_argument("job_id", nargs="+")
@@ -307,7 +310,7 @@ def ls(args, page_size=100):
         queue, status = list_jobs_worker_args
         return [j["jobId"] for j in clients.batch.list_jobs(jobQueue=queue, jobStatus=status)["jobSummaryList"]]
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor() as executor:
         job_ids = sum(executor.map(list_jobs_worker, itertools.product(queues, args.status)), [])
 
         def describe_jobs_worker(start_index):
