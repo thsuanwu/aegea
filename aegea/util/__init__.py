@@ -7,7 +7,7 @@ from dateutil.parser import parse as dateutil_parse
 from dateutil.relativedelta import relativedelta
 
 from .printing import GREEN
-from .compat import Repr, str
+from .compat import Repr, str, cpu_count
 
 logger = logging.getLogger(__name__)
 
@@ -131,5 +131,5 @@ def get_mkfs_command(fs_type="xfs", label="aegveph"):
 
 class ThreadPoolExecutor(concurrent.futures.ThreadPoolExecutor):
     def __init__(self, **kwargs):
-        max_workers = kwargs.pop("max_workers", min(8, (os.cpu_count() or 1) + 4))
+        max_workers = kwargs.pop("max_workers", min(8, (cpu_count() or 1) + 4))
         return concurrent.futures.ThreadPoolExecutor.__init__(self, max_workers=max_workers, **kwargs)
