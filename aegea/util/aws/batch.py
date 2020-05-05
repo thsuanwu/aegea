@@ -15,7 +15,7 @@ env_mgr_shellcode = """
 set -a
 if [ -f /etc/environment ]; then source /etc/environment; fi
 if [ -f /etc/default/locale ]; then source /etc/default/locale; else export LC_ALL=C.UTF-8 LANG=C.UTF-8; fi
-export AWS_DEFAULT_REGION={region}
+export AWS_DEFAULT_REGION={region} DEBIAN_FRONTEND=noninteractive
 set +a
 if [ -f /etc/profile ]; then source /etc/profile; fi
 set -euo pipefail
