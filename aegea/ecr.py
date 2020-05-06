@@ -11,7 +11,7 @@ import json
 from .ls import register_parser, register_listing_parser
 from .util import paginate
 from .util.printing import page_output, tabulate
-from .util.aws import clients
+from .util.aws import clients, AegeaException
 
 def ecr(args):
     ecr_parser.print_help()
@@ -34,8 +34,25 @@ def ls(args):
             table.append(repo)
     page_output(tabulate(table, args))
 
-parser = register_listing_parser(ls, parent=ecr_parser, help="List ECR repos and images")
-parser.add_argument("repositories", nargs="*")
+ls_parser = register_listing_parser(ls, parent=ecr_parser, help="List ECR repos and images")
+ls_parser.add_argument("repositories", nargs="*")
 
 def ecr_image_name_completer(**kwargs):
     return (r["repositoryName"] for r in paginate(clients.ecr.get_paginator("describe_repositories")))
+
+def retag(args):
+    image_id_key = "imageDigest" if len(args.existing_tag_or_digest) == 64 else "imageTag"
+    batch_get_image_args = dict(repositoryName=args.repository, imageIds=[{image_id_key: args.existing_tag_or_digest}])
+    for image in clients.ecr.batch_get_image(**batch_get_image_args)["images"]:
+        if "imageManifest" in image:
+            break
+    else:
+        raise AegeaException("No image found for tag or digest {}".format(args.existing_tag_or_digest))
+    return clients.ecr.put_image(repositoryName=args.repository,
+                                 imageManifest=image["imageManifest"],
+                                 imageTag=args.new_tag)
+
+retag_parser = register_parser(retag, parent=ecr_parser, help="Add a new tag to an existing image")
+retag_parser.add_argument("repository").completer = ecr_image_name_completer
+retag_parser.add_argument("existing_tag_or_digest", help="Tag or digest of an existing image in the registry")
+retag_parser.add_argument("new_tag", help="Tag to apply to existing image")
