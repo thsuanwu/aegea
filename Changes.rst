@@ -1,3 +1,14 @@
+Changes for v3.6.14 (2020-05-06)
+================================
+
+-  Add aegea ecr retag
+
+-  batch submit: set DEBIAN_FRONTEND=noninteractive
+
+-  Accelerate aegea buckets ls
+
+-  Cap ThreadPoolExecutor workers at 8
+
 Changes for v3.6.13 (2020-04-30)
 ================================
 
