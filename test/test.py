@@ -88,7 +88,9 @@ class TestAegea(unittest.TestCase):
                 args += ["--no-verify-ssh-key-pem-file", "--dry-run", "test"]
             elif subcommand == "rm":
                 args += [resolve_ami()]
-            elif subcommand in ("secrets", "rds", "elb", "flow-logs", "deploy", "zones", "ebs", "buckets", "efs",
+            elif subcommand == "s3":
+                args += ["buckets"]
+            elif subcommand in ("secrets", "rds", "elb", "flow-logs", "deploy", "zones", "ebs", "efs",
                                 "ecr", "lambda", "configure", "sfn"):
                 args += ["ls"]
             elif subcommand == "pricing":

@@ -13,10 +13,10 @@ from .util import ThreadPoolExecutor
 from .util.aws import ARN, resources, clients, expect_error_codes, get_cloudwatch_metric_stats
 from .util.printing import page_output, tabulate, format_number
 
-def buckets(args):
-    buckets_parser.print_help()
+def s3(args):
+    s3_parser.print_help()
 
-buckets_parser = register_parser(buckets, help="Manage S3 buckets", description=__doc__)
+s3_parser = register_parser(s3, help="Manage S3 buckets and query s3 objects", description=__doc__)
 
 def describe_bucket_worker(bucket):
     bucket.LocationConstraint = clients.s3.get_bucket_location(Bucket=bucket.name)["LocationConstraint"]
@@ -36,7 +36,7 @@ def describe_bucket_worker(bucket):
     bucket.BucketSizeBytes = format_number(data["Datapoints"][-1]["Average"]) if data["Datapoints"] else None
     return bucket
 
-def ls(args):
+def buckets(args):
     """
     List S3 buckets. See also "aws s3 ls". Use "aws s3 ls NAME" to list bucket contents.
     """
@@ -44,7 +44,7 @@ def ls(args):
         table = executor.map(describe_bucket_worker, filter_collection(resources.s3.buckets, args))
     page_output(tabulate(table, args))
 
-parser = register_filtering_parser(ls, parent=buckets_parser)
+buckets_parser = register_filtering_parser(buckets, parent=s3_parser)
 
 def lifecycle(args):
     if args.delete:
@@ -68,17 +68,24 @@ def lifecycle(args):
         expect_error_codes(e, "NoSuchLifecycleConfiguration")
         logger.error("No lifecycle configuration for bucket %s", args.bucket_name)
 
-parser = register_parser(lifecycle, parent=buckets_parser)
-parser.add_argument("bucket_name")
-parser.add_argument("--delete", action="store_true")
-parser.add_argument("--prefix", default="")
-parser.add_argument("--transition-to-infrequent-access", type=int, metavar="DAYS")
-parser.add_argument("--transition-to-glacier", type=int, metavar="DAYS")
-parser.add_argument("--expire", type=int, metavar="DAYS")
-parser.add_argument("--abort-incomplete-multipart-upload", type=int, metavar="DAYS")
+lifecycle_parser = register_parser(lifecycle, parent=s3_parser)
+lifecycle_parser.add_argument("bucket_name")
+lifecycle_parser.add_argument("--delete", action="store_true")
+lifecycle_parser.add_argument("--prefix", default="")
+lifecycle_parser.add_argument("--transition-to-infrequent-access", type=int, metavar="DAYS")
+lifecycle_parser.add_argument("--transition-to-glacier", type=int, metavar="DAYS")
+lifecycle_parser.add_argument("--expire", type=int, metavar="DAYS")
+lifecycle_parser.add_argument("--abort-incomplete-multipart-upload", type=int, metavar="DAYS")
 
 def cors(args):
     raise NotImplementedError()
 
-parser = register_parser(cors, parent=buckets_parser)
-parser.add_argument("bucket_name")
+cors_parser = register_parser(cors, parent=s3_parser)
+cors_parser.add_argument("bucket_name")
+
+# https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference-select.html
+def select(args):
+    raise NotImplementedError()
+
+select_parser = register_parser(cors, parent=s3_parser)
+select_parser.add_argument("bucket_name")
