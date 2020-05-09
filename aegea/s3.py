@@ -83,9 +83,35 @@ def cors(args):
 cors_parser = register_parser(cors, parent=s3_parser)
 cors_parser.add_argument("bucket_name")
 
-# https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference-select.html
 def select(args):
-    raise NotImplementedError()
+    """
+    Select data from an S3 object using AWS S3 Select.
 
-select_parser = register_parser(cors, parent=s3_parser)
-select_parser.add_argument("bucket_name")
+    See https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference-select.html.
+
+    Example:
+
+        aegea s3 select s3://my-bucket/data.json 'select * from S3Object[*].path'
+    """
+    _, _, bucket, key = args.s3_url.split("/", 3)
+    input_serialization = {"JSON": {"Type": args.json_type.upper()}}
+    if args.compression_type:
+        input_serialization.update(CompressionType=args.compression_type)
+
+    res = clients.s3.select_object_content(Bucket=bucket,
+                                           Key=key,
+                                           Expression=args.expression,
+                                           ExpressionType="SQL",
+                                           InputSerialization=input_serialization,
+                                           OutputSerialization={"JSON": {"RecordDelimiter": "\n"}})
+    for event in res["Payload"]:
+        if "Records" in event:
+            sys.stdout.buffer.write(event["Records"]["Payload"])
+        elif "Stats" in event or "Progress" in event:
+            logger.info(event)
+
+select_parser = register_parser(select, parent=s3_parser)
+select_parser.add_argument("s3_url")
+select_parser.add_argument("expression")
+select_parser.add_argument("--json-type", choices={"document", "lines"}, default="document")
+select_parser.add_argument("--compression-type", choices={"gzip", "bzip2"})
