@@ -1,3 +1,10 @@
+Changes for v3.6.15 (2020-05-15)
+================================
+
+-  Disable apt-daily.service
+
+-  Begin aegea s3 select
+
 Changes for v3.6.14 (2020-05-06)
 ================================
 
