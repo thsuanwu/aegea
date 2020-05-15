@@ -87,7 +87,7 @@ def select(args):
     """
     Select data from an S3 object using AWS S3 Select.
 
-    See https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference-select.html.
+    See https://docs.aws.amazon.com/AmazonS3/latest/dev/selecting-content-from-objects.html.
 
     Example:
 

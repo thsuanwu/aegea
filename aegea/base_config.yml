@@ -109,7 +109,7 @@ build_ami:
     - "keymaker install"
     - "activate-global-python-argcomplete"
     - "dpkg-reconfigure debconf -f noninteractive -p critical"
-    - "systemctl mask apport.service"
+    - "systemctl mask apport.service apt-daily.service"
     - "apt-get remove --yes popularity-contest postfix"
     - "chmod -x /etc/update-motd.d/10-help-text /etc/update-motd.d/50-motd-news"
     - "apt-get autoremove --yes"
