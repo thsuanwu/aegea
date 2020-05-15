@@ -187,6 +187,8 @@ def watch(args):
     _, cluster, task_id = ARN(args.task_arn).resource.split("/")
     logger.info("Watching task %s (%s)", task_id, cluster)
     last_status, events_received = None, 0
+    log_reader = CloudwatchLogReader("/".join([args.task_name, args.task_name, task_id]),
+                                     log_group_name=args.task_name)
     while last_status != "STOPPED":
         res = clients.ecs.describe_tasks(cluster=cluster, tasks=[args.task_arn])
         if len(res["tasks"]) == 1:
@@ -195,8 +197,7 @@ def watch(args):
                 logger.info("Task %s %s", args.task_arn, format_task_status(task_desc["lastStatus"]))
                 last_status = task_desc["lastStatus"]
         try:
-            for event in CloudwatchLogReader("/".join([args.task_name, args.task_name, task_id]),
-                                             log_group_name=args.task_name):
+            for event in log_reader:
                 print(str(Timestamp(event["timestamp"])), event["message"])
                 events_received += 1
         except ClientError as e:

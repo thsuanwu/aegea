@@ -1,10 +1,12 @@
-import os, sys, io, stat, shutil, platform, subprocess, tempfile, zipfile
+import os, sys, io, stat, shutil, platform, subprocess, tempfile, zipfile, time
 
 import boto3
 
 from ... import logger, config
-from . import resolve_instance_id, resources, clients, ARN
+from .. import Timestamp
 from ..exceptions import AegeaException
+from . import resolve_instance_id, resources, clients, ARN, paginate
+from .logs import CloudwatchLogReader
 
 sm_plugin_bucket = "session-manager-downloads"
 
@@ -47,3 +49,47 @@ def ensure_session_manager_plugin():
         os.chmod(target_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
         subprocess.check_call(["session-manager-plugin"], env=dict(os.environ, PATH=PATH))
     return shutil.which("session-manager-plugin", path=PATH)
+
+def run_command(command, instance_ids=None, targets=None, timeout=900):
+    send_command_args = dict(DocumentName="AWS-RunShellScript",
+                             CloudWatchOutputConfig=dict(CloudWatchOutputEnabled=True, CloudWatchLogGroupName=__name__),
+                             Parameters=dict(commands=[command]),
+                             TimeoutSeconds=timeout,
+                             Comment="Started by {}".format(__name__))
+    if instance_ids:
+        send_command_args.update(InstanceIds=instance_ids)
+    if targets:
+        send_command_args.update(Targets=targets)
+    log_readers = {}
+    try:
+        command_id = clients.ssm.send_command(**send_command_args)["Command"]["CommandId"]
+        while True:
+            statuses = []
+            for invocation in paginate(clients.ssm.get_paginator("list_command_invocations"), CommandId=command_id):
+                if invocation["Status"] in {"TimedOut", "Cancelled", "Failed"}:
+                    logger.error("SSM command failed: {}".format(invocation["StatusDetails"]))
+                    raise AegeaException("SSM command failed: {}".format(invocation))
+                statuses.append(invocation["Status"])
+                if invocation["Status"] not in {"InProgress", "Success"}:
+                    continue
+                for stream in "stdout", "stderr":
+                    log_stream_name = "{}/{}/aws-runShellScript/{}".format(command_id, invocation["InstanceId"], stream)
+                    if log_stream_name not in log_readers:
+                        log_readers[log_stream_name] = CloudwatchLogReader(log_group_name=__name__,
+                                                                           log_stream_name=log_stream_name)
+                    try:
+                        for event in log_readers[log_stream_name]:
+                            print(str(Timestamp(event["timestamp"])), event["message"])
+                    except clients.logs.exceptions.ResourceNotFoundException:
+                        logger.debug("No logs for %s", log_stream_name)
+                sys.stderr.write(".")
+                sys.stderr.flush()
+            if statuses and all(s == "Success" for s in statuses):
+                break
+            time.sleep(1)
+    except KeyboardInterrupt:
+        logger.error("Cancelling SSM command")
+        clients.ssm.cancel_command(CommandId=command_id)
+        logger.error("SSM command cancelled")
+        raise
+    logger.info("SSM command completed")

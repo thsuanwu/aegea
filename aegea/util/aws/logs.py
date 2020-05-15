@@ -9,13 +9,12 @@ from ..compat import timestamp
 from . import ARN, IAMPolicyBuilder, S3BucketLifecycleBuilder, ensure_s3_bucket, clients
 
 class CloudwatchLogReader:
-    next_page_token = None
-
     def __init__(self, log_stream_name, head=None, tail=None, log_group_name="/aws/batch/job"):
         self.log_group_name = log_group_name
         self.log_stream_name = log_stream_name
         self.head, self.tail = head, tail
         self.next_page_key = "nextForwardToken" if self.tail is None else "nextBackwardToken"
+        self.next_page_token = None
 
     def __iter__(self):
         page = None
@@ -33,7 +32,7 @@ class CloudwatchLogReader:
             if self.head is not None or self.tail is not None or len(page["events"]) == 0:
                 break
         if page:
-            CloudwatchLogReader.next_page_token = page[self.next_page_key]
+            self.next_page_token = page[self.next_page_key]
 
 def export_log_files(args):
     bucket_name = "aegea-cloudwatch-log-export-{}-{}".format(ARN.get_account_id(), clients.logs.meta.region_name)
