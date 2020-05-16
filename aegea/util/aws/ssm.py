@@ -60,7 +60,7 @@ def run_command(command, instance_ids=None, targets=None, timeout=900):
         send_command_args.update(InstanceIds=instance_ids)
     if targets:
         send_command_args.update(Targets=targets)
-    log_readers = {}
+    log_readers, stdout = {}, []
     try:
         command_id = clients.ssm.send_command(**send_command_args)["Command"]["CommandId"]
         while True:
@@ -79,7 +79,9 @@ def run_command(command, instance_ids=None, targets=None, timeout=900):
                                                                            log_stream_name=log_stream_name)
                     try:
                         for event in log_readers[log_stream_name]:
-                            print(str(Timestamp(event["timestamp"])), event["message"])
+                            print(event["message"], file=getattr(sys, stream))
+                            if stream == "stdout":
+                                stdout.append(event["message"])
                     except clients.logs.exceptions.ResourceNotFoundException:
                         logger.debug("No logs for %s", log_stream_name)
                 sys.stderr.write(".")
@@ -93,3 +95,4 @@ def run_command(command, instance_ids=None, targets=None, timeout=900):
         logger.error("SSM command cancelled")
         raise
     logger.info("SSM command completed")
+    return stdout

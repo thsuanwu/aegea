@@ -4,7 +4,8 @@ import os, sys, json, time, base64
 from io import open
 
 from . import register_parser, logger, config, __version__
-from .util.aws import locate_ami, add_tags, get_bdm, resolve_instance_id, resources, clients, ARN
+from .util.aws import locate_ami, add_tags, get_bdm, resolve_instance_id, resources, clients, ARN, AegeaException
+from .util.aws.ssm import run_command
 from .util.crypto import ensure_ssh_key, get_ssh_key_path
 from .util.printing import GREEN
 from .launch import launch, parser as launch_parser
@@ -12,9 +13,6 @@ from .launch import launch, parser as launch_parser
 def build_ami(args):
     for key, value in config.build_image.items():
         getattr(args, key).extend(value)
-    from .util.ssh import AegeaSSHClient
-    ssh_key_name = ensure_ssh_key(name=args.ssh_key_name, base_name=__name__,
-                                  verify_pem_file=args.verify_ssh_key_pem_file)
     if args.snapshot_existing_host:
         instance = resources.ec2.Instance(resolve_instance_id(args.snapshot_existing_host))
         args.ami = instance.image_id
@@ -25,28 +23,25 @@ def build_ami(args):
             args.ami = args.base_ami
         hostname = "{}-{}-{}".format(__name__, args.name, int(time.time())).replace(".", "-").replace("_", "-")
         launch_args = launch_parser.parse_args(args=[hostname], namespace=args)
-        launch_args.wait_for_ssh = True
         launch_args.iam_role = args.iam_role
         launch_args.cloud_config_data.update(rootfs_skel_dirs=args.rootfs_skel_dirs)
         instance = resources.ec2.Instance(launch(launch_args)["instance_id"])
     ci_timeout = args.cloud_init_timeout
     if ci_timeout <= 0:
         ci_timeout = 3660 * 24
-    ssh_client = AegeaSSHClient()
-    ssh_client.load_system_host_keys()
-    ssh_client.connect(instance.public_dns_name, username="ubuntu", key_filename=get_ssh_key_path(ssh_key_name))
     sys.stderr.write("Waiting {} seconds for cloud-init ...".format(ci_timeout))
     sys.stderr.flush()
-    devnull = open(os.devnull, "w")
     for i in range(ci_timeout):
         try:
-            ssh_client.check_output("ls /var/lib/cloud/data/result.json", stderr=devnull)
-            res = ssh_client.check_output("sudo jq .v1.errors /var/lib/cloud/data/result.json", stderr=devnull)
-            if res.strip() != "[]":
-                raise Exception("cloud-init encountered errors")
+            run_command("ls /var/lib/cloud/data/result.json", instance_ids=[instance.id])
+            res = run_command("sudo jq .v1.errors /var/lib/cloud/data/result.json", instance_ids=[instance.id])
+            if res != ["[]"]:
+                raise Exception("cloud-init encountered errors: {}".format(res))
             break
-        except Exception as e:
-            if "ENOENT" in str(e) or "EPERM" in str(e) or "No such file or directory" in str(e):
+        except clients.ssm.exceptions.InvalidInstanceId:
+            pass
+        except AegeaException as e:
+            if "SSM command failed" in str(e):
                 sys.stderr.write(".")
                 sys.stderr.flush()
                 time.sleep(1)

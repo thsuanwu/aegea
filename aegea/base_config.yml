@@ -120,9 +120,6 @@ build_ami:
       - source: "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
         filename: rstudio.list
         keyid: E298A3A825C0D65DFD57CBB651716619E084DAB9
-      - source: "deb https://packages.gitlab.com/gitlab/gitlab-ee/ubuntu/ bionic main"
-        filename: gitlab.list
-        keyid: 1A4C919DB987D435939638B914219A96E15E78F4
 
 # Name your Route 53 private DNS zone here. By default, aegea will register instances' names in this zone. For example,
 # when running `aegea launch test`, the `test` instance will be registered as `test.aegea`. To disable DNS registration,

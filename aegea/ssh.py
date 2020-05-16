@@ -227,7 +227,7 @@ scp_parser.add_argument("--no-ssm", action="store_false", dest="use_ssm")
 add_bless_and_passthrough_opts(scp_parser, "scp")
 
 def run(args):
-    return run_command(args.command, instance_ids=[get_instance(args.instance).id])
+    run_command(args.command, instance_ids=[get_instance(args.instance).id])
 
 run_parser = register_parser(run, help="Run a command on an EC2 instance")
 run_parser.add_argument("instance")
