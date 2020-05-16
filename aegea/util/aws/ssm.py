@@ -51,6 +51,13 @@ def ensure_session_manager_plugin():
     return shutil.which("session-manager-plugin", path=PATH)
 
 def run_command(command, instance_ids=None, targets=None, timeout=900):
+    """
+    Sends a command to specified instances using AWS Systems Manager. Waits for the command to complete.
+    Queries CloudWatch Logs for command stdout and stderr output, printing it to the terminal.
+    Raises an exception if the command exits with a non-zero exit status.
+
+    See https://docs.aws.amazon.com/systems-manager/latest/userguide/execute-remote-commands.html for details.
+    """
     send_command_args = dict(DocumentName="AWS-RunShellScript",
                              CloudWatchOutputConfig=dict(CloudWatchOutputEnabled=True, CloudWatchLogGroupName=__name__),
                              Parameters=dict(commands=[command]),

@@ -229,6 +229,6 @@ add_bless_and_passthrough_opts(scp_parser, "scp")
 def run(args):
     run_command(args.command, instance_ids=[get_instance(args.instance).id])
 
-run_parser = register_parser(run, help="Run a command on an EC2 instance")
+run_parser = register_parser(run, help="Run a command on an EC2 instance", description=run_command.__doc__)
 run_parser.add_argument("instance")
 run_parser.add_argument("command")
