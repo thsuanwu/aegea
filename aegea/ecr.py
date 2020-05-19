@@ -11,7 +11,7 @@ import json
 from .ls import register_parser, register_listing_parser
 from .util import paginate
 from .util.printing import page_output, tabulate
-from .util.aws import clients, AegeaException
+from .util.aws import clients, AegeaException, ARN
 
 def ecr(args):
     ecr_parser.print_help()
@@ -41,6 +41,11 @@ def ecr_image_name_completer(**kwargs):
     return (r["repositoryName"] for r in paginate(clients.ecr.get_paginator("describe_repositories")))
 
 def retag(args):
+    if "dkr.ecr" in args.repository and "amazonaws.com" in args.repository:
+        if not args.repository.startswith("{}.dkr.ecr.{}.amazonaws.com/".format(ARN.get_account_id(),
+                                                                                clients.ecr.meta.region_name)):
+            raise AegeaException("Unexpected repository ID {}".format(args.repository))
+        args.repository = args.repository.split("/", 1)[1]
     image_id_key = "imageDigest" if len(args.existing_tag_or_digest) == 64 else "imageTag"
     batch_get_image_args = dict(repositoryName=args.repository, imageIds=[{image_id_key: args.existing_tag_or_digest}])
     for image in clients.ecr.batch_get_image(**batch_get_image_args)["images"]:
