@@ -1,3 +1,10 @@
+Changes for v3.6.17 (2020-05-24)
+================================
+
+-  Fix batch watch, begin customizable job log printing
+
+-  ecr retag: Add repo ID sanity check
+
 Changes for v3.6.16 (2020-05-16)
 ================================
 
