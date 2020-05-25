@@ -63,7 +63,7 @@ describe_parser.add_argument("resource_arn")
 sfn_status_colors = dict(RUNNING=GREEN(), SUCCEEDED=BOLD() + GREEN(),
                          FAILED=BOLD() + RED(), TIMED_OUT=BOLD() + RED(), ABORTED=BOLD() + RED())
 
-def watch(args):
+def watch(args, print_event_fn=batch.print_event):
     seen_events = set()
     previous_status = None
     while True:
@@ -89,7 +89,7 @@ def watch(args):
                     if event.get("taskSubmittedEventDetails", {}).get("resourceType") == "batch":
                         job_id = json.loads(event["taskSubmittedEventDetails"]["output"])["JobId"]
                         logger.info("Batch job ID %s", job_id)
-                        batch.watch(batch.watch_parser.parse_args([job_id]))
+                        batch.watch(batch.watch_parser.parse_args([job_id]), print_event_fn=print_event_fn)
                 seen_events.add(event["id"])
         if exec_desc["status"] in {"SUCCEEDED", "FAILED", "TIMED_OUT", "ABORTED"}:
             break

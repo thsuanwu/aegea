@@ -343,16 +343,18 @@ parser.add_argument("job_id")
 def format_job_status(status):
     return job_status_colors[status] + status + ENDC()
 
-def get_logs(args):
-    for event in CloudwatchLogReader(args.log_stream_name, head=args.head, tail=args.tail):
-        print(str(Timestamp(event["timestamp"])), event["message"])
+def print_event(event):
+    print(str(Timestamp(event["timestamp"])) + " " + event["message"])
 
-def watch(args):
+def get_logs(args, print_event_fn=print_event):
+    for event in CloudwatchLogReader(args.log_stream_name, head=args.head, tail=args.tail):
+        print_event_fn(event)
+
+def watch(args, print_event_fn=print_event):
     job_desc = get_job_desc(args.job_id)
     args.job_name = job_desc["jobName"]
     logger.info("Watching job %s (%s)", args.job_id, args.job_name)
-    last_status = None
-    log_reader = CloudwatchLogReader(args.log_stream_name, head=args.head, tail=args.tail)
+    last_status, log_reader = None, None
     while last_status not in {"SUCCEEDED", "FAILED"}:
         job_desc = get_job_desc(args.job_id)
         if job_desc["status"] != last_status:
@@ -363,8 +365,10 @@ def watch(args):
         if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"}:
             if "logStreamName" in job_desc.get("container", {}):
                 args.log_stream_name = job_desc["container"]["logStreamName"]
+                if log_reader is None:
+                    log_reader = CloudwatchLogReader(args.log_stream_name, head=args.head, tail=args.tail)
                 for event in log_reader:
-                    print(str(Timestamp(event["timestamp"])), event["message"])
+                    print_event_fn(event)
         if "statusReason" in job_desc:
             logger.info("Job %s: %s", args.job_id, job_desc["statusReason"])
         if job_desc.get("container", {}).get("exitCode"):
