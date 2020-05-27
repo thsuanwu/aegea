@@ -115,33 +115,24 @@ def get_command_and_env(args):
                       "curl -L '{payload_url}' > $BATCH_SCRIPT".format(payload_url=payload_url),
                       "chmod +x $BATCH_SCRIPT",
                       "$BATCH_SCRIPT"]
-    elif args.cwl:
-        ensure_dynamodb_table("aegea-batch-jobs", hash_key_name="job_id")
+    elif args.wdl:
         bucket = ensure_s3_bucket(args.staging_s3_bucket or "aegea-batch-jobs-" + ARN.get_account_id())
-        args.environment.append(dict(name="AEGEA_BATCH_S3_BASE_URL", value="s3://" + bucket.name))
-
-        from cwltool.main import main as cwltool_main
-        with io.BytesIO() as preprocessed_cwl:
-            if cwltool_main(["--print-pre", args.cwl], stdout=preprocessed_cwl) != 0:
-                raise AegeaException("Error while running cwltool")
-            cwl_spec = yaml.load(preprocessed_cwl.getvalue())
-            payload = base64.b64encode(preprocessed_cwl.getvalue()).decode()
-            args.environment.append(dict(name="AEGEA_BATCH_CWL_DEF_B64", value=payload))
-            payload = base64.b64encode(args.cwl_input.read()).decode()
-            args.environment.append(dict(name="AEGEA_BATCH_CWL_JOB_B64", value=payload))
-
-        for requirement in cwl_spec.get("requirements", []):
-            if requirement["class"] == "DockerRequirement":
-                # FIXME: dockerFile support: ensure_ecr_image(...)
-                # container_props["image"] = requirement["dockerPull"]
-                pass
-
+        wdl_key_name = "{}.wdl".format(hashlib.sha256(args.wdl.read()).hexdigest())
+        args.wdl.seek(0)
+        bucket.upload_fileobj(args.wdl, wdl_key_name)
+        wdl_input = args.wdl_input.read()
+        wdl_input_key_name = "{}.json".format(hashlib.sha256(wdl_input).hexdigest())
+        bucket.Object(wdl_input_key_name).put(Body=wdl_input)
         shellcode += [
-            # 'sed -i -e "s|http://archive.ubuntu.com|http://us-east-1.ec2.archive.ubuntu.com|g" /etc/apt/sources.list',
-            # "apt-get update -qq",
-            # "apt-get install -qqy --no-install-suggests --no-install-recommends --force-yes python-pip python-requests python-yaml python-lockfile python-pyparsing awscli", # noqa
-            # "pip install ruamel.yaml==0.13.4 cwltool==1.0.20161227200419 dynamoq tractorbeam",
-            "cwltool --no-container --preserve-entire-environment <(echo $AEGEA_BATCH_CWL_DEF_B64 | base64 -d) <(echo $AEGEA_BATCH_CWL_JOB_B64 | base64 -d | tractor pull) | tractor push $AEGEA_BATCH_S3_BASE_URL/$AWS_BATCH_JOB_ID | dynamoq update aegea-batch-jobs $AWS_BATCH_JOB_ID" # noqa
+            "sed -i s/archive.ubuntu.com/{}.ec2.archive.ubuntu.com/ /etc/apt/sources.list".format(ARN.get_region()),
+            "apt-get -qq update",
+            "apt-get -qq install --no-install-suggests --no-install-recommends --yes python3-{pip,setuptools,wheel}",
+            "pip3 install miniwdl awscli",
+            "cd /mnt",
+            "aws s3 cp s3://{bucket}/{key} .".format(bucket=bucket.name, key=wdl_key_name),
+            "aws s3 cp s3://{bucket}/{key} wdl_input.json".format(bucket=bucket.name, key=wdl_input_key_name),
+            "miniwdl run --dir /mnt --verbose --error-json {} --input wdl_input.json > wdl_output.json".format(wdl_key_name),  # noqa
+            "aws s3 cp wdl_output.json s3://{bucket}/wdl_output/${{AWS_BATCH_JOB_ID}}.json".format(bucket=bucket.name)
         ]
     args.command = bash_cmd_preamble + shellcode + (args.command or [])
     return args.command, args.environment
@@ -160,6 +151,8 @@ def set_ulimits(args, container_props):
             container_props["ulimits"].append(dict(name=name, hardLimit=int(value), softLimit=int(value)))
 
 def set_volumes(args, container_props):
+    if args.wdl and ["/var/run/docker.sock", "/var/run/docker.sock"] not in args.volumes:
+        args.volumes.append(["/var/run/docker.sock", "/var/run/docker.sock"])
     if args.volumes:
         for i, (host_path, guest_path) in enumerate(args.volumes):
             container_props["volumes"].append({"host": {"sourcePath": host_path}, "name": "vol%d" % i})

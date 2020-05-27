@@ -172,8 +172,8 @@ def submit(args):
         logger.error("%s: %s", type(e).__name__, e)
         logger.error("Aegea will be unable to look up logs for old Batch jobs.")
     if args.job_definition_arn is None:
-        if not any([args.command, args.execute, args.cwl]):
-            raise AegeaException("One of the arguments --command --execute --cwl is required")
+        if not any([args.command, args.execute, args.wdl]):
+            raise AegeaException("One of the arguments --command --execute --wdl is required")
     elif args.name is None:
         raise AegeaException("The argument --name is required")
     ensure_log_group("docker")
@@ -220,8 +220,6 @@ def submit(args):
             input()
             clients.batch.terminate_job(jobId=job["jobId"], reason="Terminated by aegea.batch from user interrupt")
             return SystemExit("Sent termination request for Batch job {}".format(job["jobId"]))
-        if args.cwl:
-            job.update(resources.dynamodb.Table("aegea-batch-jobs").get_item(Key={"job_id": job["jobId"]})["Item"])
     elif args.wait:
         raise NotImplementedError()
     return job
@@ -241,10 +239,10 @@ def add_command_args(parser):
     group.add_argument("--command", nargs="+", help="Run these commands as the job (using " + BOLD("bash -c") + ")")
     group.add_argument("--execute", type=argparse.FileType("rb"), metavar="EXECUTABLE",
                        help="Read this executable file and run it as the job")
-    group.add_argument("--cwl", metavar="CWL_DEFINITION",
-                       help="Read this Common Workflow Language definition file and run it as the job")
-    parser.add_argument("--cwl-input", type=argparse.FileType("rb"), metavar="CWLINPUT", default=sys.stdin,
-                        help="With --cwl, use this file as the CWL job input (default: stdin)")
+    group.add_argument("--wdl", type=argparse.FileType("rb"), metavar="WDL_WORKFLOW",
+                       help="Read this WDL workflow file and run it as the job")
+    parser.add_argument("--wdl-input", type=argparse.FileType("rb"), metavar="WDL_INPUT_JSON", default=sys.stdin.buffer,
+                        help="With --wdl, use this JSON file as the WDL job input (default: stdin)")
     parser.add_argument("--environment", nargs="+", metavar="NAME=VALUE",
                         type=lambda x: dict(zip(["name", "value"], x.split("=", 1))), default=[])
     parser.add_argument("--staging-s3-bucket", help=argparse.SUPPRESS)
