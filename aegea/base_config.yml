@@ -254,7 +254,7 @@ ebs_snapshots:
     - start_time
     - tags
 
-buckets_ls:
+s3_buckets:
   resource: s3
   subresource: Bucket
   columns:
