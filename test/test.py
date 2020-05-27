@@ -126,6 +126,10 @@ class TestAegea(unittest.TestCase):
         self.call("aegea build-ami i --dry-run --no-verify-ssh-key-pem-file",
                   shell=True, expect=unauthorized_ok)
 
+        self.call("aegea batch submit --command pwd --dry-run", shell=True)
+        self.call("echo pwd > run.sh && aegea batch submit --execute run.sh --dry-run", shell=True)
+        self.call("aegea batch submit --wdl '{}' --dry-run".format(__file__.replace(".py", ".wdl")), shell=True)
+
     def test_spot_fleet_builder(self):
         builder = SpotFleetBuilder(launch_spec={})
         self.assertEqual(set(spec["InstanceType"] for spec in builder.launch_specs()),
