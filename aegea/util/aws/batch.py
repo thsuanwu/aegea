@@ -120,7 +120,7 @@ def get_command_and_env(args):
         wdl_key_name = "{}.wdl".format(hashlib.sha256(args.wdl.read()).hexdigest())
         args.wdl.seek(0)
         bucket.upload_fileobj(args.wdl, wdl_key_name)
-        wdl_input = args.wdl_input.read()
+        wdl_input = args.wdl_input.read().encode()
         wdl_input_key_name = "{}.json".format(hashlib.sha256(wdl_input).hexdigest())
         bucket.Object(wdl_input_key_name).put(Body=wdl_input)
         shellcode += [

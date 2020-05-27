@@ -241,7 +241,7 @@ def add_command_args(parser):
                        help="Read this executable file and run it as the job")
     group.add_argument("--wdl", type=argparse.FileType("rb"), metavar="WDL_WORKFLOW",
                        help="Read this WDL workflow file and run it as the job")
-    parser.add_argument("--wdl-input", type=argparse.FileType("rb"), metavar="WDL_INPUT_JSON", default=sys.stdin.buffer,
+    parser.add_argument("--wdl-input", type=argparse.FileType("r"), metavar="WDL_INPUT_JSON", default=sys.stdin,
                         help="With --wdl, use this JSON file as the WDL job input (default: stdin)")
     parser.add_argument("--environment", nargs="+", metavar="NAME=VALUE",
                         type=lambda x: dict(zip(["name", "value"], x.split("=", 1))), default=[])
