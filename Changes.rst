@@ -1,3 +1,8 @@
+Changes for v3.6.19 (2020-05-28)
+================================
+
+batch submit –wdl –watch: Return WDL output
+
 Changes for v3.6.18 (2020-05-28)
 ================================
 
