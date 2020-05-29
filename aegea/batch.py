@@ -171,6 +171,8 @@ def submit(args):
         logger.error("Failed to install Lambda helper:")
         logger.error("%s: %s", type(e).__name__, e)
         logger.error("Aegea will be unable to look up logs for old Batch jobs.")
+    if args.staging_s3_bucket is None:
+        args.staging_s3_bucket = "aegea-batch-jobs-" + ARN.get_account_id()
     if args.job_definition_arn is None:
         if not any([args.command, args.execute, args.wdl]):
             raise AegeaException("One of the arguments --command --execute --wdl is required")
@@ -214,6 +216,9 @@ def submit(args):
     if args.watch:
         try:
             watch(watch_parser.parse_args([job["jobId"]]))
+            if args.wdl:
+                wdl_output = resources.s3.Bucket(args.staging_s3_bucket).Object("wdl_output/{jobId}.json".format(**job))
+                return json.loads(wdl_output.get()["Body"].read())
         except KeyboardInterrupt:
             logger.critical("Interrupt received for Batch job %s.", job["jobId"])
             logger.critical("Press Enter to terminate job. Press Ctrl-C to quit.")

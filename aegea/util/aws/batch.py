@@ -98,7 +98,7 @@ def get_command_and_env(args):
         shellcode += commands
 
     if args.execute:
-        bucket = ensure_s3_bucket(args.staging_s3_bucket or "aegea-batch-jobs-" + ARN.get_account_id())
+        bucket = ensure_s3_bucket(args.staging_s3_bucket)
 
         key_name = hashlib.sha256(args.execute.read()).hexdigest()
         args.execute.seek(0)
@@ -116,7 +116,7 @@ def get_command_and_env(args):
                       "chmod +x $BATCH_SCRIPT",
                       "$BATCH_SCRIPT"]
     elif args.wdl:
-        bucket = ensure_s3_bucket(args.staging_s3_bucket or "aegea-batch-jobs-" + ARN.get_account_id())
+        bucket = ensure_s3_bucket(args.staging_s3_bucket)
         wdl_key_name = "{}.wdl".format(hashlib.sha256(args.wdl.read()).hexdigest())
         args.wdl.seek(0)
         bucket.upload_fileobj(args.wdl, wdl_key_name)
