@@ -130,6 +130,8 @@ class TestAegea(unittest.TestCase):
         self.call("echo pwd > run.sh && aegea batch submit --execute run.sh --dry-run", shell=True)
         self.call("aegea batch submit --wdl '{}' --dry-run".format(__file__.replace(".py", ".wdl")), shell=True)
 
+        self.call("aegea ecs run --command pwd --dry-run", shell=True)
+
     def test_spot_fleet_builder(self):
         builder = SpotFleetBuilder(launch_spec={})
         self.assertEqual(set(spec["InstanceType"] for spec in builder.launch_specs()),

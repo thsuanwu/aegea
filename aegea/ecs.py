@@ -4,7 +4,7 @@ Manage AWS Elastic Container Service (ECS) resources, including Fargate tasks.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, argparse, time, json, hashlib
+import os, sys, argparse, time, json, hashlib
 from itertools import product
 from functools import partial
 
@@ -143,11 +143,16 @@ def run(args):
         }
     }
     container_overrides = [dict(name=args.task_name, command=command, environment=environment)]
-    res = clients.ecs.run_task(cluster=args.cluster,
-                               taskDefinition=task_desc["taskDefinitionArn"],
-                               launchType="FARGATE",
-                               networkConfiguration=network_config,
-                               overrides=dict(containerOverrides=container_overrides))
+    run_args = dict(cluster=args.cluster,
+                    taskDefinition=task_desc["taskDefinitionArn"],
+                    launchType="FARGATE",
+                    networkConfiguration=network_config,
+                    overrides=dict(containerOverrides=container_overrides))
+    if args.dry_run:
+        logger.info("The following command would be run:")
+        sys.stderr.write(json.dumps(run_args, indent=4) + "\n")
+        return {"Dry run succeeded": True}
+    res = clients.ecs.run_task(**run_args)
     task_arn = res["tasks"][0]["taskArn"]
     if args.watch:
         watch(watch_parser.parse_args([task_arn, "--cluster", args.cluster, "--task-name", args.task_name]))
@@ -164,16 +169,17 @@ register_parser_args = dict(parent=ecs_parser, help="Run a Fargate task")
 if not USING_PYTHON2:
     register_parser_args["aliases"] = ["launch"]
 
-parser = register_parser(run, **register_parser_args)
-add_command_args(parser)
-add_job_defn_args(parser)
-parser.add_argument("--execution-role", metavar="IAM_ROLE", default=__name__)
-parser.add_argument("--task-role", metavar="IAM_ROLE", default=__name__)
-parser.add_argument("--security-group", default=__name__)
-parser.add_argument("--cluster", default=__name__.replace(".", "_"))
-parser.add_argument("--task-name", default=__name__.replace(".", "_"))
-parser.add_argument("--fargate-cpu", help="Execution vCPU count")
-parser.add_argument("--fargate-memory")
+run_parser = register_parser(run, **register_parser_args)
+add_command_args(run_parser)
+add_job_defn_args(run_parser)
+run_parser.add_argument("--execution-role", metavar="IAM_ROLE", default=__name__)
+run_parser.add_argument("--task-role", metavar="IAM_ROLE", default=__name__)
+run_parser.add_argument("--security-group", default=__name__)
+run_parser.add_argument("--cluster", default=__name__.replace(".", "_"))
+run_parser.add_argument("--task-name", default=__name__.replace(".", "_"))
+run_parser.add_argument("--fargate-cpu", help="Execution vCPU count")
+run_parser.add_argument("--fargate-memory")
+run_parser.add_argument("--dry-run", action="store_true", help="Gather arguments and stop short of running task")
 
 task_status_colors = dict(PROVISIONING=YELLOW(), PENDING=BOLD() + YELLOW(), ACTIVATING=BOLD() + YELLOW(),
                           RUNNING=GREEN(),
