@@ -35,7 +35,7 @@ def build_ami(args):
         try:
             run_command("ls /var/lib/cloud/data/result.json", instance_ids=[instance.id])
             res = run_command("sudo jq .v1.errors /var/lib/cloud/data/result.json", instance_ids=[instance.id])
-            if res != ["[]"]:
+            if len(res) != 1 or json.loads(res[0]) != []:
                 raise Exception("cloud-init encountered errors: {}".format(res))
             break
         except clients.ssm.exceptions.InvalidInstanceId:
