@@ -1,3 +1,12 @@
+Changes for v3.6.18 (2020-05-28)
+================================
+
+-  ecs watch: make compatible with new ECS task IDs
+
+-  Fix s3 buckets options config
+
+-  batch submit: Begin WDL support
+
 Changes for v3.6.17 (2020-05-24)
 ================================
 
