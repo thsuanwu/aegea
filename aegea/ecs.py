@@ -4,14 +4,14 @@ Manage AWS Elastic Container Service (ECS) resources, including Fargate tasks.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import argparse, time, json, hashlib
+import os, argparse, time, json, hashlib
 from itertools import product
 from functools import partial
 
 from botocore.exceptions import ClientError
 
 from . import logger
-from .batch import add_command_args, add_job_defn_args
+from .batch import add_command_args, add_job_defn_args, print_event
 from .ls import register_parser, register_listing_parser
 from .util import Timestamp, paginate, ThreadPoolExecutor
 from .util.compat import USING_PYTHON2
@@ -150,7 +150,7 @@ def run(args):
                                overrides=dict(containerOverrides=container_overrides))
     task_arn = res["tasks"][0]["taskArn"]
     if args.watch:
-        watch(watch_parser.parse_args([task_arn, "--task-name", args.task_name]))
+        watch(watch_parser.parse_args([task_arn, "--cluster", args.cluster, "--task-name", args.task_name]))
     elif args.wait:
         raise NotImplementedError()
     if args.watch or args.wait:
@@ -184,21 +184,20 @@ def format_task_status(status):
     return task_status_colors[status] + status + ENDC()
 
 def watch(args):
-    _, cluster, task_id = ARN(args.task_arn).resource.split("/")
-    logger.info("Watching task %s (%s)", task_id, cluster)
+    logger.info("Watching task %s (%s)", args.task_id, args.cluster)
     last_status, events_received = None, 0
-    log_reader = CloudwatchLogReader("/".join([args.task_name, args.task_name, task_id]),
+    log_reader = CloudwatchLogReader("/".join([args.task_name, args.task_name, os.path.basename(args.task_id)]),
                                      log_group_name=args.task_name)
     while last_status != "STOPPED":
-        res = clients.ecs.describe_tasks(cluster=cluster, tasks=[args.task_arn])
+        res = clients.ecs.describe_tasks(cluster=args.cluster, tasks=[args.task_id])
         if len(res["tasks"]) == 1:
             task_desc = res["tasks"][0]
             if task_desc["lastStatus"] != last_status:
-                logger.info("Task %s %s", args.task_arn, format_task_status(task_desc["lastStatus"]))
+                logger.info("Task %s %s", args.task_id, format_task_status(task_desc["lastStatus"]))
                 last_status = task_desc["lastStatus"]
         try:
             for event in log_reader:
-                print(str(Timestamp(event["timestamp"])), event["message"])
+                print_event(event)
                 events_received += 1
         except ClientError as e:
             expect_error_codes(e, "ResourceNotFoundException")
@@ -207,7 +206,8 @@ def watch(args):
         time.sleep(1)
 
 watch_parser = register_parser(watch, parent=ecs_parser, help="Monitor a running ECS Fargate task and stream its logs")
-watch_parser.add_argument("task_arn")
+watch_parser.add_argument("task_id")
+watch_parser.add_argument("--cluster", default=__name__.replace(".", "_"))
 watch_parser.add_argument("--task-name", default=__name__.replace(".", "_"))
 lines_group = watch_parser.add_mutually_exclusive_group()
 lines_group.add_argument("--head", type=int, nargs="?", const=10,
