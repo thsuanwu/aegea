@@ -1,3 +1,10 @@
+Changes for v3.6.24 (2020-05-30)
+================================
+
+-  Fix hostname config when using SSM with Bless
+
+-  Save instance public key under correct hostname
+
 Changes for v3.6.23 (2020-05-30)
 ================================
 
