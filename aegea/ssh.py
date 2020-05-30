@@ -58,14 +58,15 @@ def extract_passthrough_opts(args, program):
 def get_instance(name):
     return resources.ec2.Instance(resolve_instance_id(name))
 
-def save_instance_public_key(name):
+def save_instance_public_key(name, use_ssm=False):
     instance = get_instance(name)
     tags = {tag["Key"]: tag["Value"] for tag in instance.tags or []}
     ssh_host_key = tags.get("SSHHostPublicKeyPart1", "") + tags.get("SSHHostPublicKeyPart2", "")
     if ssh_host_key:
         # FIXME: this results in duplicates.
         # Use paramiko to detect if the key is already listed and not insert it then (or only insert if different)
-        add_ssh_host_key_to_known_hosts(instance.public_dns_name + " " + ssh_host_key + "\n")
+        hostname = instance.id if use_ssm else instance.public_dns_name
+        add_ssh_host_key_to_known_hosts(hostname + " " + ssh_host_key + "\n")
 
 def resolve_instance_public_dns(name):
     instance = get_instance(name)
@@ -169,7 +170,7 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
             add_ssh_key_to_agent(get_instance(hostname).key_name)
         if not username:
             username = get_linux_username()
-        save_instance_public_key(hostname)
+        save_instance_public_key(hostname, use_ssm=use_ssm)
         return [], username + "@" + (get_instance(hostname).id if use_ssm else resolve_instance_public_dns(hostname))
 
 def init_ssm(instance_id):
