@@ -167,8 +167,7 @@ def ensure_job_definition(args):
     set_ulimits(args, container_props)
     if args.gpus:
         container_props["resourceRequirements"] = [{"type": "GPU", "value": str(args.gpus)}]
-    iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"],
-                               policies=["AmazonEC2FullAccess", "AmazonDynamoDBFullAccess", "AmazonS3FullAccess"])
+    iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"], policies=args.default_job_role_iam_policies)
     container_props.update(jobRoleArn=iam_role.arn)
     expect_job_defn = dict(status="ACTIVE", type="container", parameters={},
                            retryStrategy={'attempts': args.retry_attempts}, containerProperties=container_props)

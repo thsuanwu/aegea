@@ -8,7 +8,7 @@ import os, sys, argparse, base64, collections, io, subprocess, json, time, re, h
 
 from botocore.exceptions import ClientError
 
-from . import logger
+from . import config, logger
 from .ls import register_parser, register_listing_parser
 from .ecr import ecr_image_name_completer
 from .ssh import ssh as aegea_ssh, ssh_parser as aegea_ssh_parser
@@ -183,6 +183,15 @@ def submit(args):
     if args.job_definition_arn is None:
         command, environment = get_command_and_env(args)
         container_overrides = dict(command=command, environment=environment)
+
+        if args.job_role == config.batch_submit.job_role:
+            args.default_job_role_iam_policies.append(IAMPolicyBuilder(
+                action=["s3:List*", "s3:HeadObject*", "s3:GetObject*", "s3:PutObject*"],
+                resource=["arn:aws:s3:::aegea-*", "arn:aws:s3:::aegea-*/*"]
+            ))
+        else:
+            args.default_job_role_iam_policies = []
+
         jd_res = ensure_job_definition(args)
         args.job_definition_arn = jd_res["jobDefinitionArn"]
         args.name = args.name or "{}_{}".format(jd_res["jobDefinitionName"], jd_res["revision"])
@@ -278,8 +287,7 @@ group.add_argument("--privileged", action="store_true", default=False)
 group.add_argument("--volume-type", choices={"standard", "io1", "gp2", "sc1", "st1"},
                    help="io1, PIOPS SSD; gp2, general purpose SSD; sc1, cold HDD; st1, throughput optimized HDD")
 group.add_argument("--parameters", nargs="+", metavar="NAME=VALUE", type=lambda x: x.split("=", 1), default=[])
-group.add_argument("--job-role", metavar="IAM_ROLE", default=__name__ + ".worker",
-                   help="Name of IAM role to grant to the job")
+group.add_argument("--job-role", metavar="IAM_ROLE", help="Name of IAM role to grant to the job")
 group.add_argument("--storage", nargs="+", metavar="MOUNTPOINT=SIZE_GB",
                    type=lambda x: x.rstrip("GBgb").split("=", 1), default=[])
 group.add_argument("--efs-storage", action="store", dest="efs_storage", default=False,

@@ -574,6 +574,10 @@ batch_create_compute_environment:
 
 batch_submit:
   default_memory_mb: 4000
+  job_role: aegea.batch.worker
+  default_job_role_iam_policies:
+    - AmazonEC2ReadOnlyAccess
+    - AmazonS3ReadOnlyAccess
 
 batch_terminate:
   reason: "Terminated by aegea"
