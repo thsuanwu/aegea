@@ -157,7 +157,9 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
         if not username:
             username = bless_config["client_config"]["remote_users"][0]
         bastion_config = match_instance_to_bastion(instance=instance, bastions=bless_config["ssh_config"]["bastions"])
-        if bastion_config:
+        if use_ssm:
+            return [], username + "@" + instance.id
+        elif bastion_config:
             jump_host = bastion_config["user"] + "@" + bastion_config["pattern"]
             return ["-o", "ProxyJump=" + jump_host], username + "@" + instance.private_ip_address
         elif instance.public_dns_name:
