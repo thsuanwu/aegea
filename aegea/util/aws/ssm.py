@@ -89,8 +89,6 @@ def run_command(command, instance_ids=None, targets=None, timeout=900):
                     try:
                         for event in log_readers[log_stream_name]:
                             print(event["message"], file=getattr(sys, stream))
-                            if stream == "stdout":
-                                stdout.append(event["message"])
                     except clients.logs.exceptions.ResourceNotFoundException:
                         logger.debug("No logs for %s", log_stream_name)
                 sys.stderr.write(".")
@@ -98,6 +96,14 @@ def run_command(command, instance_ids=None, targets=None, timeout=900):
             if statuses and all(s == "Success" for s in statuses):
                 break
             time.sleep(1)
+
+        for invocation in paginate(clients.ssm.get_paginator("list_command_invocations"), CommandId=command_id):
+            log_stream_name = "{}/{}/aws-runShellScript/stdout".format(command_id, invocation["InstanceId"])
+            try:
+                for event in CloudwatchLogReader(log_group_name=__name__, log_stream_name=log_stream_name):
+                    stdout.append(event["message"])
+            except clients.logs.exceptions.ResourceNotFoundException:
+                logger.debug("No logs for %s", log_stream_name)
     except KeyboardInterrupt:
         logger.error("Cancelling SSM command")
         clients.ssm.cancel_command(CommandId=command_id)
