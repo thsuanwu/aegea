@@ -291,7 +291,6 @@ class TestAegea(unittest.TestCase):
         self.call("aegea secrets delete {s} --iam-role aegea.launch".format(s=secret_name), shell=True,
                   expect=unauthorized_ok)
 
-    @unittest.skipIf("CI" in os.environ, "requires elevated AWS privileges")
     def test_ensure_job_definition(self):
         from aegea.batch import submit_parser
         jd1 = ensure_job_definition(submit_parser.parse_args(["--command", ""]))
