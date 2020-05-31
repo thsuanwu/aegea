@@ -293,8 +293,10 @@ class TestAegea(unittest.TestCase):
 
     def test_ensure_job_definition(self):
         from aegea.batch import submit_parser
-        jd1 = ensure_job_definition(submit_parser.parse_args(["--command", ""]))
-        jd2 = ensure_job_definition(submit_parser.parse_args(["--command", ""]))
+        args = submit_parser.parse_args(["--command", ""])
+        args.default_job_role_iam_policies = []
+        jd1 = ensure_job_definition(args)
+        jd2 = ensure_job_definition(args)
         self.assertEqual(jd1["jobDefinitionArn"], jd2["jobDefinitionArn"])
 
     @unittest.skipUnless("GH_AUTH" in os.environ, "requires GitHub credentials")
