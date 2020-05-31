@@ -295,7 +295,7 @@ class TestAegea(unittest.TestCase):
         from aegea.batch import submit_parser
         args = submit_parser.parse_args(["--command", ""])
         args.default_job_role_iam_policies = []
-        args.job_role, args.default_job_role_iam_policies = [], aegea.batch.worker
+        args.job_role, args.default_job_role_iam_policies = "aegea.batch.worker", []
         jd1 = ensure_job_definition(args)
         jd2 = ensure_job_definition(args)
         self.assertEqual(jd1["jobDefinitionArn"], jd2["jobDefinitionArn"])
