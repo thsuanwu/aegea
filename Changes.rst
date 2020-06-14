@@ -1,3 +1,14 @@
+Changes for v3.6.25 (2020-06-14)
+================================
+
+-  Add aegea s3 versions, aegea s3 restore
+
+-  build-ami: Disable apt-daily-upgrade.service
+
+-  Restrict default batch job IAM policies
+
+-  build-ami: Make Linux shell profile env file sh compatible
+
 Changes for v3.6.24 (2020-05-30)
 ================================
 
