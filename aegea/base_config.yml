@@ -264,6 +264,15 @@ s3_buckets:
     - NumberOfObjects
     - BucketSizeBytes
 
+s3_versions:
+  columns:
+    - key
+    - is_latest
+    - last_modified
+    - size
+    - storage_class
+    - version_id
+
 images:
   resource: ec2
   subresource: Image

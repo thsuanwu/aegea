@@ -8,10 +8,11 @@ import boto3
 from botocore.exceptions import ClientError
 
 from . import register_parser, logger
-from .ls import filter_collection, register_filtering_parser
+from .ls import filter_collection, register_listing_parser, register_filtering_parser
 from .util import ThreadPoolExecutor
 from .util.aws import ARN, resources, clients, expect_error_codes, get_cloudwatch_metric_stats
 from .util.printing import page_output, tabulate, format_number
+from .util.exceptions import AegeaException
 
 def s3(args):
     s3_parser.print_help()
@@ -115,3 +116,49 @@ select_parser.add_argument("s3_url")
 select_parser.add_argument("expression")
 select_parser.add_argument("--json-type", choices={"document", "lines"}, default="document")
 select_parser.add_argument("--compression-type", choices={"gzip", "bzip2"})
+
+def versions(args):
+    """
+    List versions of an object in a versioned S3 bucket.
+
+    See https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectVersioning.html.
+
+    Example:
+
+        aegea s3 versions s3://my-bucket/data.json
+    """
+    _, _, bucket, key = args.s3_url.split("/", 3)
+    table = resources.s3.Bucket(bucket).object_versions.filter(Prefix=key)
+    page_output(tabulate(table, args))
+
+
+versions_parser = register_listing_parser(versions, parent=s3_parser)
+versions_parser.add_argument("s3_url")
+
+def restore(args):
+    """
+    Restore a deleted object in a versioned S3 bucket.
+
+    See https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectVersioning.html.
+
+    Examples:
+
+        aegea s3 restore s3://my-bucket/data.json
+        aegea s3 restore s3://my-bucket/data.json Uecl6ZZze034000K5B3oHYAYHvhhla2H
+    """
+    _, _, bucket, key = args.s3_url.split("/", 3)
+    for version in resources.s3.Bucket(bucket).object_versions.filter(Prefix=key):
+        if args.version_id and args.version_id == version.id:
+            logger.critical("Deleting %s", version)
+            version.delete()
+            return
+        elif version.is_latest and version.size is None:
+            logger.critical("Deleting %s", version)
+            version.delete()
+            return
+    else:
+        raise AegeaException("No matching version found")
+
+restore_parser = register_parser(restore, parent=s3_parser)
+restore_parser.add_argument("s3_url")
+restore_parser.add_argument("version_id", nargs="?")
