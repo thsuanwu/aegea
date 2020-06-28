@@ -332,7 +332,10 @@ def ensure_iam_entity(iam_entity_name, policies, collection, constructor, **cons
     attached_policies = [policy.arn for policy in entity.attached_policies.all()]
     for policy in policies:
         if isinstance(policy, IAMPolicyBuilder):
-            entity.Policy(__name__).put(PolicyDocument=str(policy))
+            try:
+                assert entity.Policy(__name__).policy_document == policy.policy
+            except Exception:
+                entity.Policy(__name__).put(PolicyDocument=str(policy))
         else:
             policy_arn = "arn:aws:iam::aws:policy/{}".format(policy)
             if policy_arn not in attached_policies:
