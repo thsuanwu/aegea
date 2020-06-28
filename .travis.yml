@@ -10,7 +10,7 @@ python:
 #  - pypy3
 
 before_install:
-  - pip install --quiet coverage flake8 wheel
+  - pip install --quiet coverage flake8 wheel pandoc httpie
 
 install:
   - make install

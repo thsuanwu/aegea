@@ -1,17 +1,5 @@
 SHELL=/bin/bash -eo pipefail
 
-ifeq ($(shell which pandoc),)
-$(error Please install pandoc)
-endif
-
-ifeq ($(shell which http),)
-$(error Please install httpie)
-endif
-
-ifeq ($(shell which sponge),)
-$(error Please install sponge using "apt-get install moreutils" or "brew install moreutils")
-endif
-
 release_major:
 	$(eval export TAG=$(shell git describe --tags --match 'v*.*.*' | perl -ne '/^v(\d)+\.(\d)+\.(\d+)+/; print "v@{[$$1+1]}.0.0"'))
 	$(MAKE) release
