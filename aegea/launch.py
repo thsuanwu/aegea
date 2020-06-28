@@ -26,7 +26,8 @@ from .util import wait_for_port, validate_hostname, paginate
 from .util.cloudinit import get_user_data
 from .util.aws import (ensure_vpc, ensure_subnet, ensure_security_group, ensure_log_group, ensure_instance_profile,
                        add_tags, resolve_security_group, get_bdm, resolve_instance_id, expect_error_codes, resolve_ami,
-                       get_ondemand_price_usd, resources, clients, ARN, instance_type_completer)
+                       locate_ami, get_ondemand_price_usd, resources, clients, ARN, instance_type_completer,
+                       get_ssm_parameter)
 from .util.aws.dns import DNSZone, get_client_token
 from .util.aws.spot import SpotFleetBuilder
 from .util.crypto import new_ssh_key, add_ssh_host_key_to_known_hosts, ensure_ssh_key, hostkey_line
@@ -78,7 +79,19 @@ def launch(args):
         validate_hostname(args.hostname)
         assert not args.hostname.startswith("i-")
     ami_tags = dict(tag.split("=", 1) for tag in args.ami_tags or [])
-    args.ami = resolve_ami(args.ami, **ami_tags)
+    if args.ubuntu_linux_ami:
+        args.ami = locate_ami(product="com.ubuntu.cloud:server:20.04:amd64")
+    elif args.amazon_linux_ami:
+        args.ami = get_ssm_parameter("/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2")
+    else:
+        try:
+            args.ami = resolve_ami(args.ami, **ami_tags)
+        except AegeaException as e:
+            if args.ami is None and len(ami_tags) == 0 and "Could not resolve AMI" in str(e):
+                raise AegeaException("No AMI was given, and no AMIs were found in this account. "
+                                     "To use the default Ubuntu Linux LTS AMI, use --ubuntu-lts-ami. "
+                                     "To use the default Amazon Linux 2 AMI, use --amazon-linux-ami. ")
+            raise
     if args.subnet:
         subnet = resources.ec2.Subnet(args.subnet)
         vpc = resources.ec2.Vpc(subnet.vpc_id)
@@ -211,6 +224,8 @@ parser.add_argument("--bless-config", default=os.environ.get("BLESS_CONFIG"),
                     help="Path to a Bless configuration file (or pass via the BLESS_CONFIG environment variable)")
 parser.add_argument("--ami", help="AMI to use for the instance. Default: " + resolve_ami.__doc__)
 parser.add_argument("--ami-tags", nargs="+", metavar="NAME=VALUE", help="Use the most recent AMI with these tags")
+parser.add_argument("--ubuntu-linux-ami", action="store_true", help="Use the most recent Ubuntu Linux LTS AMI")
+parser.add_argument("--amazon-linux-ami", action="store_true", help="Use the most recent Amazon Linux 2 AMI")
 parser.add_argument("--spot", action="store_true",
                     help="Launch a preemptible spot instance, which is cheaper but could be forced to shut down")
 parser.add_argument("--duration-hours", type=float, help="Terminate the spot instance after this number of hours")

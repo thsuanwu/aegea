@@ -19,7 +19,7 @@ from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 from .util.aws import (resources, clients, ensure_iam_role, ensure_instance_profile, make_waiter, ensure_vpc,
                        ensure_security_group, ensure_log_group, IAMPolicyBuilder, resolve_ami, instance_type_completer,
-                       expect_error_codes, instance_storage_shellcode, ARN)
+                       expect_error_codes, instance_storage_shellcode, ARN, get_ssm_parameter)
 from .util.aws.spot import SpotFleetBuilder
 from .util.aws.logs import CloudwatchLogReader
 from .util.aws.batch import ensure_job_definition, get_command_and_env, ensure_lambda_helper
@@ -72,9 +72,6 @@ def ensure_launch_template(prefix=__name__.replace(".", "_"), **kwargs):
     except ClientError as e:
         expect_error_codes(e, "InvalidLaunchTemplateName.AlreadyExistsException")
     return name
-
-def get_ssm_parameter(name):
-    return clients.ssm.get_parameter(Name=name)["Parameter"]["Value"]
 
 def create_compute_environment(args):
     commands = instance_storage_shellcode.strip().format(mountpoint="/mnt", mkfs=get_mkfs_command()).split("\n")

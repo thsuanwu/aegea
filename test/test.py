@@ -67,7 +67,7 @@ class TestAegea(unittest.TestCase):
                       dict(return_codes=[1, os.EX_SOFTWARE],
                            stderr="(UnauthorizedOperation|AccessDenied|DryRunOperation)")]
             args = []
-            if subcommand in ("ssh", "scp", "run", "put-alarm", "batch"):
+            if subcommand in ("ssh", "scp", "run", "put-alarm", "batch", "rm"):
                 args += ["--help"]
             elif subcommand == "top" and sys.version_info < (3, 5):
                 continue  # concurrent.futures.ThreadPoolExecutor thread count autotune introduced in 3.5
@@ -84,10 +84,10 @@ class TestAegea(unittest.TestCase):
             elif subcommand in ("grep", "filter"):
                 args += ["--help"] if USING_PYTHON2 else ["error", "syslog", "--start-time=-2h", "--end-time=-5m"]
                 expect.append(dict(return_codes=[os.EX_DATAERR]))
-            elif subcommand in ("launch", "build-ami"):
+            elif subcommand == "launch":
+                args += ["--no-verify-ssh-key-pem-file", "--dry-run", "test", "--ubuntu-linux-ami"]
+            elif subcommand == "build-ami":
                 args += ["--no-verify-ssh-key-pem-file", "--dry-run", "test"]
-            elif subcommand == "rm":
-                args += [resolve_ami()]
             elif subcommand == "s3":
                 args += ["buckets"]
             elif subcommand in ("secrets", "rds", "elb", "flow-logs", "deploy", "zones", "ebs", "efs",
@@ -113,15 +113,16 @@ class TestAegea(unittest.TestCase):
     def test_dry_run_commands(self):
         unauthorized_ok = [dict(return_codes=[os.EX_OK]),
                            dict(return_codes=[1, os.EX_SOFTWARE], stderr="UnauthorizedOperation")]
-        self.call("aegea launch unittest --dry-run --storage /x=512 /y=1024",
+        self.call("aegea launch unittest --dry-run --storage /x=512 /y=1024 --ubuntu-linux-ami",
                   shell=True, expect=unauthorized_ok)
-        self.call("aegea launch unittest --dry-run --no-verify-ssh-key-pem-file",
+        self.call("aegea launch unittest --dry-run --no-verify-ssh-key-pem-file --ubuntu-linux-ami",
                   shell=True, expect=unauthorized_ok)
-        self.call("aegea launch unittest --dry-run --spot --no-verify-ssh-key-pem-file",
+        self.call("aegea launch unittest --dry-run --spot --no-verify-ssh-key-pem-file --amazon-linux-ami",
                   shell=True, expect=unauthorized_ok)
-        self.call("aegea launch unittest --dry-run --duration-hours 1 --no-verify-ssh-key-pem-file",
+        self.call("aegea launch unittest --dry-run --duration-hours 1 --no-verify-ssh-key-pem-file --amazon-linux-ami",
                   shell=True, expect=unauthorized_ok)
-        self.call("aegea launch unittest --duration 0.5 --min-mem 6 --cores 2 --dry-run --no-verify --client-token t",
+        self.call(("aegea launch unittest --duration 0.5 --min-mem 6 --cores 2 --dry-run --no-verify --client-token t "
+                   "--amazon-linux-ami"),
                   shell=True, expect=unauthorized_ok)
         self.call("aegea build-ami i --dry-run --no-verify-ssh-key-pem-file",
                   shell=True, expect=unauthorized_ok)

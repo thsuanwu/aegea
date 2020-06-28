@@ -15,10 +15,13 @@ from ..exceptions import AegeaException
 from ..compat import str
 from . import clients, resources
 
+def get_ssm_parameter(name):
+    return clients.ssm.get_parameter(Name=name)["Parameter"]["Value"]
+
 def locate_ami(product, region=None, channel="releases", stream="released", root_store="ssd", virt="hvm"):
     """
     Examples::
-        locate_ami(product="com.ubuntu.cloud:server:16.04:amd64", channel="daily", stream="daily", region="us-west-2")
+        locate_ami(product="com.ubuntu.cloud:server:20.04:amd64", channel="daily", stream="daily", region="us-west-2")
         locate_ami(product="Amazon Linux AMI 2016.09")
     """
     if region is None:
