@@ -2,12 +2,10 @@ language: python
 sudo: required
 dist: bionic
 python:
-  - 2.7
   - 3.5
   - 3.6
   - 3.7
   - 3.8
-#  - pypy3
 
 before_install:
   - pip install --quiet coverage flake8 wheel pandoc httpie
