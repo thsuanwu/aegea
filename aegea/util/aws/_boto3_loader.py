@@ -8,10 +8,18 @@ class Loader:
         self.factory = factory
 
     def __getattr__(self, attr):
+        if attr == "__name__":
+            return "Loader"
+        if attr == "__bases__":
+            return (object, )
         if attr == "__all__":
             return list(self.cache[self.factory])
-        if attr == "__path__" or attr == "__loader__":
-            return None
+        if attr == "__file__":
+            return __file__
+        if attr == "__path__":
+            return []
+        if attr == "__loader__":
+            return self
         if attr not in self.cache[self.factory]:
             if self.factory == "client" and attr in self.cache["resource"]:
                 self.cache["client"][attr] = self.cache["resource"][attr].meta.client
