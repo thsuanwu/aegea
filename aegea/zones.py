@@ -37,7 +37,7 @@ parser = register_parser(ls, parent=zones_parser, help="List Route53 DNS zones a
 parser.add_argument("zones", nargs="*")
 
 def update(args):
-    return DNSZone(args.zone).update(*zip(*args.updates), record_type=args.record_type)
+    return DNSZone(args.zone).update(*zip(*args.updates), record_type=args.record_type)  # type: ignore
 
 parser = register_parser(update, parent=zones_parser, help="Update Route53 DNS records")
 parser.add_argument("zone")

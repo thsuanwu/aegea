@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os, sys, base64, io, json, subprocess, random, string, tarfile
 from collections import OrderedDict
+from typing import Dict, Any
 
 from .. import logger
 from . import gzip_compress_bytes
@@ -19,7 +20,7 @@ def add_file_to_cloudinit_manifest(src_path, path, manifest):
             manifest[path].update(content=base64.b64encode(gzip_compress_bytes(content)), encoding="gz+b64")
 
 def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
-    manifest = OrderedDict()
+    manifest = OrderedDict()  # type: OrderedDict[str, Dict]
     aegea_conf = os.getenv("AEGEA_CONFIG_FILE")
     targz = io.BytesIO()
     tar = tarfile.open(mode="w:gz", fileobj=targz) if dest == "tarfile" else None
@@ -53,7 +54,7 @@ def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
 
 def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, storage=frozenset(),
                   mime_multipart_archive=False, ssh_ca_keys=None, provision_users=None, **kwargs):
-    cloud_config_data = OrderedDict()
+    cloud_config_data = OrderedDict()  # type: OrderedDict[str, Any]
     for i, (mountpoint, size_gb) in enumerate(storage):
         cloud_config_data.setdefault("fs_setup", [])
         cloud_config_data.setdefault("mounts", [])

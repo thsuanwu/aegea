@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os, sys, argparse, time, json, hashlib
 from itertools import product
 from functools import partial
+from typing import Dict, List
 
 from botocore.exceptions import ClientError
 
@@ -49,7 +50,7 @@ def tasks(args):
     def describe_tasks_worker(t, cluster=None):
         return clients.ecs.describe_tasks(cluster=cluster, tasks=t)["tasks"] if t else []
 
-    task_descs = []
+    task_descs = []  # type: List[Dict]
     if args.clusters is None:
         args.clusters = [__name__.replace(".", "_")] if args.tasks else list(paginate(list_clusters))
     if args.tasks:
@@ -81,7 +82,7 @@ def run(args):
             "awslogs-stream-prefix": args.task_name
         }
     }
-    ensure_log_group(log_config["options"]["awslogs-group"])
+    ensure_log_group(log_config["options"]["awslogs-group"])  # type: ignore
 
     if args.ecs_image:
         args.image = get_ecr_image_uri(args.ecs_image)

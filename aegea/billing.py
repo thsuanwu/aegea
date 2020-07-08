@@ -74,7 +74,7 @@ def ls(args):
         for report_key in manifest["reportKeys"]:
             report = BytesIO(bucket.Object(report_key).get().get("Body").read())
             with gzip.GzipFile(fileobj=report) as fh:
-                reader = csv.DictReader(fh)
+                reader = csv.DictReader(fh)  # type: ignore
                 for line in reader:
                     page_output(tabulate(filter_line_items(reader, args), args))
     except ClientError as e:

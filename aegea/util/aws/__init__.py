@@ -4,6 +4,7 @@ import os, sys, json, io, gzip, time, socket, hashlib, uuid
 import requests
 from warnings import warn
 from datetime import datetime, timedelta
+from typing import List, Dict, Any
 
 import boto3, botocore.session
 from botocore.exceptions import ClientError
@@ -190,6 +191,7 @@ def ensure_s3_bucket(name=None, policy=None, lifecycle=None):
     return bucket
 
 class ARN:
+    arn = partition = service = region = account_id = resource = ""
     fields = "arn partition service region account_id resource".split()
     _default_region, _default_account_id, _default_iam_username = None, None, None
 
@@ -238,7 +240,7 @@ class ARN:
 
 class IAMPolicyBuilder:
     def __init__(self, *args, **kwargs):
-        self.policy = dict(Version="2012-10-17", Statement=[])
+        self.policy = dict(Version="2012-10-17", Statement=[])  # type: Dict[str, Any]
         if args:
             if len(args) > 1 or not isinstance(args[0], dict):
                 raise AegeaException("IAMPolicyBuilder: Expected one policy document")
@@ -385,7 +387,7 @@ def resolve_instance_id(name):
 def get_bdm(max_devices=12, ebs_storage=frozenset()):
     # Note: d2.8xl and hs1.8xl have 24 devices
     bdm = [dict(VirtualName="ephemeral" + str(i), DeviceName="xvd" + chr(ord("b") + i)) for i in range(max_devices)]
-    ebs_bdm = []
+    ebs_bdm = []  # type: List[Dict]
     for i, (mountpoint, size_gb) in enumerate(ebs_storage):
         ebs_spec = dict(Encrypted=True, DeleteOnTermination=True, VolumeType="st1", VolumeSize=int(size_gb))
         ebs_bdm.insert(0, dict(DeviceName="xvd" + chr(ord("z") - i), Ebs=ebs_spec))
@@ -461,7 +463,7 @@ def get_pricing_data(service_code, filters=None, max_cache_age_days=30):
         if cache_date < datetime.now() - timedelta(days=max_cache_age_days):
             raise Exception("Cache is too old, discard")
         with gzip.open(service_code_filename) as gz_fh:
-            with io.BufferedReader(gz_fh) as buf_fh:
+            with io.BufferedReader(gz_fh) as buf_fh:  # type: ignore
                 pricing_data = json.loads(buf_fh.read().decode())
     except Exception:
         logger.info("Fetching pricing data for %s", service_code)

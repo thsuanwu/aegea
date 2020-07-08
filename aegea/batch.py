@@ -5,6 +5,7 @@ Manage AWS Batch jobs, queues, and compute environments.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib, itertools
+from typing import List
 
 from botocore.exceptions import ClientError
 
@@ -320,12 +321,12 @@ def ls(args, page_size=100):
         return [j["jobId"] for j in clients.batch.list_jobs(jobQueue=queue, jobStatus=status)["jobSummaryList"]]
 
     with ThreadPoolExecutor() as executor:
-        job_ids = sum(executor.map(list_jobs_worker, itertools.product(queues, args.status)), [])
+        job_ids = sum(executor.map(list_jobs_worker, itertools.product(queues, args.status)), [])  # type: List
 
         def describe_jobs_worker(start_index):
             return clients.batch.describe_jobs(jobs=job_ids[start_index:start_index + page_size])["jobs"]
 
-        table = sum(executor.map(describe_jobs_worker, range(0, len(job_ids), page_size)), [])
+        table = sum(executor.map(describe_jobs_worker, range(0, len(job_ids), page_size)), [])  # type: List
     page_output(tabulate(table, args, cell_transforms={"createdAt": Timestamp}))
 
 job_status_colors = dict(SUBMITTED=YELLOW(), PENDING=YELLOW(), RUNNABLE=BOLD() + YELLOW(),

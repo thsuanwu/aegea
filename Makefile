@@ -13,14 +13,14 @@ aegea/version.py: setup.py
 	echo "__version__ = '$$(python setup.py --version)'" > $@
 
 test_deps:
-	pip install coverage flake8
+	pip install coverage flake8 mypy
 
 lint: test_deps
 	./setup.py flake8
 	flake8 --filename='*' $$(grep -r -l '/usr/bin/env python' aegea/missions aegea/rootfs.skel scripts)
-	mypy $$(python setup.py --name)
+	mypy --check-untyped-defs --no-strict-optional $$(python setup.py --name)
 
-test: test_deps lint
+test: test_deps
 	coverage run --source=$$(python setup.py --name) -m unittest discover --start-directory test --top-level-directory . --verbose
 
 init_docs:

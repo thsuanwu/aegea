@@ -5,6 +5,7 @@ Manage AWS Step Functions state machines and executions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys, argparse, json, time
+from typing import Set, Dict, Any
 
 from botocore.exceptions import ClientError
 
@@ -40,7 +41,7 @@ def ls(args):
         return list(paginate(list_executions_paginator, stateMachineArn=state_machine["stateMachineArn"]))
 
     with ThreadPoolExecutor() as executor:
-        executions = sum(executor.map(list_executions, state_machines), [])
+        executions = sum(executor.map(list_executions, state_machines), [])  # type: ignore
 
     page_output(tabulate(executions, args))
 
@@ -64,7 +65,7 @@ sfn_status_colors = dict(RUNNING=GREEN(), SUCCEEDED=BOLD() + GREEN(),
                          FAILED=BOLD() + RED(), TIMED_OUT=BOLD() + RED(), ABORTED=BOLD() + RED())
 
 def watch(args, print_event_fn=batch.print_event):
-    seen_events = set()
+    seen_events = set()  # type: Set[str]
     previous_status = None
     while True:
         exec_desc = clients.stepfunctions.describe_execution(executionArn=str(args.execution_arn))
@@ -78,7 +79,7 @@ def watch(args, print_event_fn=batch.print_event):
         history = clients.stepfunctions.get_execution_history(executionArn=str(args.execution_arn))
         for event in sorted(history["events"], key=lambda x: x["id"]):
             if event["id"] not in seen_events:
-                details = {}
+                details = {}  # type: Dict[str, Any]
                 for key in event.keys():
                     if key.endswith("EventDetails") and event[key]:
                         details = event[key]

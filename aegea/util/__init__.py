@@ -80,7 +80,7 @@ class Timestamp(datetime):
                 snap_units = {u.rstrip("s"): 0 for u in units[units.index(list(diffs)[0]) + snap:]} if snap else {}
                 snap_units.pop("day", None)
                 snap_units.update(microsecond=0)
-                ts = datetime.now().replace(**snap_units) + relativedelta(**diffs)
+                ts = datetime.now().replace(**snap_units) + relativedelta(**diffs)  # type: ignore
                 cls._precision[ts] = snap_units
                 return ts
             return dateutil_parse(t)

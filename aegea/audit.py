@@ -5,7 +5,7 @@ from botocore.exceptions import ClientError
 from datetime import datetime, timedelta
 import dateutil.parser
 from dateutil.tz import tzutc
-from typing import Dict
+from typing import Dict, Any
 
 from . import register_parser, logger, config
 from .util import natural_sort
@@ -13,7 +13,8 @@ from .util.aws import expect_error_codes, ARN, clients, resources
 from .util.printing import RED, GREEN, WHITE, page_output, format_table
 
 class Auditor(unittest.TestCase):
-    cache = {}  # type: Dict[str, Dict]
+    cache = {}  # type: Dict[str, Any]
+    email = None
 
     def runTest(self):
         pass

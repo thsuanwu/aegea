@@ -27,7 +27,7 @@ def cost(args):
     get_cost_and_usage_args = dict(get_common_method_args(args), Metrics=args.metrics)
     get_cost_and_usage_args["GroupBy"] = [dict(Type="DIMENSION", Key=k) for k in args.group_by]
     get_cost_and_usage_args["GroupBy"] += [dict(Type="TAG", Key=k) for k in args.group_by_tag]
-    rows = collections.defaultdict(dict)
+    rows = collections.defaultdict(dict)  # type: ignore
     try:
         account_name = clients.iam.list_account_aliases()["AccountAliases"][0]
     except Exception:
@@ -46,8 +46,8 @@ def cost(args):
             rows[group["Keys"][0]]["TOTAL"] += value
             rows[group["Keys"][0]][page["TimePeriod"]["Start"]] = value
     args.columns.append("TOTAL")
-    rows = [row for row in rows.values() if row["TOTAL"] > args.min_total]
-    rows = sorted(rows, key=lambda row: -row["TOTAL"])
+    rows = [row for row in rows.values() if row["TOTAL"] > args.min_total]  # type: ignore
+    rows = sorted(rows, key=lambda row: -row["TOTAL"])  # type: ignore
     page_output(tabulate(rows, args, cell_transforms=cell_transforms))
 
 parser_cost = register_parser(cost, help="List AWS costs")

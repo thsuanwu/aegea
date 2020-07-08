@@ -7,6 +7,7 @@ Use ``aws ecr create-repository`` and ``aws ecr delete-repository`` to manage EC
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import json
+from typing import Dict, List
 
 from .ls import register_parser, register_listing_parser
 from .util import paginate
@@ -19,7 +20,7 @@ def ecr(args):
 ecr_parser = register_parser(ecr, help="Manage Elastic Container Registry resources", description=__doc__)
 
 def ls(args):
-    table = []
+    table = []  # type: List[Dict]
     describe_repositories_args = dict(repositoryNames=args.repositories) if args.repositories else {}
     for repo in paginate(clients.ecr.get_paginator("describe_repositories"), **describe_repositories_args):
         try:

@@ -25,6 +25,7 @@ Run the same search, but retrieve 10 lines of context for each match:
 import os, sys, json, hashlib, time
 from datetime import datetime, timedelta
 from functools import partial
+from typing import Dict
 
 from . import register_parser, logger
 from .util import Timestamp, paginate, add_time_bound_args, ThreadPoolExecutor
@@ -115,7 +116,7 @@ def grep(args):
                                      startTime=int(timestamp(args.start_time) * 1000),
                                      endTime=int(timestamp(args.end_time) * 1000),
                                      queryString=args.query)
-    seen_results = {}
+    seen_results = {}  # type: Dict[str, Dict]
     print_with_context = partial(print_log_event_with_context, before=args.before_context, after=args.after_context)
     try:
         with ThreadPoolExecutor() as executor:

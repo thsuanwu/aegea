@@ -18,11 +18,11 @@ def describe_services():
 def get_instance_type_sort_key(args):
     def instance_type_sort_key(row):
         instance_type = re.match(r"(.+)\.(\d*)(.+)", row[args.columns.index("instanceType")])
-        family, mx, size = instance_type.groups() if instance_type else (0, 0, 0)
-        if size == "metal":
+        family, mx, size = instance_type.groups() if instance_type else (0, 0, 0)  # type: ignore
+        if size == "metal":  # type: ignore
             mx = sys.maxsize
         size_order = ["nano", "micro", "small", "medium", "large", "xlarge"]
-        return family, int(mx) if mx else 1, size_order.index(size) if size in size_order else sys.maxsize
+        return family, int(mx) if mx else 1, size_order.index(size) if size in size_order else sys.maxsize # type: ignore # noqa
     return instance_type_sort_key
 
 def pricing(args):

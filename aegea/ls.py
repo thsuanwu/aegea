@@ -2,7 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys, copy
-from typing import Dict, Any
+from typing import List, Dict, Any
 
 from . import register_parser
 from .util import paginate, describe_cidr
@@ -119,18 +119,18 @@ def acls(args):
 parser = register_filtering_parser(acls, help="List EC2 network ACLs")
 
 def clusters(args):
-    cluster_arns = sum([p["clusterArns"] for p in clients.ecs.get_paginator("list_clusters").paginate()], [])
+    cluster_arns = sum([p["clusterArns"] for p in clients.ecs.get_paginator("list_clusters").paginate()], []) # type: List[Dict] # noqa
     page_output(tabulate(clients.ecs.describe_clusters(clusters=cluster_arns)["clusters"], args))
 
 parser = register_listing_parser(clusters, help="List ECS clusters")
 
 def tasks(args):
-    cluster_arns = sum([p["clusterArns"] for p in clients.ecs.get_paginator("list_clusters").paginate()], [])
+    cluster_arns = sum([p["clusterArns"] for p in clients.ecs.get_paginator("list_clusters").paginate()], []) # type: List[Dict] # noqa
     table = []
     for cluster_arn in cluster_arns:
         list_tasks_args = dict(cluster=cluster_arn, desiredStatus=args.desired_status)
         paginator = clients.ecs.get_paginator("list_tasks")
-        task_arns = sum([p["taskArns"] for p in paginator.paginate(**list_tasks_args)], [])
+        task_arns = sum([p["taskArns"] for p in paginator.paginate(**list_tasks_args)], [])  # type: List[Dict]
         if task_arns:
             for task in clients.ecs.describe_tasks(cluster=cluster_arn, tasks=task_arns)["tasks"]:
                 table.append(task)

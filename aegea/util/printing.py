@@ -119,8 +119,8 @@ def format_table(table, column_names=None, column_specs=None, max_col_width=32, 
                      "integer": YELLOW(),
                      "float": WHITE(),
                      "string": GREEN()}
-    for i in "uint8", "int16", "uint16", "int32", "uint32", "int64":
-        type_colormap[i] = type_colormap["integer"]
+    for t in "uint8", "int16", "uint16", "int32", "uint32", "int64":
+        type_colormap[t] = type_colormap["integer"]
     type_colormap["double"] = type_colormap["float"]
 
     def col_head(i):
@@ -271,7 +271,7 @@ def tabulate(collection, args, cell_transforms=None):
         table = [{f: get_cell(i, f, cell_transforms.get(f)) for f in args.columns} for i in collection]
         return json.dumps(table, indent=2, default=lambda x: str(x))
     else:
-        table = [[get_cell(i, f, cell_transforms.get(f)) for f in args.columns] for i in collection]
+        table = [[get_cell(i, f, cell_transforms.get(f)) for f in args.columns] for i in collection]  # type: ignore
         if getattr(args, "sort_by", None):
             reverse = False
             if callable(args.sort_by):
@@ -281,7 +281,7 @@ def tabulate(collection, args, cell_transforms=None):
                     reverse = True
                     args.sort_by = args.sort_by[:-len(":reverse")]
                 table = sorted(table, key=lambda x: x[args.columns.index(args.sort_by)], reverse=reverse)
-        table = [[format_cell(c) for c in row] for row in table]
+        table = [[format_cell(c) for c in row] for row in table]  # type: ignore
         args.columns = list(trim_names(args.columns, *getattr(args, "trim_col_names", [])))
         format_args = dict(auto_col_width=True) if args.max_col_width == 0 else dict(max_col_width=args.max_col_width)
         return format_table(table, column_names=getattr(args, "display_column_names", args.columns), **format_args)

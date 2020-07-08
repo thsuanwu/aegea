@@ -28,12 +28,15 @@ jobs:
         pip install --quiet coverage flake8 wheel pandoc httpie mypy
         make install
         echo 'import coverage; coverage.process_startup()' > sitecustomize.py
+    - name: Lint
+      if: ${{matrix.python-version == '3.8'}}
+      run: make lint
     - name: Test
       run: |
         export COVERAGE_PROCESS_START=$(pwd)/.coveragerc
         make test
     - name: Upload coverage data
-      if: ${{matrix.python-version}} == 3.8
+      if: ${{matrix.python-version == '3.8'}}
       run: |
         coverage combine
         bash <(curl -s https://codecov.io/bash)

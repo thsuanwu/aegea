@@ -17,6 +17,7 @@ The return value (stdout) is a JSON object with one key, ``instance_id``.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys, time, datetime, base64, json
+from typing import Dict, List
 
 import yaml
 
@@ -161,12 +162,12 @@ def launch(args):
                     class InstanceSpotFleetBuilder(SpotFleetBuilder):
                         def instance_types(self, **kwargs):
                             yield args.instance_type, 1
-                    spot_fleet_builder = InstanceSpotFleetBuilder(**spot_fleet_args)
+                    spot_fleet_builder = InstanceSpotFleetBuilder(**spot_fleet_args)  # type: SpotFleetBuilder
                 else:
                     spot_fleet_builder = SpotFleetBuilder(**spot_fleet_args)
                 logger.info("Launching {}".format(spot_fleet_builder))
                 sfr_id = spot_fleet_builder()
-                instances = []
+                instances = []  # type: List[Dict]
                 while not instances:
                     res = clients.ec2.describe_spot_fleet_instances(SpotFleetRequestId=sfr_id)
                     instances = res["ActiveInstances"]

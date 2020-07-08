@@ -8,6 +8,8 @@ _constants = {}  # type: Dict[str, Any]
 
 def write():
     from . import aws
+    raise NotImplementedError()
+    """
     constants = {"instance_types": {}}
     instance_attrs = ["vcpu", "memory", "storage", "gpu", "clockSpeed", "networkPerformance"]
     spot_instance_families = {"m3", "m4", "c3", "c4", "r3", "r4", "i2", "i3", "d2", "g2"}
@@ -18,6 +20,7 @@ def write():
         constants["instance_types"][product["attributes"]["instanceType"]] = traits
     with open(_constants_filename, "w") as fh:
         json.dump(constants, fh)
+    """
 
 def get(field):
     if not _constants:

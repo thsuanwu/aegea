@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os, sys
 from datetime import datetime
+from typing import List
 
 import boto3
 import botocore.exceptions
@@ -19,11 +20,11 @@ def get_stats_for_region(region):
         num_enis = len(list(session.resource("ec2").network_interfaces.all()))
         num_volumes = len(list(session.resource("ec2").volumes.all()))
     except botocore.exceptions.ClientError:
-        num_instances, num_amis, num_vpcs, num_enis, num_volumes = ["Access denied"] * 5
+        num_instances, num_amis, num_vpcs, num_enis, num_volumes = ["Access denied"] * 5  # type: ignore
     return [region, num_instances, num_amis, num_vpcs, num_enis, num_volumes]
 
 def top(args):
-    table = []
+    table = []  # type: List[List]
     columns = ["Region", "Instances", "AMIs", "VPCs", "Network interfaces", "EBS volumes"]
     executor = ThreadPoolExecutor()
     table = list(executor.map(get_stats_for_region, boto3.Session().get_available_regions("ec2")))

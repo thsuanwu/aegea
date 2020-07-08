@@ -6,6 +6,7 @@ from collections import defaultdict
 
 import boto3
 from botocore.exceptions import ClientError
+from typing import Dict, Any
 
 from . import register_parser, logger
 from .ls import filter_collection, register_listing_parser, register_filtering_parser
@@ -50,7 +51,7 @@ buckets_parser = register_filtering_parser(buckets, parent=s3_parser)
 def lifecycle(args):
     if args.delete:
         return resources.s3.BucketLifecycle(args.bucket_name).delete()
-    rule = defaultdict(list, Prefix=args.prefix, Status="Enabled")
+    rule = defaultdict(list, Prefix=args.prefix, Status="Enabled")  # type: Dict[str, Any]
     if args.transition_to_infrequent_access is not None:
         rule["Transitions"].append(dict(StorageClass="STANDARD_IA", Days=args.transition_to_infrequent_access))
     if args.transition_to_glacier is not None:

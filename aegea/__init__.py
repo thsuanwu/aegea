@@ -19,7 +19,7 @@ from .version import __version__
 
 logger = logging.getLogger(__name__)
 
-config, parser = None, None
+config, parser = None, None  # type: AegeaConfig, argparse.ArgumentParser
 _subparsers = {}  # type: Dict[Any, Any]
 
 class AegeaConfig(tweak.Config):

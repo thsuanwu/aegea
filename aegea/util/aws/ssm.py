@@ -44,7 +44,7 @@ def ensure_session_manager_plugin():
         target_path = os.path.join(session_manager_dir, "session-manager-plugin")
         if platform.system() == "Darwin":
             download_session_manager_plugin_macos(target_path=target_path)
-        elif platform.linux_distribution()[0] == "Ubuntu":
+        elif platform.linux_distribution()[0] == "Ubuntu":  # type: ignore
             download_session_manager_plugin_linux(target_path=target_path)
         else:
             download_session_manager_plugin_linux(target_path=target_path, pkg_format="rpm")
@@ -69,7 +69,7 @@ def run_command(command, instance_ids=None, targets=None, timeout=900):
         send_command_args.update(InstanceIds=instance_ids)
     if targets:
         send_command_args.update(Targets=targets)
-    log_readers, stdout = {}, []
+    log_readers, stdout = {}, []  # type: ignore
     try:
         command_id = clients.ssm.send_command(**send_command_args)["Command"]["CommandId"]
         while True:
