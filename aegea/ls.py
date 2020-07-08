@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys, copy
+from typing import Dict, Any
 
 from . import register_parser
 from .util import paginate, describe_cidr
@@ -83,7 +84,7 @@ def images(args):
 
 parser = register_filtering_parser(images, help="List EC2 AMIs")
 
-peer_desc_cache = {}
+peer_desc_cache = {}  # type: Dict[str, Any]
 def describe_peer(peer):
     if "CidrIp" in peer:
         if peer["CidrIp"] not in peer_desc_cache:

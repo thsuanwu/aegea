@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os, sys, argparse, logging, shutil, json, datetime, traceback, errno, warnings, platform
 from textwrap import fill
+from typing import Dict, Any
 
 import tweak, boto3, botocore
 from botocore.exceptions import NoRegionError
@@ -19,7 +20,7 @@ from .version import __version__
 logger = logging.getLogger(__name__)
 
 config, parser = None, None
-_subparsers = {}
+_subparsers = {}  # type: Dict[Any, Any]
 
 class AegeaConfig(tweak.Config):
     base_config_file = os.path.join(os.path.dirname(__file__), "base_config.yml")
