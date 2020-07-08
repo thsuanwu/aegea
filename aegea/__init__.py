@@ -9,7 +9,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os, sys, argparse, logging, shutil, json, datetime, traceback, errno, warnings, platform
 from textwrap import fill
-import tweak
+
+import tweak, boto3, botocore
 from botocore.exceptions import NoRegionError
 from io import open
 from .util.compat import USING_PYTHON2
@@ -57,11 +58,13 @@ def initialize():
         description="{}: {}".format(BOLD() + RED() + __name__.capitalize() + ENDC(), fill(__doc__.strip())),
         formatter_class=AegeaHelpFormatter
     )
-    parser.add_argument("--version", action="version", version="%(prog)s {}\n{} {}\n{}".format(
+    parser.add_argument("--version", action="version", version="%(prog)s {}\n{}\n{}\n{} {}\n{}".format(
         __version__,
+        "boto3 " + boto3.__version__,
+        "botocore " + botocore.__version__,
         platform.python_implementation(),
         platform.python_version(),
-        platform.platform()
+        platform.platform(),
     ))
 
     def help(args):
