@@ -190,6 +190,12 @@ def ensure_s3_bucket(name=None, policy=None, lifecycle=None):
     return bucket
 
 class ARN:
+    arn: str
+    partition: str
+    service: str
+    region: str
+    account_id: str
+    resource: str
     fields = "arn partition service region account_id resource".split()
     _default_region, _default_account_id, _default_iam_username = None, None, None
 
