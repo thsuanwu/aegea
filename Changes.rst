@@ -1,3 +1,14 @@
+Changes for v3.6.26 (2020-07-10)
+================================
+
+-  launch: assign tags at launch time where possible
+
+-  version: Print versions of boto3, botocore
+
+-  IAM: avoid trying to write policy every time
+
+-  Do not assume a private AMI is present
+
 Changes for v3.6.25 (2020-06-14)
 ================================
 
