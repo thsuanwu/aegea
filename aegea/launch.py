@@ -28,7 +28,7 @@ from .util.cloudinit import get_user_data
 from .util.aws import (ensure_vpc, ensure_subnet, ensure_security_group, ensure_log_group, ensure_instance_profile,
                        add_tags, resolve_security_group, get_bdm, resolve_instance_id, expect_error_codes, resolve_ami,
                        locate_ami, get_ondemand_price_usd, resources, clients, ARN, instance_type_completer,
-                       get_ssm_parameter)
+                       get_ssm_parameter, encode_tags)
 from .util.aws.dns import DNSZone, get_client_token
 from .util.aws.spot import SpotFleetBuilder
 from .util.crypto import new_ssh_key, add_ssh_host_key_to_known_hosts, ensure_ssh_key, hostkey_line
@@ -90,7 +90,7 @@ def launch(args):
         except AegeaException as e:
             if args.ami is None and len(ami_tags) == 0 and "Could not resolve AMI" in str(e):
                 raise AegeaException("No AMI was given, and no AMIs were found in this account. "
-                                     "To use the default Ubuntu Linux LTS AMI, use --ubuntu-lts-ami. "
+                                     "To use the default Ubuntu Linux LTS AMI, use --ubuntu-linux-ami. "
                                      "To use the default Amazon Linux 2 AMI, use --amazon-linux-ami. ")
             raise
     if args.subnet:
@@ -127,6 +127,10 @@ def launch(args):
         user_data_args["ssh_ca_keys"] = get_ssh_ca_keys(bless_config)
         user_data_args["provision_users"] = bless_config["client_config"]["remote_users"]
 
+    hkl = hostkey_line(hostnames=[], key=ssh_host_key).strip()
+    instance_tags = dict(Name=args.hostname, Owner=ARN.get_iam_username(),
+                         SSHHostPublicKeyPart1=hkl[:255], SSHHostPublicKeyPart2=hkl[255:],
+                         OwnerSSHKeyName=ssh_key_name, **dict(args.tags))
     user_data_args.update(dict(args.cloud_config_data))
     launch_spec = dict(ImageId=args.ami,
                        KeyName=ssh_key_name,
@@ -134,6 +138,7 @@ def launch(args):
                        InstanceType=args.instance_type,
                        BlockDeviceMappings=get_bdm(ebs_storage=args.storage),
                        UserData=get_user_data(**user_data_args))
+    tag_spec = dict(ResourceType="instance", Tags=encode_tags(instance_tags))
     logger.info("Launch spec user data is %i bytes long", len(launch_spec["UserData"]))
     if args.iam_role:
         instance_profile = ensure_instance_profile(args.iam_role, policies=args.iam_policies)
@@ -148,7 +153,8 @@ def launch(args):
         if args.spot:
             launch_spec["UserData"] = base64.b64encode(launch_spec["UserData"]).decode()
             if args.duration_hours or args.cores or args.min_mem_per_core_gb:
-                spot_fleet_args = dict(launch_spec=launch_spec, client_token=args.client_token)
+                spot_fleet_args = dict(launch_spec=dict(launch_spec, TagSpecifications=[tag_spec]),
+                                       client_token=args.client_token)
                 for arg in "cores", "min_mem_per_core_gb", "spot_price", "duration_hours", "dry_run":
                     if getattr(args, arg, None):
                         spot_fleet_args[arg] = getattr(args, arg)
@@ -190,7 +196,9 @@ def launch(args):
                 clients.ec2.get_waiter("spot_instance_request_fulfilled").wait(SpotInstanceRequestIds=[sir_id])
                 res = clients.ec2.describe_spot_instance_requests(SpotInstanceRequestIds=[sir_id])
                 instance = resources.ec2.Instance(res["SpotInstanceRequests"][0]["InstanceId"])
+                add_tags(instance, **instance_tags)
         else:
+            launch_spec = dict(launch_spec, TagSpecifications=[tag_spec])
             instances = resources.ec2.create_instances(MinCount=1, MaxCount=1, ClientToken=args.client_token,
                                                        DryRun=args.dry_run, **launch_spec)
             instance = instances[0]
@@ -199,11 +207,6 @@ def launch(args):
         logger.info("Dry run succeeded")
         exit()
     instance.wait_until_running()
-    hkl = hostkey_line(hostnames=[], key=ssh_host_key).strip()
-    tags = dict(tag.split("=", 1) for tag in args.tags)
-    add_tags(instance, Name=args.hostname, Owner=ARN.get_iam_username(),
-             SSHHostPublicKeyPart1=hkl[:255], SSHHostPublicKeyPart2=hkl[255:],
-             OwnerSSHKeyName=ssh_key_name, **tags)
     if args.use_dns:
         dns_zone.update(args.hostname, instance.private_dns_name)
     while not instance.public_dns_name:
@@ -241,7 +244,8 @@ parser.add_argument("--client-token", help="Token used to identify your instance
 parser.add_argument("--subnet")
 parser.add_argument("--availability-zone", "--az")
 parser.add_argument("--security-groups", nargs="+", metavar="SECURITY_GROUP")
-parser.add_argument("--tags", nargs="+", metavar="NAME=VALUE", help="Tags to apply to launched instances.")
+parser.add_argument("--tags", nargs="+", metavar="NAME=VALUE", type=lambda x: x.split("=", 1),
+                    help="Tags to apply to launched instances.")
 parser.add_argument("--wait-for-ssh", action="store_true",
                     help="Wait for launched instance to begin accepting SSH connections. Security groups and NACLs must permit SSH from launching host.")  # noqa
 parser.add_argument("--efs-home", action="store_true",
