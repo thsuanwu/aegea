@@ -99,8 +99,6 @@ def launch(args):
     else:
         vpc = ensure_vpc()
         subnet = ensure_subnet(vpc, availability_zone=args.availability_zone)
-    if not subnet.map_public_ip_on_launch:
-        raise AegeaException("Subnets without public IP mapping are not supported")
 
     if args.security_groups:
         security_groups = [resolve_security_group(sg, vpc) for sg in args.security_groups]
