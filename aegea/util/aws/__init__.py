@@ -66,15 +66,21 @@ def ensure_vpc():
         else:
             from ... import config
             logger.info("Creating VPC with CIDR %s", config.vpc.cidr[ARN.get_region()])
-            vpc = resources.ec2.create_vpc(CidrBlock=config.vpc.cidr[ARN.get_region()])
+            tags = dict(Name="aegea-vpc", managedBy="aegea")
+            tag_spec = dict(ResourceType="vpc", Tags=encode_tags(tags))
+            vpc = resources.ec2.create_vpc(CidrBlock=config.vpc.cidr[ARN.get_region()], TagSpecifications=[tag_spec])
             clients.ec2.get_waiter("vpc_available").wait(VpcIds=[vpc.id])
-            add_tags(vpc, Name=__name__)
             vpc.modify_attribute(EnableDnsSupport=dict(Value=config.vpc.enable_dns_support))
             vpc.modify_attribute(EnableDnsHostnames=dict(Value=config.vpc.enable_dns_hostnames))
-            internet_gateway = resources.ec2.create_internet_gateway()
+            tags = dict(Name="aegea-igw", managedBy="aegea")
+            tag_spec = dict(ResourceType="internet-gateway", Tags=encode_tags(tags))
+            internet_gateway = resources.ec2.create_internet_gateway(TagSpecifications=[tag_spec])
             vpc.attach_internet_gateway(InternetGatewayId=internet_gateway.id)
             for route_table in vpc.route_tables.all():
                 route_table.create_route(DestinationCidrBlock="0.0.0.0/0", GatewayId=internet_gateway.id)
+            tags = dict(Name="aegea-eigw", managedBy="aegea")
+            tag_spec = dict(ResourceType="egress-only-internet-gateway", Tags=encode_tags(tags))
+            clients.ec2.create_egress_only_internet_gateway(VpcId=vpc.id, TagSpecifications=[tag_spec])
             ensure_subnet(vpc)
     return vpc
 
@@ -97,9 +103,11 @@ def ensure_subnet(vpc, availability_zone=None):
         subnets = {}
         for az, subnet_cidr in zip(availability_zones(), subnet_cidrs):
             logger.info("Creating subnet with CIDR %s in %s, %s", subnet_cidr, vpc, az)
-            subnets[az] = resources.ec2.create_subnet(VpcId=vpc.id, CidrBlock=str(subnet_cidr), AvailabilityZone=az)
+            tags = dict(Name="aegea-subnet", managedBy="aegea")
+            tag_spec = dict(ResourceType="subnet", Tags=encode_tags(tags))
+            subnets[az] = resources.ec2.create_subnet(VpcId=vpc.id, CidrBlock=str(subnet_cidr), AvailabilityZone=az,
+                                                      TagSpecifications=[tag_spec])
             clients.ec2.get_waiter("subnet_available").wait(SubnetIds=[subnets[az].id])
-            add_tags(subnets[az], Name=__name__)
             clients.ec2.modify_subnet_attribute(SubnetId=subnets[az].id,
                                                 MapPublicIpOnLaunch=dict(Value=config.vpc.map_public_ip_on_launch))
         subnet = subnets[availability_zone] if availability_zone is not None else list(subnets.values())[0]
