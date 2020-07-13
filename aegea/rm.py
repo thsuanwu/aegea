@@ -36,6 +36,8 @@ def rm(args):
                 resources.ec2.Snapshot(name).delete(DryRun=not args.force)
             elif name.startswith("lt-"):
                 clients.ec2.delete_launch_template(LaunchTemplateId=name, DryRun=not args.force)
+            elif name.startswith("eigw-"):
+                clients.ec2.delete_egress_only_internet_gateway(EgressOnlyInternetGatewayId=name, DryRun=not args.force)
             elif name.startswith("fl-"):
                 if args.force:
                     clients.ec2.delete_flow_logs(FlowLogIds=[name])
