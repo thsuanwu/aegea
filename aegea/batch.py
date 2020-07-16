@@ -39,7 +39,7 @@ batch_parser = register_parser(batch, help="Manage AWS Batch resources", descrip
 def queues(args):
     page_output(tabulate(paginate(clients.batch.get_paginator("describe_job_queues")), args))
 
-parser = register_listing_parser(queues, parent=batch_parser, help="List Batch queues")
+queues_parser = register_listing_parser(queues, parent=batch_parser, help="List Batch queues")
 
 def create_queue(args):
     ces = [dict(computeEnvironment=e, order=i) for i, e in enumerate(args.compute_environments)]
@@ -48,23 +48,23 @@ def create_queue(args):
     make_waiter(clients.batch.describe_job_queues, "jobQueues[].status", "VALID", "pathAny").wait(jobQueues=[args.name])
     return queue
 
-parser = register_parser(create_queue, parent=batch_parser, help="Create a Batch queue")
-parser.add_argument("name")
-parser.add_argument("--priority", type=int, default=5)
-parser.add_argument("--compute-environments", nargs="+", required=True)
+create_queue_parser = register_parser(create_queue, parent=batch_parser, help="Create a Batch queue")
+create_queue_parser.add_argument("name")
+create_queue_parser.add_argument("--priority", type=int, default=5)
+create_queue_parser.add_argument("--compute-environments", nargs="+", required=True)
 
 def delete_queue(args):
     clients.batch.update_job_queue(jobQueue=args.name, state="DISABLED")
     make_waiter(clients.batch.describe_job_queues, "jobQueues[].status", "VALID", "pathAny").wait(jobQueues=[args.name])
     clients.batch.delete_job_queue(jobQueue=args.name)
 
-parser = register_parser(delete_queue, parent=batch_parser, help="Delete a Batch queue")
-parser.add_argument("name").completer = complete_queue_name
+delete_queue_parser = register_parser(delete_queue, parent=batch_parser, help="Delete a Batch queue")
+delete_queue_parser.add_argument("name").completer = complete_queue_name
 
 def compute_environments(args):
     page_output(tabulate(paginate(clients.batch.get_paginator("describe_compute_environments")), args))
 
-parser = register_listing_parser(compute_environments, parent=batch_parser, help="List Batch compute environments")
+ce_parser = register_listing_parser(compute_environments, parent=batch_parser, help="List Batch compute environments")
 
 def ensure_launch_template(prefix=__name__.replace(".", "_"), **kwargs):
     name = prefix + "_" + hashlib.sha256(json.dumps(kwargs, sort_keys=True).encode()).hexdigest()[:32]
@@ -151,8 +151,8 @@ def delete_compute_environment(args):
     wtr.wait(computeEnvironments=[args.name])
     clients.batch.delete_compute_environment(computeEnvironment=args.name)
 
-parser = register_parser(delete_compute_environment, parent=batch_parser, help="Delete a Batch compute environment")
-parser.add_argument("name").completer = complete_ce_name
+dce_parser = register_parser(delete_compute_environment, parent=batch_parser, help="Delete a Batch compute environment")
+dce_parser.add_argument("name").completer = complete_ce_name
 
 def ensure_queue(name):
     cq_args = argparse.Namespace(name=name, priority=5, compute_environments=[name])
@@ -309,9 +309,9 @@ def terminate(args):
             result += list(executor.map(terminate_one, args.job_id[1:]))
     logger.info("Sent termination requests for %d jobs", len(result))
 
-parser = register_parser(terminate, parent=batch_parser, help="Terminate Batch jobs")
-parser.add_argument("job_id", nargs="+")
-parser.add_argument("--reason", help="A message to attach to the job that explains the reason for canceling it")
+terminate_parser = register_parser(terminate, parent=batch_parser, help="Terminate Batch jobs")
+terminate_parser.add_argument("job_id", nargs="+")
+terminate_parser.add_argument("--reason", help="A message to attach to the job conveying the reason for canceling it")
 
 def ls(args, page_size=100):
     queues = args.queues or [q["jobQueueName"] for q in clients.batch.describe_job_queues()["jobQueues"]]
@@ -333,9 +333,9 @@ job_status_colors = dict(SUBMITTED=YELLOW(), PENDING=YELLOW(), RUNNABLE=BOLD() +
                          STARTING=GREEN(), RUNNING=GREEN(),
                          SUCCEEDED=BOLD() + GREEN(), FAILED=BOLD() + RED())
 job_states = job_status_colors.keys()
-parser = register_listing_parser(ls, parent=batch_parser, help="List Batch jobs")
-parser.add_argument("--queues", nargs="+").completer = complete_queue_name
-parser.add_argument("--status", nargs="+", default=job_states, choices=job_states)
+ls_parser = register_listing_parser(ls, parent=batch_parser, help="List Batch jobs")
+ls_parser.add_argument("--queues", nargs="+").completer = complete_queue_name
+ls_parser.add_argument("--status", nargs="+", default=job_states, choices=job_states)
 
 def get_job_desc(job_id):
     try:
@@ -347,8 +347,8 @@ def get_job_desc(job_id):
 def describe(args):
     return get_job_desc(args.job_id)
 
-parser = register_parser(describe, parent=batch_parser, help="Describe a Batch job")
-parser.add_argument("job_id")
+describe_parser = register_parser(describe, parent=batch_parser, help="Describe a Batch job")
+describe_parser.add_argument("job_id")
 
 def format_job_status(status):
     return job_status_colors[status] + status + ENDC()
