@@ -1,3 +1,12 @@
+Changes for v3.6.28 (2020-07-16)
+================================
+
+-  batch: give parsers unique names
+
+-  ensure_vpc: set tags at create time
+
+-  rm: support EIGWs
+
 Changes for v3.6.27 (2020-07-10)
 ================================
 
