@@ -36,8 +36,8 @@ def clusters(args):
     cluster_desc = clients.ecs.describe_clusters(clusters=args.clusters)["clusters"]
     page_output(tabulate(cluster_desc, args))
 
-parser = register_listing_parser(clusters, parent=ecs_parser, help="List ECS clusters")
-parser.add_argument("clusters", nargs="*").completer = complete_cluster_name
+clusters_parser = register_listing_parser(clusters, parent=ecs_parser, help="List ECS clusters")
+clusters_parser.add_argument("clusters", nargs="*").completer = complete_cluster_name
 
 def tasks(args):
     list_clusters = clients.ecs.get_paginator("list_clusters")
@@ -63,11 +63,11 @@ def tasks(args):
                 task_descs += sum(descs, [])
     page_output(tabulate(task_descs, args))
 
-parser = register_listing_parser(tasks, parent=ecs_parser, help="List ECS tasks")
-parser.add_argument("tasks", nargs="*")
-parser.add_argument("--clusters", nargs="*").completer = complete_cluster_name
-parser.add_argument("--desired-status", nargs=1, choices={"RUNNING", "STOPPED"}, default=["RUNNING", "STOPPED"])
-parser.add_argument("--launch-type", nargs=1, choices={"EC2", "FARGATE"}, default=["EC2", "FARGATE"])
+tasks_parser = register_listing_parser(tasks, parent=ecs_parser, help="List ECS tasks")
+tasks_parser.add_argument("tasks", nargs="*")
+tasks_parser.add_argument("--clusters", nargs="*").completer = complete_cluster_name
+tasks_parser.add_argument("--desired-status", nargs=1, choices={"RUNNING", "STOPPED"}, default=["RUNNING", "STOPPED"])
+tasks_parser.add_argument("--launch-type", nargs=1, choices={"EC2", "FARGATE"}, default=["EC2", "FARGATE"])
 
 def run(args):
     args.storage = args.efs_storage = args.mount_instance_storage = None
