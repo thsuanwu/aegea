@@ -15,21 +15,16 @@ Installation
 
 Before you do this, you will also need to install some system library dependencies:
 
-+--------------+---------+-------------------------------------------------------------------------------------------------------+
-| OS           | Python  | Command                                                                                               |
-+==============+=========+=======================================================================================================+
-| Mac OS       |         | Install `Homebrew <https://brew.sh>`_, then run ``brew install python``.                              |
-+--------------+---------+-------------------------------------------------------------------------------------------------------+
-| Ubuntu       | Python 2| sudo apt-get update;                                                                                  |
-|              |         | sudo apt-get install build-essential python-pip python-dev python-cffi libffi-dev libssl-dev moreutils|
-+--------------+---------+-------------------------------------------------------------------------------------------------------+
-| Ubuntu       | Python 3| sudo apt-get update;                                                                                  |
-|              |         | sudo apt-get install build-essential python3-{pip,dev,cffi} libffi-dev libssl-dev moreutils           |
-+--------------+---------+-------------------------------------------------------------------------------------------------------+
-| Red Hat      | Python 2| sudo yum install python-devel python-cffi openssl-devel moreutils                                     |
-+--------------+---------+-------------------------------------------------------------------------------------------------------+
-| Red Hat      | Python 3| sudo yum install python3-devel python3-cffi openssl-devel moreutils                                   |
-+--------------+---------+-------------------------------------------------------------------------------------------------------+
++--------------+-------------------------------------------------------------------------------------------------------+
+| OS           | Command                                                                                               |
++==============+=======================================================================================================+
+| Mac OS       | Install `Homebrew <https://brew.sh>`_, then run ``brew install python``.                              |
++--------------+-------------------------------------------------------------------------------------------------------+
+| Ubuntu       | sudo apt-get update;                                                                                  |
+|              | sudo apt-get install build-essential python3-{pip,dev,cffi} libffi-dev libssl-dev moreutils           |
++--------------+-------------------------------------------------------------------------------------------------------+
+| Red Hat      | sudo yum install python3-devel python3-cffi openssl-devel moreutils                                   |
++--------------+-------------------------------------------------------------------------------------------------------+
 
 Run ``aws configure`` to configure `IAM <https://aws.amazon.com/iam/>`_ access credentials that will be used by the
 ``aws`` and ``aegea`` commands. You can create a new IAM key at https://console.aws.amazon.com/iam/home#/users.
@@ -37,6 +32,32 @@ Run ``aws configure`` to configure `IAM <https://aws.amazon.com/iam/>`_ access c
 Aegea commands
 ~~~~~~~~~~~~~~
 Below are some highlights from Aegea's suite of commands. Run ``aegea --help`` to see the full list of commands.
+
++----------------------------+-----------------------------------------------------------------------------------------+
+| Command                    | Key functionality                                                                       |
++============================+=========================================================================================+
+| `aegea ls`                 | List running EC2 instances                                                              |
++----------------------------+-----------------------------------------------------------------------------------------+
+| `aegea launch`             | Launch EC2 instances and specify options such as spot tenancy, AMI, instance type, etc. |
++----------------------------+-----------------------------------------------------------------------------------------+
+| `aegea ssh`, `aegea scp`   | Connect to running instances, transfer files using AWS Systems Manager or other options |
++----------------------------+-----------------------------------------------------------------------------------------+
+| `aegea batch`              | Submit, manage and monitor AWS Batch jobs                                               |
++----------------------------+-----------------------------------------------------------------------------------------+
+| `aegea ecs`                | Monitor ECS clusters and run Fargate tasks                                              |
++----------------------------+-----------------------------------------------------------------------------------------+
+| `aegea build-ami`          | Build EC2 AMIs using cloud-init configuration scripts                                   |
++----------------------------+-----------------------------------------------------------------------------------------+
+| `aegea build-docker-image` | Build AWS ECR docker images using Dockerfiles or cloud-init scripts                     |
++----------------------------+-----------------------------------------------------------------------------------------+
+| `aegea logs`               | Download AWS CloudWatch Logs contents using S3 export                                   |
++----------------------------+-----------------------------------------------------------------------------------------+
+| `aegea grep`               | Query AWS CloudWatch Logs contents using CloudWatch Logs Insights                       |
++----------------------------+-----------------------------------------------------------------------------------------+
+| `aegea cost`               | List AWS cost reports generated by AWS Cost Explorer                                    |
++----------------------------+-----------------------------------------------------------------------------------------+
+| `aegea secrets`            | List and manage secrets stored in AWS Secrets Manager                                   |
++----------------------------+-----------------------------------------------------------------------------------------+
 
 Aegea SSH
 ---------
@@ -60,16 +81,9 @@ The `AWS Batch <https://aws.amazon.com/batch>`_ API lets you run non-interactive
 containers, managing AWS ECS, Spot Fleet, and EC2 in your account on your behalf. Use the ``aegea batch`` family of commands
 to interact with AWS Batch. The key command is ``aegea batch submit`` to submit jobs.
 
-`aegea/missions/docker-example/ <aegea/missions/docker-example/>`_ is a root directory of an **aegea mission** -
-a configuration management role. It has a rootfs.skel and a config.yml, which has directives to install packages,
-etc. The example just installs the bwa APT package.
-
-Run ``aegea-build-image-for-mission docker-example dex`` to build an ECR image called dex from the "docker-example"
-mission. You can list ECR images with ``aegea ecr ls``, and delete them with e.g. ``aws ecr delete-repository dex``.
-
-Run ``aegea batch submit --ecs-image dex --command "bwa aln || true" "bwa mem || true" --memory 2048 --vcpus 4 --watch``
-to run a Batch job that requires 2 GB RAM and 4 cores to be allocated to the Docker container, using the "dex" image,
-and executes two commands as listed after --command, using "bash -euo pipefail -c".
+Run ``aegea batch submit --command "echo 'hello world'" --memory 2048 --vcpus 4 --watch``
+to run a Batch job that requires 2 GB RAM and 4 cores to be allocated to the Docker container,
+and executes the specified command.
 
 You can also use ``aegea batch submit --execute FILE``. This will slurp up FILE (any type of shell script or ELF
 executable) and execute it in the job's Docker container.
@@ -109,8 +123,6 @@ Building AMIs and Docker images
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Aegea includes a lightweight configuration management system for building machine images based on
 `cloud-init <http://cloudinit.readthedocs.io/>`_ (both Docker images and AMIs are supported).
-
-TODO: ``build_image build_ami build_docker_image rootfs.skel``
 
 .. image:: https://img.shields.io/travis/com/kislyuk/aegea.svg
    :target: https://travis-ci.com/kislyuk/aegea
