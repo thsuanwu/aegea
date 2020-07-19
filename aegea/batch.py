@@ -12,7 +12,7 @@ from botocore.exceptions import ClientError
 from . import config, logger
 from .ls import register_parser, register_listing_parser
 from .ecr import ecr_image_name_completer
-from .ssh import ssh as aegea_ssh, ssh_parser as aegea_ssh_parser
+from .ssh import ssh_to_ecs_container
 from .util import Timestamp, paginate, get_mkfs_command, ThreadPoolExecutor
 from .util.crypto import ensure_ssh_key
 from .util.cloudinit import get_user_data
@@ -417,9 +417,10 @@ def ssh(args):
         raise AegeaException("No ECS task found for job {}".format(args.job_id))
     container_id = res["tasks"][0]["containers"][0]["runtimeId"]
     logger.info("Job {} is in container {}".format(args.job_id, container_id))
-    aegea_ssh(aegea_ssh_parser.parse_args(["-t", "-l", "ec2-user", ecs_ci_ec2_id,
-                                           "docker", "exec", "--interactive", "--tty", container_id] + args.ssh_args))
+    ssh_to_ecs_container(instance_id=ecs_ci_ec2_id, container_id=container_id, ssh_args=args.ssh_args,
+                         use_ssm=args.use_ssm)
 
 ssh_parser = register_parser(ssh, parent=batch_parser, help="Log in to a running Batch job via SSH")
 ssh_parser.add_argument("job_id")
+ssh_parser.add_argument("--no-ssm", action="store_false", dest="use_ssm")
 ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER)

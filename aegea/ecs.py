@@ -14,8 +14,10 @@ from botocore.exceptions import ClientError
 from . import logger
 from .batch import add_command_args, add_job_defn_args, print_event
 from .ls import register_parser, register_listing_parser
+from .ssh import ssh_to_ecs_container
 from .util import Timestamp, paginate, ThreadPoolExecutor
 from .util.compat import USING_PYTHON2
+from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_iam_role, ensure_log_group,
                        ensure_ecs_cluster, expect_error_codes)
@@ -39,28 +41,32 @@ def clusters(args):
 clusters_parser = register_listing_parser(clusters, parent=ecs_parser, help="List ECS clusters")
 clusters_parser.add_argument("clusters", nargs="*").completer = complete_cluster_name
 
-def tasks(args):
-    list_clusters = clients.ecs.get_paginator("list_clusters")
+def get_task_descs(cluster_names, task_names=None, desired_status=frozenset(["RUNNING", "STOPPED"])):
     list_tasks = clients.ecs.get_paginator("list_tasks")
 
     def list_tasks_worker(worker_args):
-        cluster, status = worker_args
-        return cluster, status, list(paginate(list_tasks, cluster=cluster, desiredStatus=status))
+        _cluster, _status = worker_args
+        return _cluster, _status, list(paginate(list_tasks, cluster=_cluster, desiredStatus=_status))
 
     def describe_tasks_worker(t, cluster=None):
         return clients.ecs.describe_tasks(cluster=cluster, tasks=t)["tasks"] if t else []
 
     task_descs = []  # type: List[Dict]
-    if args.clusters is None:
-        args.clusters = [__name__.replace(".", "_")] if args.tasks else list(paginate(list_clusters))
-    if args.tasks:
-        task_descs = describe_tasks_worker(args.tasks, cluster=args.clusters[0])
+    if task_names:
+        task_descs = describe_tasks_worker(task_names, cluster=cluster_names[0])
     else:
         with ThreadPoolExecutor() as executor:
-            for cluster, status, tasks in executor.map(list_tasks_worker, product(args.clusters, args.desired_status)):
+            for cluster, status, tasks in executor.map(list_tasks_worker, product(cluster_names, desired_status)):
                 worker = partial(describe_tasks_worker, cluster=cluster)
                 descs = executor.map(worker, (tasks[pos:pos + 100] for pos in range(0, len(tasks), 100)))
                 task_descs += sum(descs, [])
+    return task_descs
+
+def tasks(args):
+    list_clusters = clients.ecs.get_paginator("list_clusters")
+    if args.clusters is None:
+        args.clusters = [__name__.replace(".", "_")] if args.tasks else list(paginate(list_clusters))
+    task_descs = get_task_descs(cluster_names=args.clusters, task_names=args.tasks, desired_status=args.desired_status)
     page_output(tabulate(task_descs, args))
 
 tasks_parser = register_listing_parser(tasks, parent=ecs_parser, help="List ECS tasks")
@@ -221,3 +227,31 @@ lines_group.add_argument("--head", type=int, nargs="?", const=10,
                          help="Retrieve this number of lines from the beginning of the log (default 10)")
 lines_group.add_argument("--tail", type=int, nargs="?", const=10,
                          help="Retrieve this number of lines from the end of the log (default 10)")
+
+def ssh(args):
+    if not args.ssh_args:
+        args.ssh_args = ["/bin/bash", "-l"]
+    for task_desc in get_task_descs(cluster_names=[args.cluster_name], desired_status=["RUNNING"]):
+        if task_desc["taskArn"] == args.task_name:
+            break
+        task_name = ARN(task_desc["taskDefinitionArn"]).resource.split("/", 1)[-1].split(":", 1)[0]
+        if task_name == args.task_name:
+            break
+    else:
+        raise AegeaException('No task found with name "{}" in cluster "{}"'.format(args.task_name, args.cluster_name))
+
+    ecs_ci_arn = task_desc["containerInstanceArn"]
+    ecs_ci_desc = clients.ecs.describe_container_instances(cluster=task_desc["clusterArn"],
+                                                           containerInstances=[ecs_ci_arn])["containerInstances"][0]
+    ecs_ci_ec2_id = ecs_ci_desc["ec2InstanceId"]
+    logger.info("Task {} is on EC2 instance {}".format(args.task_name, ecs_ci_ec2_id))
+    container_id = task_desc["containers"][0]["runtimeId"]
+    logger.info("Task {} is in container {}".format(args.task_name, container_id))
+    ssh_to_ecs_container(instance_id=ecs_ci_ec2_id, container_id=container_id, ssh_args=args.ssh_args,
+                         use_ssm=args.use_ssm)
+
+ssh_parser = register_parser(ssh, parent=ecs_parser, help="Log in to a running ECS container via SSH")
+ssh_parser.add_argument("cluster_name")
+ssh_parser.add_argument("task_name")
+ssh_parser.add_argument("--no-ssm", action="store_false", dest="use_ssm")
+ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER)

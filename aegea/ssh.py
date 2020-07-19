@@ -235,3 +235,9 @@ def run(args):
 run_parser = register_parser(run, help="Run a command on an EC2 instance", description=run_command.__doc__)
 run_parser.add_argument("instance")
 run_parser.add_argument("command")
+
+def ssh_to_ecs_container(instance_id, container_id, ssh_args, use_ssm):
+    ssh_args = ssh_parser.parse_args(["-t", "-l", "ec2-user", instance_id,
+                                      "docker", "exec", "--interactive", "--tty", container_id] + ssh_args)
+    ssh_args.use_ssm = use_ssm
+    ssh(ssh_args)
