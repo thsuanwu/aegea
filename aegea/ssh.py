@@ -259,7 +259,9 @@ run_parser.add_argument("instance")
 run_parser.add_argument("command")
 
 def ssh_to_ecs_container(instance_id, container_id, ssh_args, use_ssm):
-    ssh_args = ssh_parser.parse_args(["-t", "-l", "ec2-user", instance_id,
-                                      "docker", "exec", "--interactive", "--tty", container_id] + ssh_args)
-    ssh_args.use_ssm = use_ssm
-    ssh(ssh_args)
+    ssh_args = ["-t", instance_id, "sudo", "docker", "exec", "--interactive", "--tty", container_id] + ssh_args
+    if "BLESS_CONFIG" not in os.environ:  # bless will provide the username, otherwise use Amazon Linux default
+        ssh_args = ["-l", "ec2-user"] + ssh_args
+    parsed_args = ssh_parser.parse_args(ssh_args)
+    parsed_args.use_ssm = use_ssm
+    ssh(parsed_args)
