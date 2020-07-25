@@ -17,7 +17,7 @@ YAML file with the format described in
 https://github.com/chanzuckerberg/blessclient/blob/master/examples/config.yml.
 """
 
-import os, sys, argparse, string, datetime, json, base64, time, fnmatch
+import os, sys, argparse, string, datetime, json, base64, time, fnmatch, subprocess
 
 import boto3, yaml
 
@@ -98,6 +98,13 @@ def get_kms_auth_token(session, bless_config, lambda_regional_config):
                       EncryptionContext=encryption_context)
     return base64.b64encode(res["CiphertextBlob"]).decode()
 
+def get_awslambda_client(region_name, credentials):
+    return boto3.client("lambda",
+                        region_name=region_name,
+                        aws_access_key_id=credentials['AccessKeyId'],
+                        aws_secret_access_key=credentials['SecretAccessKey'],
+                        aws_session_token=credentials['SessionToken'])
+
 def ensure_bless_ssh_cert(ssh_key_name, bless_config, use_kms_auth, max_cert_age=1800):
     ssh_key = ensure_local_ssh_key(ssh_key_name)
     ssh_key_filename = get_ssh_key_path(ssh_key_name)
@@ -110,31 +117,46 @@ def ensure_bless_ssh_cert(ssh_key_name, bless_config, use_kms_auth, max_cert_age
     for lambda_regional_config in bless_config["lambda_config"]["regions"]:
         if lambda_regional_config["aws_region"] == clients.ec2.meta.region_name:
             break
-    session = boto3.Session(profile_name=bless_config["client_config"]["aws_user_profile"])
-    iam = session.resource("iam")
-    sts = session.client("sts")
-    assume_role_res = sts.assume_role(RoleArn=bless_config["lambda_config"]["role_arn"], RoleSessionName=__name__)
-    awslambda = boto3.client('lambda',
-                             region_name=lambda_regional_config["aws_region"],
-                             aws_access_key_id=assume_role_res['Credentials']['AccessKeyId'],
-                             aws_secret_access_key=assume_role_res['Credentials']['SecretAccessKey'],
-                             aws_session_token=assume_role_res['Credentials']['SessionToken'])
-    bless_input = dict(bastion_user=iam.CurrentUser().user_name,
-                       bastion_user_ip="0.0.0.0/0",
-                       bastion_ips=",".join(bless_config["client_config"]["bastion_ips"]),
-                       remote_usernames=",".join(bless_config["client_config"]["remote_users"]),
-                       public_key_to_sign=get_public_key_from_pair(ssh_key),
-                       command="*")
-    if use_kms_auth:
-        bless_input["kmsauth_token"] = get_kms_auth_token(session=session,
-                                                          bless_config=bless_config,
-                                                          lambda_regional_config=lambda_regional_config)
+
+    if "oidc_client_id" in bless_config["client_config"]:
+        from cryptography.hazmat.primitives import serialization
+        aws_oidc_args = ["--client-id", bless_config["client_config"]["oidc_client_id"],
+                         "--issuer-url", bless_config["client_config"]["oidc_issuer_url"]]
+        aws_role_arn_arg = ["--aws-role-arn", bless_config["client_config"]["role_arn"]]
+        token = json.loads(subprocess.check_output(["aws-oidc", "token"] + aws_oidc_args))["access_token"]
+        creds = json.loads(subprocess.check_output(["aws-oidc", "creds-process"] + aws_oidc_args + aws_role_arn_arg))
+        awslambda = get_awslambda_client(region_name=lambda_regional_config["aws_region"], credentials=creds)
+        public_key = ssh_key.key.public_key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                           format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        bless_input = dict(public_key_to_sign=dict(publicKey="".join(public_key.decode().splitlines()[1:-1])),
+                           identity=dict(okta_identity=dict(AccessToken=token)))
+    else:
+        session = boto3.Session(profile_name=bless_config["client_config"]["aws_user_profile"])
+        iam = session.resource("iam")
+        sts = session.client("sts")
+        assume_role_res = sts.assume_role(RoleArn=bless_config["lambda_config"]["role_arn"], RoleSessionName=__name__)
+        awslambda = get_awslambda_client(region_name=lambda_regional_config["aws_region"],
+                                         credentials=assume_role_res["Credentials"])
+        bless_input = dict(bastion_user=iam.CurrentUser().user_name,
+                           bastion_user_ip="0.0.0.0/0",
+                           bastion_ips=",".join(bless_config["client_config"]["bastion_ips"]),
+                           remote_usernames=",".join(bless_config["client_config"]["remote_users"]),
+                           public_key_to_sign=get_public_key_from_pair(ssh_key),
+                           command="*")
+        if use_kms_auth:
+            bless_input["kmsauth_token"] = get_kms_auth_token(session=session,
+                                                              bless_config=bless_config,
+                                                              lambda_regional_config=lambda_regional_config)
+
     res = awslambda.invoke(FunctionName=bless_config["lambda_config"]["function_name"], Payload=json.dumps(bless_input))
     bless_output = json.loads(res["Payload"].read().decode())
     if "certificate" not in bless_output:
         raise AegeaException("Error while requesting Bless SSH certificate: {}".format(bless_output))
     with open(ssh_cert_filename, "w") as fh:
-        fh.write(bless_output["certificate"])
+        if isinstance(bless_output["certificate"], dict):
+            fh.write("ssh-rsa-cert-v01@openssh.com " + bless_output["certificate"]["cert"])
+        else:
+            fh.write(bless_output["certificate"])
     return ssh_cert_filename
 
 def match_instance_to_bastion(instance, bastions):
@@ -154,9 +176,9 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
                               use_kms_auth=use_kms_auth)
         add_ssh_key_to_agent(ssh_key_name)
         instance = get_instance(hostname)
-        if not username:
-            username = bless_config["client_config"]["remote_users"][0]
         bastion_config = match_instance_to_bastion(instance=instance, bastions=bless_config["ssh_config"]["bastions"])
+        if not username:
+            username = bastion_config["user"]
         if use_ssm:
             return [], username + "@" + instance.id
         elif bastion_config:
