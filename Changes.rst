@@ -1,3 +1,8 @@
+Changes for v3.6.32 (2020-07-24)
+================================
+
+-  Use bless-provided username when connecting to containers
+
 Changes for v3.6.31 (2020-07-24)
 ================================
 
