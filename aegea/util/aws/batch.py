@@ -1,4 +1,5 @@
 import os, sys, io, json, base64, hashlib, argparse
+from typing import Dict, Any
 
 import yaml
 from botocore.exceptions import ClientError
@@ -156,7 +157,7 @@ def get_volumes_and_mountpoints(args):
         args.volumes.append(["/var/run/docker.sock", "/var/run/docker.sock"])
     if args.volumes:
         for i, (host_path, guest_path) in enumerate(args.volumes):
-            vol_spec = {"name": "vol%d" % i}
+            vol_spec = {"name": "vol%d" % i}  # type: Dict[str, Any]
             mount_spec = {"sourceVolume": "vol%d" % i, "containerPath": guest_path}
             if host_path.startswith("fs-"):
                 fs_id, _, root_directory = host_path.partition(":")
