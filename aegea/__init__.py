@@ -159,7 +159,7 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
     subparser.add_argument("--log-level", default=config.get("log_level"),
                            help=str([logging.getLevelName(i) for i in range(10, 60, 10)]),
                            choices={logging.getLevelName(i) for i in range(10, 60, 10)})
-    subparser.add_argument("--profile", help="Profile to use from the AWS CLI credential file",
+    subparser.add_argument("--profile", help="Profile to use from the AWS CLI configuration file",
                            type=set_aws_profile).completer = get_aws_profiles
     subparser.add_argument("--region", help="Region to use (overrides environment variable)",
                            type=set_aws_region).completer = get_region_names

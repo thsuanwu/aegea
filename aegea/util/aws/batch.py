@@ -150,20 +150,31 @@ def set_ulimits(args, container_props):
             name, value = ulimit.split(":", 1)
             container_props["ulimits"].append(dict(name=name, hardLimit=int(value), softLimit=int(value)))
 
-def set_volumes(args, container_props):
+def get_volumes_and_mountpoints(args):
+    volumes, mount_points = [], []
     if args.wdl and ["/var/run/docker.sock", "/var/run/docker.sock"] not in args.volumes:
         args.volumes.append(["/var/run/docker.sock", "/var/run/docker.sock"])
     if args.volumes:
         for i, (host_path, guest_path) in enumerate(args.volumes):
-            container_props["volumes"].append({"host": {"sourcePath": host_path}, "name": "vol%d" % i})
-            container_props["mountPoints"].append({"sourceVolume": "vol%d" % i, "containerPath": guest_path})
+            vol_spec = {"name": "vol%d" % i}
+            mount_spec = {"sourceVolume": "vol%d" % i, "containerPath": guest_path}
+            if host_path.startswith("fs-"):
+                fs_id, _, root_directory = host_path.partition(":")
+                vol_spec["efsVolumeConfiguration"] = dict(fileSystemId=fs_id)
+                if root_directory:
+                    vol_spec["efsVolumeConfiguration"]["rootDirectory"] = root_directory
+            else:
+                vol_spec["host"] = dict(sourcePath=host_path)
+            volumes.append(vol_spec)
+            mount_points.append(mount_spec)
+    return volumes, mount_points
 
 def ensure_job_definition(args):
     if args.ecs_image:
         args.image = get_ecr_image_uri(args.ecs_image)
     container_props = {k: getattr(args, k) for k in ("image", "vcpus", "privileged")}
     container_props.update(memory=4, volumes=[], mountPoints=[], environment=[], command=[], resourceRequirements=[])
-    set_volumes(args, container_props)
+    container_props["volumes"], container_props["mountPoints"] = get_volumes_and_mountpoints(args)
     set_ulimits(args, container_props)
     if args.gpus:
         container_props["resourceRequirements"] = [{"type": "GPU", "value": str(args.gpus)}]

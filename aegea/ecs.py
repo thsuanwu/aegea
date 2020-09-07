@@ -22,7 +22,7 @@ from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_iam_role, ensure_log_group,
                        ensure_ecs_cluster, expect_error_codes)
 from .util.aws.logs import CloudwatchLogReader
-from .util.aws.batch import get_command_and_env, set_ulimits, set_volumes, get_ecr_image_uri
+from .util.aws.batch import get_command_and_env, set_ulimits, get_volumes_and_mountpoints, get_ecr_image_uri
 
 def complete_cluster_name(**kwargs):
     return [ARN(c).resource.partition("/")[2] for c in paginate(clients.ecs.get_paginator("list_clusters"))]
@@ -93,6 +93,7 @@ def run(args):
     if args.ecs_image:
         args.image = get_ecr_image_uri(args.ecs_image)
 
+    volumes, mount_points = get_volumes_and_mountpoints(args)
     container_defn = dict(name=args.task_name,
                           image=args.image,
                           cpu=0,
@@ -102,9 +103,8 @@ def run(args):
                           portMappings=[],
                           essential=True,
                           logConfiguration=log_config,
-                          mountPoints=[dict(sourceVolume="scratch", containerPath="/mnt")],
+                          mountPoints=[dict(sourceVolume="scratch", containerPath="/mnt")] + mount_points,
                           volumesFrom=[])
-    set_volumes(args, container_defn)
     set_ulimits(args, container_defn)
     exec_role = ensure_iam_role(args.execution_role, trust=["ecs-tasks"],
                                 policies=["service-role/AmazonEC2ContainerServiceforEC2Role",
@@ -118,7 +118,7 @@ def run(args):
                             networkMode="awsvpc",
                             cpu=args.fargate_cpu,
                             memory=args.fargate_memory,
-                            volumes=[dict(name="scratch", host={})])
+                            volumes=[dict(name="scratch", host={})] + volumes)
 
     task_hash = hashlib.sha256(json.dumps(expect_task_defn, sort_keys=True).encode()).hexdigest()[:8]
     task_defn_name = __name__.replace(".", "_") + "_" + task_hash
@@ -153,6 +153,7 @@ def run(args):
     run_args = dict(cluster=args.cluster,
                     taskDefinition=task_desc["taskDefinitionArn"],
                     launchType="FARGATE",
+                    platformVersion=args.fargate_platform_version,
                     networkConfiguration=network_config,
                     overrides=dict(containerOverrides=container_overrides))
     if args.dry_run:
