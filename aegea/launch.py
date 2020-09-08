@@ -210,7 +210,7 @@ def launch(args):
         time.sleep(1)
     if args.use_dns:
         dns_zone.update(args.hostname, instance.private_dns_name)
-    add_ssh_host_key_to_known_hosts(hostkey_line([instance.public_dns_name], ssh_host_key))
+    add_ssh_host_key_to_known_hosts(hostkey_line([instance.public_dns_name or instance.id], ssh_host_key))
     if args.wait_for_ssh:
         wait_for_port(instance.public_dns_name, 22)
     logger.info("Launched %s in %s using %s", instance, subnet, args.ami)
