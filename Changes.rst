@@ -1,3 +1,14 @@
+Changes for v3.6.33 (2020-09-08)
+================================
+
+-  launch: poll instance state; do not assume public DNS name. Fixes #55
+
+-  Support ECS EFS volumes
+
+-  Enable ssh agent forwarding in sudo shells by default
+
+-  Update CRAN mirror for Ubuntu 20.04
+
 Changes for v3.6.32 (2020-07-24)
 ================================
 
