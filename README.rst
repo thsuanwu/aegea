@@ -27,7 +27,8 @@ Before you do this, you will also need to install some system library dependenci
 +--------------+-------------------------------------------------------------------------------------------------------+
 
 Run ``aws configure`` to configure `IAM <https://aws.amazon.com/iam/>`_ access credentials that will be used by the
-``aws`` and ``aegea`` commands. You can create a new IAM key at https://console.aws.amazon.com/iam/home#/users.
+``aws`` and ``aegea`` commands. You can create a new IAM key at https://console.aws.amazon.com/iam/home#/users. See the
+`AWS CLI documentation <https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html>`_ for more details.
 
 Aegea commands
 ~~~~~~~~~~~~~~
