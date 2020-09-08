@@ -1,3 +1,8 @@
+Changes for v3.6.34 (2020-09-08)
+================================
+
+-  Use instance id in lieu of public_dns_name when adding host key
+
 Changes for v3.6.33 (2020-09-08)
 ================================
 
