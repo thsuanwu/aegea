@@ -133,6 +133,7 @@ class TestAegea(unittest.TestCase):
 
         self.call("aegea ecs run --command pwd --dry-run", shell=True)
 
+    @unittest.skipIf(sys.version_info < (3, 8), "Skipping test which is prone to rate limiting")
     def test_spot_fleet_builder(self):
         builder = SpotFleetBuilder(launch_spec={})
         self.assertEqual(set(spec["InstanceType"] for spec in builder.launch_specs()),
