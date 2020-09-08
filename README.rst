@@ -124,8 +124,8 @@ Building AMIs and Docker images
 Aegea includes a lightweight configuration management system for building machine images based on
 `cloud-init <http://cloudinit.readthedocs.io/>`_ (both Docker images and AMIs are supported).
 
-.. image:: https://img.shields.io/travis/com/kislyuk/aegea.svg
-   :target: https://travis-ci.com/kislyuk/aegea
+.. image:: https://github.com/kislyuk/aegea/workflows/Tests/badge.svg
+   :target: https://github.com/kislyuk/aegea/actions
 .. image:: https://img.shields.io/pypi/v/aegea.svg
    :target: https://pypi.python.org/pypi/aegea
 .. image:: https://img.shields.io/pypi/l/aegea.svg
