@@ -204,12 +204,12 @@ def launch(args):
         expect_error_codes(e, "DryRunOperation")
         logger.info("Dry run succeeded")
         exit()
-    instance.wait_until_running()
-    if args.use_dns:
-        dns_zone.update(args.hostname, instance.private_dns_name)
-    while not instance.public_dns_name:
+    while instance.state["Name"] != "running":
+        logger.debug("%s %s", instance, instance.state["Name"])
         instance = resources.ec2.Instance(instance.id)
         time.sleep(1)
+    if args.use_dns:
+        dns_zone.update(args.hostname, instance.private_dns_name)
     add_ssh_host_key_to_known_hosts(hostkey_line([instance.public_dns_name], ssh_host_key))
     if args.wait_for_ssh:
         wait_for_port(instance.public_dns_name, 22)
