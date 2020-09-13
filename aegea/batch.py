@@ -273,6 +273,7 @@ def add_job_defn_args(parser):
     parser.add_argument("--volumes", nargs="+", metavar="HOST_PATH=GUEST_PATH", type=lambda x: x.split("=", 1),
                         default=[])
     parser.add_argument("--memory-mb", dest="memory", type=int)
+    parser.add_argument("--user", help="Name or ID of user to use in the Docker container")
 
 add_command_args(submit_parser)
 

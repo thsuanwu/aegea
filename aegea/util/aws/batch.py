@@ -173,7 +173,7 @@ def get_volumes_and_mountpoints(args):
 def ensure_job_definition(args):
     if args.ecs_image:
         args.image = get_ecr_image_uri(args.ecs_image)
-    container_props = {k: getattr(args, k) for k in ("image", "vcpus", "privileged")}
+    container_props = {k: getattr(args, k) for k in ("image", "vcpus", "user", "privileged")}
     container_props.update(memory=4, volumes=[], mountPoints=[], environment=[], command=[], resourceRequirements=[])
     container_props["volumes"], container_props["mountPoints"] = get_volumes_and_mountpoints(args)
     set_ulimits(args, container_props)

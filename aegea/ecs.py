@@ -98,6 +98,7 @@ def run(args):
                           image=args.image,
                           cpu=0,
                           memory=args.memory,
+                          user=args.user,
                           command=[],
                           environment=[],
                           portMappings=[],
