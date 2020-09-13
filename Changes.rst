@@ -1,3 +1,10 @@
+Changes for v3.6.35 (2020-09-13)
+================================
+
+-  Pass through user setting in ecs and batch
+
+-  Test improvements
+
 Changes for v3.6.34 (2020-09-08)
 ================================
 
