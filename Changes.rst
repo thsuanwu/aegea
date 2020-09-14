@@ -1,3 +1,8 @@
+Changes for v3.6.36 (2020-09-14)
+================================
+
+-  Specify default user for batch submit
+
 Changes for v3.6.35 (2020-09-13)
 ================================
 
