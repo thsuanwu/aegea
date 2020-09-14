@@ -585,6 +585,7 @@ batch_create_compute_environment:
 #    AegeaMission: "ecs-container-instance"
 
 batch_submit:
+  user: "0"
   default_memory_mb: 4000
   job_role: aegea.batch.worker
   default_job_role_iam_policies:
