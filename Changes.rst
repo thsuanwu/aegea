@@ -1,3 +1,8 @@
+Changes for v3.6.39 (2020-09-14)
+================================
+
+-  ecs run: accept raw numeric cpu, mem values
+
 Changes for v3.6.38 (2020-09-14)
 ================================
 
