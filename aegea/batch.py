@@ -272,7 +272,10 @@ def add_job_defn_args(parser):
     ecs_img_arg.completer = ecr_image_name_completer
     parser.add_argument("--volumes", nargs="+", metavar="HOST_PATH=GUEST_PATH", type=lambda x: x.split("=", 1),
                         default=[])
-    parser.add_argument("--memory-mb", dest="memory", type=int)
+    # Note: ECS (but not Batch) also supports memoryReservation, a way to specify a soft memory limit for packing,
+    # but that is only useful when co-locating multiple ECS containers together (which we don't do here)
+    parser.add_argument("--memory-mb", dest="memory", type=int,
+                        help="Memory to allocate to the Docker container (this is both a soft and a hard limit)")
     parser.add_argument("--user", help="Name or ID of user to use in the Docker container")
 
 add_command_args(submit_parser)

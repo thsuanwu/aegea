@@ -94,6 +94,12 @@ def run(args):
         args.image = get_ecr_image_uri(args.ecs_image)
 
     volumes, mount_points = get_volumes_and_mountpoints(args)
+    if args.memory is None:
+        if args.fargate_memory.endswith("GB"):
+            args.memory = int(args.fargate_memory[:-len("GB")]) * 1024
+        else:
+            args.memory = int(args.fargate_memory)
+
     container_defn = dict(name=args.task_name,
                           image=args.image,
                           cpu=0,
@@ -133,8 +139,8 @@ def run(args):
         task_desc = {key: task_defn.pop(key) for key in desc_keys}
         if expect_task_defn["cpu"].endswith(" vCPU"):
             expect_task_defn["cpu"] = str(int(expect_task_defn["cpu"][:-len(" vCPU")]) * 1024)
-        if expect_task_defn["memory"].endswith(" GB"):
-            expect_task_defn["memory"] = str(int(expect_task_defn["memory"][:-len(" GB")]) * 1024)
+        if expect_task_defn["memory"].endswith("GB"):
+            expect_task_defn["memory"] = str(int(expect_task_defn["memory"][:-len("GB")]) * 1024)
         assert task_defn == expect_task_defn
         logger.debug("Reusing task definition %s", task_desc["taskDefinitionArn"])
     except (ClientError, AssertionError):
@@ -186,9 +192,16 @@ run_parser.add_argument("--task-role", metavar="IAM_ROLE", default=__name__)
 run_parser.add_argument("--security-group", default=__name__)
 run_parser.add_argument("--cluster", default=__name__.replace(".", "_"))
 run_parser.add_argument("--task-name", default=__name__.replace(".", "_"))
-run_parser.add_argument("--fargate-cpu", help="Execution vCPU count")
-run_parser.add_argument("--fargate-memory")
 run_parser.add_argument("--dry-run", action="store_true", help="Gather arguments and stop short of running task")
+
+fargate_group = run_parser.add_argument_group(
+    description=("Resource allocation for the Fargate task VM, which runs the task Docker container(s): "
+                 "(See also https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html)")
+)
+fargate_group.add_argument("--fargate-cpu", help="vCPUs to allocate to the Fargate task",
+                           choices={".25 vCPU", ".5 vCPU", "1 vCPU", "2 vCPU", "4 vCPU"})
+fargate_group.add_argument("--fargate-memory", help="Memory to allocate to the Fargate task",
+                           choices=["0.5GB"] + ["{}GB".format(i) for i in range(1, 31)])
 
 task_status_colors = dict(PROVISIONING=YELLOW(), PENDING=BOLD() + YELLOW(), ACTIVATING=BOLD() + YELLOW(),
                           RUNNING=GREEN(),

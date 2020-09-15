@@ -368,7 +368,6 @@ ecs_tasks:
 
 ecs_run:
   user: "0"
-  memory: 1024
   image: ubuntu:19.04
   fargate_cpu: "1 vCPU"
   fargate_memory: "2 GB"
