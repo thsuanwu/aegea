@@ -250,6 +250,15 @@ lines_group.add_argument("--head", type=int, nargs="?", const=10,
 lines_group.add_argument("--tail", type=int, nargs="?", const=10,
                          help="Retrieve this number of lines from the end of the log (default 10)")
 
+def stop(args):
+    return clients.ecs.stop_task(cluster=args.cluster,
+                                 task=args.task_id,
+                                 reason="Stopped by {}".format(__name__))
+
+stop_parser = register_parser(stop, parent=ecs_parser, help="Stop a running ECS Fargate task")
+stop_parser.add_argument("task_arn")
+stop_parser.add_argument("--cluster", default=__name__.replace(".", "_"))
+
 def ssh(args):
     if not args.ssh_args:
         args.ssh_args = ["/bin/bash", "-l"]
