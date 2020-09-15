@@ -1,3 +1,8 @@
+Changes for v3.6.37 (2020-09-14)
+================================
+
+-  ecs run: Align default container memory reservation to Fargate task
+
 Changes for v3.6.36 (2020-09-14)
 ================================
 
