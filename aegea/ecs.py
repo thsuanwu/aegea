@@ -198,10 +198,14 @@ fargate_group = run_parser.add_argument_group(
     description=("Resource allocation for the Fargate task VM, which runs the task Docker container(s): "
                  "(See also https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html)")
 )
-fargate_group.add_argument("--fargate-cpu", help="vCPUs to allocate to the Fargate task",
-                           choices={".25 vCPU", ".5 vCPU", "1 vCPU", "2 vCPU", "4 vCPU"})
-fargate_group.add_argument("--fargate-memory", help="Memory to allocate to the Fargate task",
-                           choices=["0.5GB"] + ["{}GB".format(i) for i in range(1, 31)])
+fargate_group.add_argument(
+    "--fargate-cpu", help="vCPUs to allocate to the Fargate task",
+    choices=[".25 vCPU", ".5 vCPU", "1 vCPU", "2 vCPU", "4 vCPU", "256", "512", "1024", "2048", "4096"]
+)
+fargate_group.add_argument(
+    "--fargate-memory", help="Memory to allocate to the Fargate task",
+    choices=["0.5GB"] + ["{}GB".format(i) for i in range(1, 31)] + [512] + list(range(1024, 30721, 1024))
+)
 
 task_status_colors = dict(PROVISIONING=YELLOW(), PENDING=BOLD() + YELLOW(), ACTIVATING=BOLD() + YELLOW(),
                           RUNNING=GREEN(),
