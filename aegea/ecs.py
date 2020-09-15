@@ -204,7 +204,7 @@ fargate_group.add_argument(
 )
 fargate_group.add_argument(
     "--fargate-memory", help="Memory to allocate to the Fargate task",
-    choices=["0.5GB"] + ["{}GB".format(i) for i in range(1, 31)] + [512] + list(range(1024, 30721, 1024))
+    choices=["0.5GB"] + ["{}GB".format(i) for i in range(1, 31)] + [512] + list(map(str, range(1024, 30721, 1024)))
 )
 
 task_status_colors = dict(PROVISIONING=YELLOW(), PENDING=BOLD() + YELLOW(), ACTIVATING=BOLD() + YELLOW(),
