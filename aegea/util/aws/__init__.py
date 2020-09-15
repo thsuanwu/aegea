@@ -368,10 +368,14 @@ def ensure_instance_profile(iam_role_name, policies=frozenset()):
         instance_profile.add_role(RoleName=role.name)
     return instance_profile
 
-def encode_tags(tags):
+def encode_tags(tags, case="title"):
     if isinstance(tags, (list, tuple)):
         tags = dict(tag.split("=", 1) for tag in tags)
-    return [dict(Key=k, Value=v) for k, v in tags.items()]
+    assert case in {"title", "lower"}
+    if case == "title":
+        return [dict(Key=k, Value=v) for k, v in tags.items()]
+    elif case == "lower":
+        return [dict(key=k, value=v) for k, v in tags.items()]
 
 def decode_tags(tags):
     return {tag["Key"]: tag["Value"] for tag in tags}
