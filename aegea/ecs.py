@@ -256,7 +256,7 @@ def stop(args):
                                  reason="Stopped by {}".format(__name__))
 
 stop_parser = register_parser(stop, parent=ecs_parser, help="Stop a running ECS Fargate task")
-stop_parser.add_argument("task_arn")
+stop_parser.add_argument("task_id")
 stop_parser.add_argument("--cluster", default=__name__.replace(".", "_"))
 
 def ssh(args):
