@@ -368,7 +368,7 @@ ecs_tasks:
 
 ecs_run:
   user: "0"
-  image: ubuntu:19.04
+  image: ubuntu:20.04
   fargate_cpu: "1 vCPU"
   fargate_memory: "2 GB"
   # See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html
