@@ -18,12 +18,13 @@ from .util.crypto import ensure_ssh_key
 from .util.cloudinit import get_user_data
 from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
-from .util.aws import (resources, clients, ensure_iam_role, ensure_instance_profile, make_waiter, ensure_vpc,
-                       ensure_security_group, ensure_log_group, IAMPolicyBuilder, resolve_ami, instance_type_completer,
+from .util.aws import (resources, clients, make_waiter, ensure_vpc,
+                       ensure_security_group, ensure_log_group, resolve_ami, instance_type_completer,
                        expect_error_codes, instance_storage_shellcode, ARN, get_ssm_parameter)
 from .util.aws.spot import SpotFleetBuilder
 from .util.aws.logs import CloudwatchLogReader
 from .util.aws.batch import ensure_job_definition, get_command_and_env, ensure_lambda_helper
+from .util.aws.iam import IAMPolicyBuilder, ensure_iam_role, ensure_instance_profile
 
 def complete_queue_name(**kwargs):
     return [q["jobQueueName"] for q in paginate(clients.batch.get_paginator("describe_job_queues"))]

@@ -6,7 +6,8 @@ import requests
 from ... import logger
 from .. import Timestamp, paginate, ThreadPoolExecutor
 from ..compat import timestamp
-from . import ARN, IAMPolicyBuilder, S3BucketLifecycleBuilder, ensure_s3_bucket, clients
+from . import ARN, S3BucketLifecycleBuilder, ensure_s3_bucket, clients
+from .iam import IAMPolicyBuilder
 
 class CloudwatchLogReader:
     def __init__(self, log_stream_name, head=None, tail=None, log_group_name="/aws/batch/job"):

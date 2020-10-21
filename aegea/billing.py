@@ -19,7 +19,8 @@ from botocore.exceptions import ClientError
 from . import register_parser, config
 from .util.exceptions import AegeaException
 from .util.printing import format_table, page_output, get_field, get_cell, tabulate
-from .util.aws import ARN, clients, resources, ensure_s3_bucket, IAMPolicyBuilder
+from .util.aws import ARN, clients, resources, ensure_s3_bucket
+from .util.aws.iam import IAMPolicyBuilder
 
 def billing(args):
     billing_parser.print_help()

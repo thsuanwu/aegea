@@ -45,7 +45,8 @@ from botocore.paginate import Paginator
 from . import logger
 from .ls import register_parser, register_listing_parser
 from .util import paginate
-from .util.aws import ARN, IAMPolicyBuilder, resources, clients, expect_error_codes, ensure_iam_policy
+from .util.aws import ARN, resources, clients, expect_error_codes
+from .util.aws.iam import IAMPolicyBuilder, ensure_iam_policy
 from .util.printing import page_output, tabulate
 from .util.exceptions import AegeaException
 from .util.crypto import new_ssh_key, hostkey_line, key_fingerprint

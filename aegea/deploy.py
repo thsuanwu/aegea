@@ -50,8 +50,8 @@ from .util.git import parse_repo_name, get_repo, private_submodules
 from .util.crypto import key_fingerprint
 from .util.printing import format_table, page_output, get_field, get_cell, tabulate, BOLD
 from .util.compat import lru_cache
-from .util.aws import (ARN, resources, clients, IAMPolicyBuilder, resolve_instance_id, get_iam_role_for_instance,
-                       expect_error_codes, ensure_iam_policy)
+from .util.aws import ARN, resources, clients, resolve_instance_id, get_iam_role_for_instance, expect_error_codes
+from .util.aws.iam import IAMPolicyBuilder, ensure_iam_policy
 
 def deploy(args):
     deploy_parser.print_help()

@@ -19,10 +19,11 @@ from .util import Timestamp, paginate, ThreadPoolExecutor
 from .util.compat import USING_PYTHON2
 from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
-from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_iam_role, ensure_log_group,
+from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_log_group,
                        ensure_ecs_cluster, expect_error_codes, encode_tags)
 from .util.aws.logs import CloudwatchLogReader
 from .util.aws.batch import get_command_and_env, set_ulimits, get_volumes_and_mountpoints, get_ecr_image_uri
+from .util.aws.iam import ensure_iam_role
 
 def complete_cluster_name(**kwargs):
     return [ARN(c).resource.partition("/")[2] for c in paginate(clients.ecs.get_paginator("list_clusters"))]

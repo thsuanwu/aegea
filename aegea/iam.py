@@ -11,7 +11,8 @@ import botocore
 from . import config, logger
 from .ls import register_parser, register_listing_parser
 from .util.printing import page_output, tabulate, BOLD
-from .util.aws import resources, clients, ensure_iam_group, IAMPolicyBuilder
+from .util.aws import resources, clients
+from .util.aws.iam import ensure_iam_group, IAMPolicyBuilder
 
 def iam(args):
     iam_parser.print_help()

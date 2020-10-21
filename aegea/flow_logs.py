@@ -7,7 +7,8 @@ from .ls import register_parser, register_listing_parser
 from .logs import grep, add_time_bound_args
 from .util.printing import page_output, tabulate
 from .util.exceptions import AegeaException
-from .util.aws import ARN, resources, clients, ensure_iam_role, ensure_vpc, expect_error_codes
+from .util.aws import ARN, resources, clients, ensure_vpc, expect_error_codes
+from .util.aws.iam import ensure_iam_role
 
 def flow_logs(args):
     flow_logs_parser.print_help()

@@ -5,10 +5,11 @@ import yaml
 from botocore.exceptions import ClientError
 from botocore.paginate import Paginator
 
-from . import ARN, resources, clients, expect_error_codes, ensure_s3_bucket, ensure_iam_role, instance_storage_shellcode
-from .. import paginate, get_mkfs_command, logger
-from ..exceptions import AegeaException
 from ... import __version__
+from ..exceptions import AegeaException
+from .. import paginate, get_mkfs_command, logger
+from . import ARN, resources, clients, expect_error_codes, ensure_s3_bucket, instance_storage_shellcode
+from .iam import ensure_iam_role
 
 bash_cmd_preamble = ["/bin/bash", "-c", 'for i in "$@"; do eval "$i"; done; cd /', __name__]
 

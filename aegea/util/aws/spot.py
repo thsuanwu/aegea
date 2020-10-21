@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 from ... import logger
 from .. import constants, VerboseRepr
 from ..exceptions import AegeaException
-from . import ensure_iam_role, clients
+from . import clients
+from .iam import ensure_iam_role
 
 class SpotFleetBuilder(VerboseRepr):
     # TODO: vivify from toolspec; vivify from SFR ID; update with incremental cores/memory requirements
