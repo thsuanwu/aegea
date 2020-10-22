@@ -141,9 +141,11 @@ def ensure_iam_policy(name, doc):
                 version.delete()
         return policy
 
-def concatenate_managed_policies(policy_names):
+def compose_managed_policies(policy_names):
     policy = IAMPolicyBuilder()
     for policy_name in policy_names:
         doc = resources.iam.Policy(arn="arn:aws:iam::aws:policy/" + policy_name).default_version.document
-        policy.policy["Statement"].append(doc)
+        for i, statement in enumerate(doc["Statement"]):
+            policy.policy["Statement"].append(statement)
+            policy.policy["Statement"][-1]["Sid"] = policy_name + str(i)
     return policy

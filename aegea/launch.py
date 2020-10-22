@@ -31,7 +31,7 @@ from .util.aws import (ensure_vpc, ensure_subnet, ensure_security_group, ensure_
                        get_ssm_parameter, encode_tags)
 from .util.aws.dns import DNSZone, get_client_token
 from .util.aws.spot import SpotFleetBuilder
-from .util.aws.iam import ensure_instance_profile
+from .util.aws.iam import ensure_instance_profile, compose_managed_policies
 from .util.crypto import new_ssh_key, add_ssh_host_key_to_known_hosts, ensure_ssh_key, hostkey_line
 from .util.exceptions import AegeaException
 from botocore.exceptions import ClientError
@@ -140,7 +140,8 @@ def launch(args):
     tag_spec = dict(ResourceType="instance", Tags=encode_tags(instance_tags))
     logger.info("Launch spec user data is %i bytes long", len(launch_spec["UserData"]))
     if args.iam_role:
-        instance_profile = ensure_instance_profile(args.iam_role, policies=args.iam_policies)
+        umbrella_policy = compose_managed_policies(args.iam_policies)
+        instance_profile = ensure_instance_profile(args.iam_role, policies=[umbrella_policy])
         launch_spec["IamInstanceProfile"] = dict(Arn=instance_profile.arn)
     if not args.spot:
         launch_spec["SubnetId"] = subnet.id
