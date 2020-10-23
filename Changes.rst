@@ -1,3 +1,11 @@
+Changes for v3.6.44 (2020-10-23)
+================================
+
+-  Begin managed policy concatenator; use concatenated policy in aegea
+   launch
+
+-  Change default ecs run container image to Ubuntu 20.04 LTS
+
 Changes for v3.6.43 (2020-09-19)
 ================================
 
