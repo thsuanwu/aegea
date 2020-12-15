@@ -10,9 +10,10 @@ sys.path.insert(0, pkg_root)  # noqa
 import aegea, aegea.util.aws.dns
 from aegea.util import Timestamp
 from aegea.util.cloudinit import get_user_data
-from aegea.util.aws import (resolve_ami, IAMPolicyBuilder, locate_ami, get_ondemand_price_usd, ARN,
+from aegea.util.aws import (resolve_ami, locate_ami, get_ondemand_price_usd, ARN,
                             get_public_ip_ranges, ensure_s3_bucket, encode_tags, decode_tags, filter_by_tags,
                             clients, resources, get_bdm, get_iam_role_for_instance, make_waiter)
+from aegea.util.aws.iam import IAMPolicyBuilder
 from aegea.util.aws.batch import ensure_job_definition
 from aegea.util.aws.spot import SpotFleetBuilder
 from aegea.util.compat import USING_PYTHON2, str

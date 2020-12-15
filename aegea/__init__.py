@@ -93,8 +93,8 @@ def main(args=None):
             try:
                 err_log_filename = os.path.join(config.user_config_dir, "error.log")
                 with open(err_log_filename, "ab") as fh:
-                    print(datetime.datetime.now().isoformat(), file=fh)
-                    print(err_msg, file=fh)
+                    print(datetime.datetime.now().isoformat(), file=fh)  # type: ignore
+                    print(err_msg, file=fh)  # type: ignore
                 exit("{}: {}. See {} for error details.".format(e.__class__.__name__, e, err_log_filename))
             except Exception:
                 print(err_msg, file=sys.stderr)
