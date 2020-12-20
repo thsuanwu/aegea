@@ -114,7 +114,7 @@ class TestAegea(unittest.TestCase):
     def test_dry_run_commands(self):
         unauthorized_ok = [dict(return_codes=[os.EX_OK]),
                            dict(return_codes=[1, os.EX_SOFTWARE], stderr="UnauthorizedOperation")]
-        self.call("aegea launch unittest --dry-run --storage /x=512 /y=1024 --ubuntu-linux-ami",
+        self.call("aegea launch unittest --dry-run --storage /x=512 /y=1024 --no-verify --ubuntu-linux-ami",
                   shell=True, expect=unauthorized_ok)
         self.call("aegea launch unittest --dry-run --no-verify-ssh-key-pem-file --ubuntu-linux-ami",
                   shell=True, expect=unauthorized_ok)
@@ -279,6 +279,7 @@ class TestAegea(unittest.TestCase):
             self.call(os.path.join(deploy_utils_bindir, script),
                       expect=[dict(return_codes=[2], stderr="(required|too few)")])
 
+    @unittest.skipIf(sys.version_info[:2] != (3, 9), "Skipping test which is prone to race conditions")
     def test_secrets(self):
         unauthorized_ok = [dict(return_codes=[os.EX_OK]),
                            dict(return_codes=[1, os.EX_SOFTWARE], stderr="(AccessDenied|NoSuchKey)")]
@@ -294,6 +295,7 @@ class TestAegea(unittest.TestCase):
         self.call("aegea secrets delete {s} --iam-role aegea.launch".format(s=secret_name), shell=True,
                   expect=unauthorized_ok)
 
+    @unittest.skipIf("GITHUB_ACTIONS" in os.environ, "does not correctly run in CI")
     def test_ensure_job_definition(self):
         from aegea.batch import submit_parser
         args = submit_parser.parse_args(["--command", ""])
