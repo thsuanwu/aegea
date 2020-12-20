@@ -1,3 +1,8 @@
+Changes for v3.6.45 (2020-12-19)
+================================
+
+-  Use subprocess instead of distro to check for Ubuntu presence (#56)
+
 Changes for v3.6.44 (2020-10-23)
 ================================
 
