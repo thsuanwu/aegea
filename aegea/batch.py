@@ -24,7 +24,7 @@ from .util.aws import (resources, clients, make_waiter, ensure_vpc,
 from .util.aws.spot import SpotFleetBuilder
 from .util.aws.logs import CloudwatchLogReader
 from .util.aws.batch import ensure_job_definition, get_command_and_env, ensure_lambda_helper
-from .util.aws.iam import IAMPolicyBuilder, ensure_iam_role, ensure_instance_profile
+from .util.aws.iam import IAMPolicyBuilder, ensure_iam_role, ensure_instance_profile, ensure_fargate_execution_role
 
 def complete_queue_name(**kwargs):
     return [q["jobQueueName"] for q in paginate(clients.batch.get_paginator("describe_job_queues"))]
@@ -76,17 +76,6 @@ def ensure_launch_template(prefix=__name__.replace(".", "_"), **kwargs):
     return name
 
 def create_compute_environment(args):
-    commands = instance_storage_shellcode.strip().format(mountpoint="/mnt", mkfs=get_mkfs_command()).split("\n")
-    user_data = get_user_data(commands=commands, mime_multipart_archive=True)
-    if args.ecs_container_instance_ami:
-        ecs_ami_id = args.ecs_container_instance_ami
-    elif args.ecs_container_instance_ami_tags:
-        ecs_ami_id = resolve_ami(**args.ecs_container_instance_ami_tags)
-    else:
-        ecs_ami_id = get_ssm_parameter("/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id")
-    launch_template = ensure_launch_template(ImageId=ecs_ami_id,
-                                             # TODO: add configurable BDM for Docker image cache space
-                                             UserData=base64.b64encode(user_data).decode())
     batch_iam_role = ensure_iam_role(args.service_role, trust=["batch"], policies=["service-role/AWSBatchServiceRole"])
     vpc = ensure_vpc()
     ssh_key_name = ensure_ssh_key(args.ssh_key_name, base_name=__name__)
@@ -96,16 +85,29 @@ def create_compute_environment(args):
                                                          "AmazonSSMManagedInstanceCore",
                                                          IAMPolicyBuilder(action="sts:AssumeRole", resource="*")})
     compute_resources = dict(type=args.compute_type,
-                             minvCpus=args.min_vcpus, desiredvCpus=args.desired_vcpus, maxvCpus=args.max_vcpus,
-                             instanceTypes=args.instance_types,
+                             maxvCpus=args.max_vcpus,
                              subnets=[subnet.id for subnet in vpc.subnets.all()],
-                             securityGroupIds=[ensure_security_group("aegea.launch", vpc).id],
-                             instanceRole=instance_profile.name,
-                             bidPercentage=100,
-                             spotIamFleetRole=SpotFleetBuilder.get_iam_fleet_role().name,
-                             ec2KeyPair=ssh_key_name,
-                             tags=dict(Name=__name__),
-                             launchTemplate=dict(launchTemplateName=launch_template))
+                             securityGroupIds=[ensure_security_group("aegea.launch", vpc).id])
+    if not args.compute_type.startswith("FARGATE"):
+        commands = instance_storage_shellcode.strip().format(mountpoint="/mnt", mkfs=get_mkfs_command()).split("\n")
+        user_data = get_user_data(commands=commands, mime_multipart_archive=True)
+        if args.ecs_container_instance_ami:
+            ecs_ami_id = args.ecs_container_instance_ami
+        elif args.ecs_container_instance_ami_tags:
+            ecs_ami_id = resolve_ami(**args.ecs_container_instance_ami_tags)
+        else:
+            ecs_ami_id = get_ssm_parameter("/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id")
+        launch_template = ensure_launch_template(ImageId=ecs_ami_id,
+                                                 # TODO: add configurable BDM for Docker image cache space
+                                                 UserData=base64.b64encode(user_data).decode())
+        compute_resources.update(minvCpus=args.min_vcpus,
+                                 desiredvCpus=args.desired_vcpus,
+                                 ec2KeyPair=ssh_key_name,
+                                 instanceRole=instance_profile.name,
+                                 instanceTypes=args.instance_types,
+                                 launchTemplate=dict(launchTemplateName=launch_template),
+                                 spotIamFleetRole=SpotFleetBuilder.get_iam_fleet_role().name,
+                                 tags=dict(Name=__name__))
     logger.info("Creating compute environment %s in %s", args.name, vpc)
     compute_environment = clients.batch.create_compute_environment(computeEnvironmentName=args.name,
                                                                    type=args.type,
@@ -119,7 +121,7 @@ def create_compute_environment(args):
 cce_parser = register_parser(create_compute_environment, parent=batch_parser, help="Create a Batch compute environment")
 cce_parser.add_argument("name")
 cce_parser.add_argument("--type", choices={"MANAGED", "UNMANAGED"})
-cce_parser.add_argument("--compute-type", choices={"EC2", "SPOT"})
+cce_parser.add_argument("--compute-type", choices={"EC2", "SPOT", "FARGATE", "FARGATE_SPOT"})
 cce_parser.add_argument("--min-vcpus", type=int)
 cce_parser.add_argument("--desired-vcpus", type=int)
 cce_parser.add_argument("--max-vcpus", type=int)
@@ -176,9 +178,11 @@ def submit(args):
         if not any([args.command, args.execute, args.wdl]):
             raise AegeaException("One of the arguments --command --execute --wdl is required")
     elif args.name is None:
-        raise AegeaException("The argument --name is required")
+        args.name = os.path.basename(args.job_definition_arn).replace(":", "_")
+
     ensure_log_group("docker")
     ensure_log_group("syslog")
+    args.execution_role_arn = ensure_fargate_execution_role(__name__ + ".fargate_execution").arn
     if args.job_definition_arn is None:
         command, environment = get_command_and_env(args)
         container_overrides = dict(command=command, environment=environment)
@@ -190,38 +194,53 @@ def submit(args):
             ))
         else:
             args.default_job_role_iam_policies = []
-
-        jd_res = ensure_job_definition(args)
-        args.job_definition_arn = jd_res["jobDefinitionArn"]
-        args.name = args.name or "{}_{}".format(jd_res["jobDefinitionName"], jd_res["revision"])
+        job_definition_arn, job_name = ensure_job_definition(args)
     else:
         container_overrides = {}
         if args.command:
             container_overrides["command"] = args.command
         if args.environment:
             container_overrides["environment"] = args.environment
+        job_definition_arn, job_name = args.job_definition_arn, args.name
+
     if args.memory is None:
         logger.warn("Specify a memory quota for your job with --memory-mb NNNN.")
         logger.warn("The memory quota is required and a hard limit. Setting it to %d MB.", int(args.default_memory_mb))
         args.memory = int(args.default_memory_mb)
     container_overrides["memory"] = args.memory
-    submit_args = dict(jobName=args.name,
-                       jobQueue=args.queue,
-                       dependsOn=[dict(jobId=dep) for dep in args.depends_on],
-                       jobDefinition=args.job_definition_arn,
-                       parameters={k: v for k, v in args.parameters},
-                       containerOverrides=container_overrides)
-    if args.dry_run:
-        logger.info("The following command would be run:")
-        sys.stderr.write(json.dumps(submit_args, indent=4) + "\n")
-        return {"Dry run succeeded": True}
-    try:
-        job = clients.batch.submit_job(**submit_args)
-    except ClientError as e:
-        if not re.search("JobQueue .+ not found", str(e)):
-            raise
-        ensure_queue(args.queue)
-        job = clients.batch.submit_job(**submit_args)
+    while True:
+        submit_args = dict(jobName=job_name,
+                           jobQueue=args.queue,
+                           dependsOn=[dict(jobId=dep) for dep in args.depends_on],
+                           jobDefinition=job_definition_arn,
+                           parameters={k: v for k, v in args.parameters},
+                           containerOverrides=container_overrides)
+        try:
+            if args.dry_run:
+                logger.info("The following command would be run:")
+                sys.stderr.write(json.dumps(submit_args, indent=4) + "\n")
+                return {"Dry run succeeded": True}
+            else:
+                job = clients.batch.submit_job(**submit_args)
+            break
+        except (clients.batch.exceptions.ClientError, clients.batch.exceptions.ClientException) as e:
+            if re.search("JobQueue .+ not found", str(e)):
+                ensure_queue(args.queue)
+            elif "Job Queue is attached to Compute Environment that can not run Jobs with capability EC2" in str(e):
+                if args.job_definition_arn is not None:
+                    raise AegeaException("To submit a job to a Fargate queue, specify a Fargate job definition")
+                logger.debug("This job must be dispatched to Fargate, switching to Fargate job definition")
+                args.platform_capabilities = ["FARGATE"]
+                job_definition_arn, job_name = ensure_job_definition(args)
+                container_overrides["resourceRequirements"] = [dict(type="VCPU", value=str(args.vcpus)),
+                                                               dict(type="MEMORY", value=str(args.memory))]
+                del container_overrides["memory"]
+                submit_args.update(jobName=job_name,
+                                   jobDefinition=job_definition_arn,
+                                   containerOverrides=container_overrides)
+            else:
+                raise
+
     if args.watch:
         try:
             watch(watch_parser.parse_args([job["jobId"]]))

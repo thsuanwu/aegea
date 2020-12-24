@@ -23,7 +23,7 @@ from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_l
                        ensure_ecs_cluster, expect_error_codes, encode_tags)
 from .util.aws.logs import CloudwatchLogReader
 from .util.aws.batch import get_command_and_env, set_ulimits, get_volumes_and_mountpoints, get_ecr_image_uri
-from .util.aws.iam import ensure_iam_role
+from .util.aws.iam import ensure_iam_role, ensure_fargate_execution_role
 
 def complete_cluster_name(**kwargs):
     return [ARN(c).resource.partition("/")[2] for c in paginate(clients.ecs.get_paginator("list_clusters"))]
@@ -114,9 +114,7 @@ def run(args):
                           mountPoints=[dict(sourceVolume="scratch", containerPath="/mnt")] + mount_points,
                           volumesFrom=[])
     set_ulimits(args, container_defn)
-    exec_role = ensure_iam_role(args.execution_role, trust=["ecs-tasks"],
-                                policies=["service-role/AmazonEC2ContainerServiceforEC2Role",
-                                          "service-role/AWSBatchServiceRole"])
+    exec_role = ensure_fargate_execution_role(args.execution_role)
     task_role = ensure_iam_role(args.task_role, trust=["ecs-tasks"])
 
     expect_task_defn = dict(containerDefinitions=[container_defn],
@@ -149,12 +147,12 @@ def run(args):
         task_desc = clients.ecs.register_task_definition(family=task_defn_name, **expect_task_defn)["taskDefinition"]
 
     network_config = {
-        'awsvpcConfiguration': {
-            'subnets': [
+        "awsvpcConfiguration": {
+            "subnets": [
                 subnet.id for subnet in vpc.subnets.all()
             ],
-            'securityGroups': [ensure_security_group(args.security_group, vpc).id],
-            'assignPublicIp': 'ENABLED'
+            "securityGroups": [ensure_security_group(args.security_group, vpc).id],
+            "assignPublicIp": "ENABLED"
         }
     }
     container_overrides = [dict(name=args.task_name, command=command, environment=environment)]

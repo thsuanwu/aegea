@@ -572,21 +572,24 @@ batch_queues:
     - status
     - statusReason
 
-# Valid instance types values: "optimal", family name, type name
 batch_create_compute_environment:
   type: MANAGED
-  compute_type: SPOT
-  instance_types: [m5d, c5d, r5d]
+  compute_type: FARGATE_SPOT
+  max_vcpus: 64
+  # The following parameters are not applicable (and ignored) for Fargate CEs
+  # Valid instance types values: "optimal", family name, type name
   min_vcpus: 0
   desired_vcpus: 2
-  max_vcpus: 64
+  instance_types: [m5d, c5d, r5d]
 #  ecs_container_instance_ami_tags:
 #    AegeaMission: "ecs-container-instance"
 
 batch_submit:
   user: "0"
-  default_memory_mb: 4000
+  default_memory_mb: 4096
   job_role: aegea.batch.worker
+  platform_capabilities:
+    - EC2
   default_job_role_iam_policies:
     - AmazonEC2ReadOnlyAccess
     - AmazonS3ReadOnlyAccess

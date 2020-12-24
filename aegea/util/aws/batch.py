@@ -172,20 +172,37 @@ def get_volumes_and_mountpoints(args):
     return volumes, mount_points
 
 def ensure_job_definition(args):
+    def get_jd_arn_and_job_name(jd_res):
+        job_name = args.name or "{}_{}".format(jd_res["jobDefinitionName"], jd_res["revision"])
+        return jd_res["jobDefinitionArn"], job_name
+
     if args.ecs_image:
         args.image = get_ecr_image_uri(args.ecs_image)
-    container_props = {k: getattr(args, k) for k in ("image", "vcpus", "user", "privileged")}
-    container_props.update(memory=4, volumes=[], mountPoints=[], environment=[], command=[], resourceRequirements=[])
+    container_props = dict(image=args.image, user=args.user, privileged=args.privileged)
+    container_props.update(volumes=[], mountPoints=[], environment=[], command=[], resourceRequirements=[], ulimits=[],
+                           secrets=[])
+    if args.platform_capabilities == ["FARGATE"]:
+        container_props["resourceRequirements"].append(dict(type="VCPU", value="0.25"))
+        container_props["resourceRequirements"].append(dict(type="MEMORY", value="512"))
+        container_props["executionRoleArn"] = args.execution_role_arn
+    else:
+        container_props["vcpus"] = args.vcpus
+        container_props["memory"] = 4
+        set_ulimits(args, container_props)
     container_props["volumes"], container_props["mountPoints"] = get_volumes_and_mountpoints(args)
-    set_ulimits(args, container_props)
     if args.gpus:
-        container_props["resourceRequirements"] = [{"type": "GPU", "value": str(args.gpus)}]
+        container_props["resourceRequirements"].append(dict(type="GPU", value=str(args.gpus)))
     iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"], policies=args.default_job_role_iam_policies)
     container_props.update(jobRoleArn=iam_role.arn)
-    expect_job_defn = dict(status="ACTIVE", type="container", parameters={},
-                           retryStrategy={'attempts': args.retry_attempts}, containerProperties=container_props)
+    expect_job_defn = dict(status="ACTIVE", type="container", parameters={}, tags={},
+                           retryStrategy=dict(attempts=args.retry_attempts, evaluateOnExit=[]),
+                           containerProperties=container_props, platformCapabilities=args.platform_capabilities)
     job_hash = hashlib.sha256(json.dumps(container_props, sort_keys=True).encode()).hexdigest()[:8]
     job_defn_name = __name__.replace(".", "_") + "_jd_" + job_hash
+    if args.platform_capabilities == ["FARGATE"]:
+        job_defn_name += "_FARGATE"
+        container_props["fargatePlatformConfiguration"] = dict(platformVersion="LATEST")
+        container_props["networkConfiguration"] = dict(assignPublicIp="ENABLED")
     describe_job_definitions_paginator = Paginator(method=clients.batch.describe_job_definitions,
                                                    pagination_config=dict(result_key="jobDefinitions",
                                                                           input_token="nextToken",
@@ -195,12 +212,15 @@ def ensure_job_definition(args):
     for job_defn in paginate(describe_job_definitions_paginator, jobDefinitionName=job_defn_name):
         job_defn_desc = {k: job_defn.pop(k) for k in ("jobDefinitionName", "jobDefinitionArn", "revision")}
         if job_defn == expect_job_defn:
-            return job_defn_desc
-    return clients.batch.register_job_definition(jobDefinitionName=job_defn_name,
-                                                 type="container",
-                                                 containerProperties=container_props,
-                                                 retryStrategy=dict(attempts=args.retry_attempts))
-
+            logger.info("Found existing Batch job definition %s", job_defn_desc["jobDefinitionArn"])
+            return get_jd_arn_and_job_name(job_defn_desc)
+    logger.info("Creating new Batch job definition %s", job_defn_name)
+    jd_res = clients.batch.register_job_definition(jobDefinitionName=job_defn_name,
+                                                   type="container",
+                                                   containerProperties=container_props,
+                                                   retryStrategy=dict(attempts=args.retry_attempts),
+                                                   platformCapabilities=args.platform_capabilities)
+    return get_jd_arn_and_job_name(jd_res)
 
 def ensure_lambda_helper():
     awslambda = getattr(clients, "lambda")

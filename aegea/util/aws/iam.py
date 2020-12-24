@@ -149,3 +149,8 @@ def compose_managed_policies(policy_names):
             policy.policy["Statement"].append(statement)
             policy.policy["Statement"][-1]["Sid"] = policy_name + str(i)
     return policy
+
+def ensure_fargate_execution_role(name):
+    return ensure_iam_role(name, trust=["ecs-tasks"],
+                           policies=["service-role/AmazonEC2ContainerServiceforEC2Role",
+                                     "service-role/AWSBatchServiceRole"])
