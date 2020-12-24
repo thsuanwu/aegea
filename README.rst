@@ -3,9 +3,10 @@ Aegea: Amazon Web Services Operator Interface
 
 *Aegea* is a command line interface (CLI) that provides a set of essential commands and terminal dashboards for
 operators of Amazon Web Services (AWS) accounts. Aegea lets you build AMIs and Docker images using the
-`cloud-init <http://cloudinit.readthedocs.io/>`_ config management package, manage config roles, launch and monitor instances
-and services, and manage AWS resources including ELB, RDS, and AWS Batch. It is intended to be used in conjunction with the
-existing functionality of the `AWS CLI <https://aws.amazon.com/cli/>`_ and `boto3 <https://boto3.readthedocs.io/>`_.
+`cloud-init <http://cloudinit.readthedocs.io/>`_ config management package, manage config roles, launch and monitor
+instances and services, and manage AWS resources including ELB, RDS, and AWS Batch. Aegea is designed to be used in
+conjunction with the existing functionality of the `AWS CLI <https://aws.amazon.com/cli/>`_ and
+`boto3 <https://boto3.readthedocs.io/>`_.
 
 Installation
 ~~~~~~~~~~~~
@@ -79,10 +80,10 @@ storage configuration, and other options.
 Aegea Batch
 -----------
 The `AWS Batch <https://aws.amazon.com/batch>`_ API lets you run non-interactive command line workflows in Docker
-containers, managing AWS ECS, Spot Fleet, and EC2 in your account on your behalf. Use the ``aegea batch`` family of commands
-to interact with AWS Batch. The key command is ``aegea batch submit`` to submit jobs.
+containers, managing AWS ECS, Fargate, and EC2/Spot in your account on your behalf. Use the ``aegea batch`` family of
+commands to interact with AWS Batch. The key command is ``aegea batch submit`` to submit jobs.
 
-Run ``aegea batch submit --command "echo 'hello world'" --memory 2048 --vcpus 4 --watch``
+Run ``aegea batch submit --command "echo 'hello world'" --memory 4096 --vcpus 2 --watch``
 to run a Batch job that requires 2 GB RAM and 4 cores to be allocated to the Docker container,
 and executes the specified command.
 
@@ -90,25 +91,34 @@ You can also use ``aegea batch submit --execute FILE``. This will slurp up FILE 
 executable) and execute it in the job's Docker container.
 
 The concurrency and cost of your Batch jobs is governed by the "Max vCPUs" setting in your compute environment.
-To change the capacity or other settings of your compute environment, go to
-https://console.aws.amazon.com/batch/home?region=us-east-1#/compute-environments, select "aegea_batch", and click "Edit".
+To change the capacity or other settings of the default compute environment used by ``aegea batch``, go to
+https://console.aws.amazon.com/batch/home?region=us-east-1#/compute-environments, select "aegea_batch", and click
+"Edit".
 
-AWS Batch launches and manages `ECS <https://aws.amazon.com/ecs/>`_ host instances to execute your jobs. You can see the
-host instances by running ``aegea ls``.
+Batch and ECS Fargate
+'''''''''''''''''''''
+The `ECS Fargate <https://aws.amazon.com/fargate/>`_ API is an interface to the AWS container-based virtualization
+platform, `Firecracker <https://github.com/firecracker-microvm/firecracker>`_. ECS Fargate allows you to run workloads
+in fully managed containers: no instances run in your account; you are billed by the second of container use, and
+containers start up within 10 seconds, compared to minutes for EC2 instances.
 
-Aegea ECS Run
--------------
-The `ECS Fargate <https://aws.amazon.com/fargate/>`_ API is an interface to the AWS container-based virtualization platform,
-Firecracker. ECS Fargate allows you to run workloads in fully managed containers: no instances run in your account; you are billed by
-the second of container use, and containers usually start up within 20 seconds. Use the ``aegea ecs run`` command to interact with
-ECS Fargate. Most ``aegea batch`` semantics are applicable to ``aegea ecs``, which interacts with ECS via the "one shot"
+AWS Batch can run your jobs on either ECS Container Instances (EC2 instances connected to ECS that Batch manages in your
+account) or directly in ECS Fargate containers. While Fargate containers are much faster to start, they have
+`lower CPU and memory limits <https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html>`_
+of 4 CPUs and 30 GB RAM (compared to 96 CPUs and 768 GB RAM on EC2).
+
+By default, ``aegea batch`` will create and use an AWS Batch compute environment and queue that uses ECS Fargate, but
+you can control this by setting the ``--compute-type`` option to ``aegea batch create-compute-environment``.
+
+Aegea also supports direct use of ECS Fargate without Batch via the ``aegea ecs run`` command. Most ``aegea batch``
+semantics are applicable to ``aegea ecs``, which interacts with ECS via the "one shot"
 `ECS RunTask <https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_RunTask.html>`_ API.
 
 Configuration management
 ~~~~~~~~~~~~~~~~~~~~~~~~
 Aegea supports ingesting configuration from a configurable array of sources. Each source is a JSON or YAML file.
-Configuration sources that follow the first source update the configuration using recursive dictionary merging. Sources are
-enumerated in the following order (i.e., in order of increasing priority):
+Configuration sources that follow the first source update the configuration using recursive dictionary merging. Sources
+are enumerated in the following order (i.e., in order of increasing priority):
 
 - Site-wide configuration source, ``/etc/aegea/config.yml``
 - User configuration source, ``~/.config/aegea/config.yml``
