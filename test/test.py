@@ -51,13 +51,16 @@ class TestAegea(unittest.TestCase):
             raise e
         return self.SubprocessResult(out, err, return_code)
 
+    @unittest.skipIf("GITHUB_ACTIONS" in os.environ, "suffers from rate limits in CI")
+    def test_pricing_commands(self):
+        self.call(["aegea", "pricing", "AmazonEC2"])
+        self.call(["aegea", "pricing", "AmazonRDS"])
+
     def test_basic_aegea_commands(self):
         self.call(["aegea"], expect=[dict(return_codes=[1])])
         self.call(["aegea", "--help"])
         self.call(["aegea", "--version"])
         self.call(["aegea", "pricing"])
-        self.call(["aegea", "pricing", "AmazonEC2"])
-        self.call(["aegea", "pricing", "AmazonRDS"])
         self.call(["aegea", "ls", "-w9"])
         for ssh_cmd in "ssh", "scp":
             self.call(["aegea", ssh_cmd, "nonexistent_instance:"],
