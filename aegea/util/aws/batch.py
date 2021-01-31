@@ -33,7 +33,7 @@ add-apt-repository ppa:deadsnakes/ppa
 apt-get update
 apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq lsof python3.6 python3-virtualenv > /dev/null
 python3 -m virtualenv -q --python=python3.6 /opt/aegea-venv
-/opt/aegea-venv/bin/pip install -q argcomplete requests boto3 tweak pyyaml
+/opt/aegea-venv/bin/pip install -q argcomplete requests boto3 tweak
 /opt/aegea-venv/bin/pip install -q --no-deps aegea@git+https://github.com/thsuanwu/aegea.git#egg=aegea-0.0.1
 aegea_ebs_cleanup() {{ echo Detaching EBS volume $aegea_ebs_vol_id; cd /; /opt/aegea-venv/bin/aegea ebs detach --unmount --force --delete $aegea_ebs_vol_id; }}
 trap aegea_ebs_cleanup EXIT
