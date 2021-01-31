@@ -28,6 +28,7 @@ sed -i -e "s|/archive.ubuntu.com|/{region}.ec2.archive.ubuntu.com|g" /etc/apt/so
 apt-get update -qq"""
 
 ebs_vol_mgr_shellcode = apt_mgr_shellcode + """
+apt install software-properties-common
 add-apt-repository ppa:deadsnakes/ppa \
 && apt update \
 && apt install python3.6
