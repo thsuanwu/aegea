@@ -29,7 +29,7 @@ apt-get update -qq"""
 
 ebs_vol_mgr_shellcode = apt_mgr_shellcode + """
 apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq lsof python3-virtualenv > /dev/null
-python3 -m virtualenv -q --python=python3 /opt/aegea-venv
+python3 -m virtualenv -q --python=python3.6 /opt/aegea-venv
 /opt/aegea-venv/bin/pip install -q argcomplete requests boto3 tweak pyyaml
 /opt/aegea-venv/bin/pip install -q --no-deps aegea=={aegea_version}
 aegea_ebs_cleanup() {{ echo Detaching EBS volume $aegea_ebs_vol_id; cd /; /opt/aegea-venv/bin/aegea ebs detach --unmount --force --delete $aegea_ebs_vol_id; }}
