@@ -36,7 +36,7 @@ install: clean version
 
 install_venv: clean
 	virtualenv --prompt "(aegea-venv) " .venv
-	source .venv/bin/activate; pip install --upgrade "pip < 21.0"
+	source .venv/bin/activate; pip install --upgrade "pip==19.3"
 	source .venv/bin/activate; pip install --upgrade setuptools
 	source .venv/bin/activate; pip install --upgrade wheel
 	source .venv/bin/activate; python ./setup.py bdist_wheel
