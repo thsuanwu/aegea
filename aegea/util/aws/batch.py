@@ -28,11 +28,10 @@ sed -i -e "s|/archive.ubuntu.com|/{region}.ec2.archive.ubuntu.com|g" /etc/apt/so
 apt-get update -qq"""
 
 ebs_vol_mgr_shellcode = apt_mgr_shellcode + """
-apt-get install software-properties-common
+apt-get install -qqy --no-install-suggests --no-install-recommends software-properties-common
 add-apt-repository ppa:deadsnakes/ppa
 apt-get update
-apt-get install python3.6
-apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq lsof python3-virtualenv > /dev/null
+apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq lsof python3.6 python3-virtualenv > /dev/null
 python3 -m virtualenv -q --python=python3.6 /opt/aegea-venv
 /opt/aegea-venv/bin/pip install -q argcomplete requests boto3 tweak pyyaml
 /opt/aegea-venv/bin/pip install -q --no-deps aegea=={aegea_version}
