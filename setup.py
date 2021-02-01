@@ -7,7 +7,7 @@ try:
     version = subprocess.check_output(["git", "describe", "--tags", "--match", "v*.*.*"]).decode()
     version = version.strip("v\n").replace("-", "+", 1).replace("-", ".")
 except Exception:
-    version = "0.0.1"
+    version = "0.0.0"
 
 setuptools.setup(
     name="aegea",
